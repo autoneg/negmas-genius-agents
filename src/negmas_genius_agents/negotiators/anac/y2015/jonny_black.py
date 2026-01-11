@@ -1,21 +1,4 @@
-"""
-JonnyBlack negotiation agent from ANAC 2015.
-
-This module implements JonnyBlack, a negotiation agent that competed in the
-Sixth International Automated Negotiating Agents Competition (ANAC 2015).
-JonnyBlack uses unpredictable concession with opponent exploitation.
-
-Original Java class: agents.anac.y2015.JonnyBlack.JonnyBlack
-
-References:
-    ANAC 2015 competition:
-    https://ii.tudelft.nl/negotiation/node/12
-
-    Aydogan, R., Festen, D., Hindriks, K., & Jonker, C. (2017).
-    Alternating Offers Protocols for Multilateral Negotiation.
-    In Modern Approaches to Agent-based Complex Automated Negotiation.
-    Springer. (ANAC 2015 Proceedings)
-"""
+"""JonnyBlack from ANAC 2015."""
 
 from __future__ import annotations
 
@@ -42,6 +25,16 @@ class JonnyBlack(SAONegotiator):
 
     JonnyBlack uses unpredictable concession behavior with opponent
     exploitation when weakness (rapid concession) is detected.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2015.JonnyBlack.JonnyBlack
+
+    References:
+        ANAC 2015 competition:
+        https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
         - Three-phase concession with "mystery factor" noise (-8% to +8%):

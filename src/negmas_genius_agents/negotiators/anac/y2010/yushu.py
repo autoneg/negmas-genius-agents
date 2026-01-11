@@ -1,32 +1,4 @@
-"""
-Yushu from ANAC 2010 - 2nd place agent.
-
-Yushu was developed by Bo An (UMass Amherst) and achieved second place in the
-first ANAC competition. It uses an adaptive time-dependent strategy with
-sophisticated round estimation and opponent tracking.
-
-This implementation faithfully reproduces Yushu's core strategies:
-- Time-dependent concession with eagerness parameter
-- Best-10 opponent bid tracking for fallback decisions
-- Response time estimation for remaining rounds prediction
-- Dynamic minimum utility adjustment based on opponent behavior
-
-References:
-    An, B. (2011). "Yushu: A Heuristic-based Agent for Automated Negotiating
-    Competition" New Trends in Agent-based Complex Automated Negotiations,
-    pp. 145-149.
-
-    @inproceedings{an2011yushu,
-      title={Yushu: A heuristic-based agent for automated negotiating competition},
-      author={An, Bo},
-      booktitle={New Trends in Agent-based Complex Automated Negotiations},
-      series={Studies in Computational Intelligence},
-      volume={383},
-      pages={145--149},
-      year={2011},
-      publisher={Springer}
-    }
-"""
+"""Yushu from ANAC 2010."""
 
 from __future__ import annotations
 
@@ -51,33 +23,50 @@ class Yushu(SAONegotiator):
     """
     Yushu from ANAC 2010 - 2nd place agent.
 
-    Yushu is a time-dependent concession agent with adaptive minimum utility.
+    This agent uses an adaptive time-dependent strategy with sophisticated round
+    estimation and opponent tracking.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This implementation faithfully reproduces Yushu's core strategies:
+
+    - Time-dependent concession with eagerness parameter
+    - Best-10 opponent bid tracking for fallback decisions
+    - Response time estimation for remaining rounds prediction
+    - Dynamic minimum utility adjustment based on opponent behavior
+
+    References:
+        Original Genius class: ``agents.anac.y2010.Yushu.Yushu``
+
+        ANAC 2010: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
-    - Time-dependent target: `target = max - (max-min) * time^eagerness`
-    - Eagerness=1.2 (slightly conceder, faster than linear)
-    - Bid selection from candidates in [0.96*target, 1.08*target] range
-    - Avoids repeating recent bids (last 4)
-    - Near deadline: offers best opponent bid if rounds_left < 1.6
+        - Time-dependent target: `target = max - (max-min) * time^eagerness`
+        - Eagerness=1.2 (slightly conceder, faster than linear)
+        - Bid selection from candidates in [0.96*target, 1.08*target] range
+        - Avoids repeating recent bids (last 4)
+        - Near deadline: offers best opponent bid if rounds_left < 1.6
 
     **Acceptance Strategy:**
-    - Accept if offer >= target utility
-    - Accept if offer >= 0.96*max (when rounds_left >= 15)
-    - Accept if offer >= 0.92*max (when rounds_left < 15)
-    - Also accepts if offer >= planned counter-offer utility when rounds_left < 8
+        - Accept if offer >= target utility
+        - Accept if offer >= 0.96*max (when rounds_left >= 15)
+        - Accept if offer >= 0.92*max (when rounds_left < 15)
+        - Also accepts if offer >= planned counter-offer utility when rounds_left < 8
 
     **Opponent Modeling:**
-    - Tracks all opponent bids with utilities
-    - Maintains sorted list of best 10 opponent bids
-    - Calculates average opponent utility for min_utility adjustment
-    - Estimates remaining rounds from response time patterns
+        - Tracks all opponent bids with utilities
+        - Maintains sorted list of best 10 opponent bids
+        - Calculates average opponent utility for min_utility adjustment
+        - Estimates remaining rounds from response time patterns
 
     Minimum utility adjustments:
-    - rounds_left > 6.7: min = 0.93 * max
-    - rounds_left > 5.0: min = 0.90 * max
-    - rounds_left > 3.0: min = 0.86 * max
-    - rounds_left > 2.3: min = 0.80 * max
-    - otherwise: min = 0.60 * max
+        - rounds_left > 6.7: min = 0.93 * max
+        - rounds_left > 5.0: min = 0.90 * max
+        - rounds_left > 3.0: min = 0.86 * max
+        - rounds_left > 2.3: min = 0.80 * max
+        - otherwise: min = 0.60 * max
 
     Args:
         eagerness: Concession rate exponent (default 1.2, slightly faster than linear)

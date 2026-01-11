@@ -1,31 +1,4 @@
-"""
-Gahboninho from ANAC 2011 - 2nd place agent.
-
-Gahboninho was developed by Rica Gonen from the Open University of Israel. The name
-means "bully" in Hebrew, reflecting its aggressive negotiation strategy that exploits
-cooperative opponents while remaining robust against tough ones.
-
-This implementation faithfully reproduces Gahboninho's core strategies:
-- Three-phase negotiation: early profiling, main exploitation, and panic concession
-- Noise-based opponent classification (lower noise = more cooperative opponent)
-- Exploitation mechanism that becomes more selfish against nicer opponents
-- Rapid concession in final moments with willingness to offer opponent's best bid
-
-References:
-    Gonen, R. (2012). "Gahboninho"
-    In: Ito, T., Zhang, M., Robu, V., Fatima, S., Matsuo, T. (eds)
-    Complex Automated Negotiations: Theories, Models, and Software Competitions.
-    Studies in Computational Intelligence, vol 435. Springer, Berlin, Heidelberg.
-
-    @inproceedings{gahboninho2011,
-      title={Gahboninho},
-      author={Gonen, Rica},
-      booktitle={Complex Automated Negotiations: Theories, Models, and Software Competitions},
-      pages={229--233},
-      year={2012},
-      publisher={Springer}
-    }
-"""
+"""Gahboninho from ANAC 2011."""
 
 from __future__ import annotations
 
@@ -50,8 +23,44 @@ class Gahboninho(SAONegotiator):
     """
     Gahboninho from ANAC 2011 - 2nd place agent.
 
-    A "bully" agent that exploits cooperative opponents by becoming more selfish
-    when it detects nice behavior, while remaining robust against tough opponents.
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    The name "Gahboninho" means "bully" in Hebrew, reflecting its aggressive
+    negotiation strategy that exploits cooperative opponents while remaining
+    robust against tough ones.
+
+    This implementation reproduces Gahboninho's core strategies:
+
+    - Three-phase negotiation: early profiling, main exploitation, and panic concession
+    - Noise-based opponent classification (lower noise = more cooperative opponent)
+    - Exploitation mechanism that becomes more selfish against nicer opponents
+    - Rapid concession in final moments with willingness to offer opponent's best bid
+
+    References:
+        Original Genius class: ``agents.anac.y2011.Gahboninho.Gahboninho``
+
+        Ben Adar, M., Sofy, N., Elimelech, A. (2013). Gahboninho: Strategy for
+        Balancing Pressure and Compromise in Automated Negotiation. In: Ito, T.,
+        Zhang, M., Robu, V., Matsuo, T. (eds) Complex Automated Negotiations:
+        Theories, Models, and Software Competitions. Studies in Computational
+        Intelligence, vol 435. Springer, Berlin, Heidelberg.
+        https://doi.org/10.1007/978-3-642-30737-9_13
+
+        .. code-block:: bibtex
+
+            @incollection{benadar2013gahboninho,
+                title={Gahboninho: Strategy for Balancing Pressure and Compromise
+                       in Automated Negotiation},
+                author={Ben Adar, Mai and Sofy, Nadav and Elimelech, Avshalom},
+                booktitle={Complex Automated Negotiations: Theories, Models, and
+                           Software Competitions},
+                pages={205--208},
+                year={2013},
+                publisher={Springer},
+                doi={10.1007/978-3-642-30737-9_13}
+            }
 
     **Offering Strategy:**
     - Early phase (first 40 actions, t < 0.15): Gradual decrease from 1.0 to 0.925

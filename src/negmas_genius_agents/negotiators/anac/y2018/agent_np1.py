@@ -1,18 +1,4 @@
-"""
-AgentNP1 from ANAC 2018.
-
-This module implements AgentNP1 (Nash Product 1), a negotiating agent that
-competed in the Automated Negotiating Agents Competition (ANAC) 2018.
-AgentNP1 focuses on Nash bargaining solution by maximizing the estimated
-Nash product during bid selection.
-
-References:
-    - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
-    - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
-      Competition (ANAC 2018)." IJCAI 2019.
-    - Genius framework: https://ii.tudelft.nl/genius/
-    - Original package: agents.anac.y2018.agentnp1.AgentNP1
-"""
+"""AgentNP1 from ANAC 2018."""
 
 from __future__ import annotations
 
@@ -37,10 +23,21 @@ class AgentNP1(SAONegotiator):
     """
     AgentNP1 (Nash Product 1) from ANAC 2018.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     AgentNP1 focuses on achieving fair outcomes by maximizing the Nash product
     during bid selection. The agent uses frequency-based opponent modeling to
     estimate opponent preferences and selects bids that balance own utility
     with estimated opponent satisfaction.
+
+    References:
+        - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
+        - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
+          Competition (ANAC 2018)." IJCAI 2019.
+        - Genius framework: https://ii.tudelft.nl/genius/
+        - Original package: agents.anac.y2018.agentnp1.AgentNP1
 
     **Offering Strategy:**
         Uses a polynomial concession curve: target = 1 - t^e. Candidates are

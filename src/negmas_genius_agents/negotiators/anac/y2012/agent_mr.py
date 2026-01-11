@@ -1,16 +1,4 @@
-"""
-AgentMR - Mixed Reality negotiation agent from ANAC 2012.
-
-This module implements the AgentMR (Mixed Reality) negotiation agent which
-competed in the Automated Negotiating Agents Competition (ANAC) 2012.
-The agent uses multiple bidding strategies and adapts based on opponent behavior.
-
-References:
-    ANAC 2012 Competition Results and Agent Descriptions.
-    Baarslag, T., Hindriks, K., Hendrikx, M., Dirkzwager, A., & Jonker, C. (2014).
-    Decoupling Negotiating Agents to Explore the Space of Negotiation Strategies.
-    Novel Insights in Agent-based Complex Automated Negotiation, 61-83.
-"""
+"""AgentMR from ANAC 2012."""
 
 from __future__ import annotations
 
@@ -37,6 +25,15 @@ class AgentMR(SAONegotiator):
 
     AgentMR uses a multi-phase negotiation strategy with risk-aware utility
     computation and opponent behavior prediction.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        Original Genius class: ``agents.anac.y2012.AgentMR.AgentMR``
+
+        ANAC 2012: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
         The agent operates in three distinct phases:

@@ -1,31 +1,4 @@
-"""
-AgentK2 from ANAC 2011.
-
-AgentK2 was developed by Shogo Kawaguchi, Katsuhide Fujita, and Takayuki Ito from
-Nagoya Institute of Technology. It is an improved version of AgentK, which won
-ANAC 2010, featuring enhanced opponent modeling and adaptive concession.
-
-This implementation faithfully reproduces AgentK2's core strategies:
-- Probabilistic acceptance based on statistical analysis of opponent offers
-- Running statistics (mean, variance, deviation) of received utilities
-- Adaptive target utility that responds to opponent concession patterns
-- Enhanced opponent modeling using frequency-based preference learning
-
-References:
-    Kawaguchi, S., Fujita, K., & Ito, T. (2012). "AgentK2"
-    In: Ito, T., Zhang, M., Robu, V., Fatima, S., Matsuo, T. (eds)
-    Complex Automated Negotiations: Theories, Models, and Software Competitions.
-    Studies in Computational Intelligence, vol 435. Springer, Berlin, Heidelberg.
-
-    @inproceedings{agentk2_2011,
-      title={AgentK2},
-      author={Kawaguchi, Shogo and Fujita, Katsuhide and Ito, Takayuki},
-      booktitle={Complex Automated Negotiations: Theories, Models, and Software Competitions},
-      pages={241--245},
-      year={2012},
-      publisher={Springer}
-    }
-"""
+"""AgentK2 from ANAC 2011."""
 
 from __future__ import annotations
 
@@ -50,8 +23,21 @@ class AgentK2(SAONegotiator):
     """
     AgentK2 from ANAC 2011.
 
-    An improved version of the ANAC 2010 winner AgentK, featuring enhanced
-    opponent modeling and probabilistic acceptance based on statistical analysis.
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This implementation faithfully reproduces AgentK2's core strategies:
+
+    - Probabilistic acceptance based on statistical analysis of opponent offers
+    - Running statistics (mean, variance, deviation) of received utilities
+    - Adaptive target utility that responds to opponent concession patterns
+    - Enhanced opponent modeling using frequency-based preference learning
+
+    References:
+        Original Genius class: ``agents.anac.y2011.AgentK2.Agent_K2``
+
+        ANAC 2011: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
     - Maintains dynamic bid_target based on statistical analysis

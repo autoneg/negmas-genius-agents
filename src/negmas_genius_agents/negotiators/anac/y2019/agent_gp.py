@@ -1,19 +1,4 @@
-"""
-AgentGP from ANAC 2019.
-
-This agent placed 3rd in the Nash-based category in ANAC 2019.
-Uses a Gaussian Process-inspired approach for opponent modeling,
-balancing exploration and exploitation in bid selection.
-
-References:
-    Baarslag, T., Fujita, K., Gerding, E. H., Hindriks, K., Ito, T.,
-    Jennings, N. R., ... & Williams, C. R. (2019). The Tenth International
-    Automated Negotiating Agents Competition (ANAC 2019).
-    In Proceedings of the International Joint Conference on Autonomous
-    Agents and Multiagent Systems (AAMAS).
-
-Original Genius class: agents.anac.y2019.agentgp.AgentGP
-"""
+"""AgentGP from ANAC 2019."""
 
 from __future__ import annotations
 
@@ -41,6 +26,26 @@ class AgentGP(SAONegotiator):
     AgentGP uses a Gaussian Process-inspired approach for opponent modeling
     and bid selection, treating the negotiation as a multi-armed bandit
     problem with uncertainty in opponent preferences.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{baarslag2019tenth,
+                title={The Tenth International Automated Negotiating Agents
+                       Competition (ANAC 2019)},
+                author={Baarslag, Tim and Fujita, Katsuhide and Gerding,
+                        Enrico H and Hindriks, Koen and Ito, Takayuki and
+                        Jennings, Nicholas R and others},
+                booktitle={Proceedings of the International Joint Conference
+                           on Autonomous Agents and Multiagent Systems (AAMAS)},
+                year={2019}
+            }
+
+        Original Genius class: ``agents.anac.y2019.agentgp.AgentGP``
 
     **Offering Strategy:**
         - Polynomial concession from initial target (0.95) to minimum (0.55)

@@ -1,18 +1,4 @@
-"""
-PokerFace from ANAC 2015.
-
-PokerFace uses a bluffing-inspired strategy:
-1. Hides true preferences by varying offers unpredictably
-2. Maintains consistent acceptance threshold despite varied offers
-3. Uses strategic "tells" to mislead opponent modeling
-4. Aggressive early, reveals true position late
-
-Original: agents.anac.y2015.pokerface.PokerFace
-
-References:
-    - https://ii.tudelft.nl/negotiation/node/12 (ANAC 2015)
-    - Genius negotiation framework: https://ii.tudelft.nl/genius/
-"""
+"""PokerFace from ANAC 2015."""
 
 from __future__ import annotations
 
@@ -35,19 +21,43 @@ __all__ = ["PokerFace"]
 
 class PokerFace(SAONegotiator):
     """
-    PokerFace from ANAC 2015.
+    PokerFace negotiation agent from ANAC 2015.
 
-    PokerFace uses a bluffing-inspired strategy:
-    1. Hides true preferences by varying offers unpredictably
-    2. Maintains consistent acceptance threshold despite varied offers
-    3. Uses strategic "tells" to mislead opponent modeling
-    4. Aggressive early, reveals true position late
+    PokerFace uses a bluffing-inspired strategy that hides true preferences
+    by varying offers unpredictably while maintaining a consistent hidden
+    acceptance threshold.
 
-    Key features:
-    - Unpredictable bidding pattern
-    - Bluffing in early phases
-    - Consistent hidden threshold
-    - Strategic revelation late game
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2015.pokerface.PokerFace
+
+    References:
+        ANAC 2015 competition:
+        https://ii.tudelft.nl/negotiation/node/12
+
+    **Offering Strategy:**
+        - Three-phase bluffing approach:
+          * Bluffing (t<0.5): Displays ~98% demands with +/-5% noise
+            and +/-10% random variance to confuse opponent modeling
+          * Transition (0.5<t<0.8): Gradually reveals true position,
+            moving from 95% toward true_threshold + 0.1
+          * Reveal (t>0.8): Converges to true_threshold (70%)
+        - Random bid selection to hide preference patterns
+        - Bluff mode disables after t=0.6
+
+    **Acceptance Strategy:**
+        - Uses hidden "true threshold" (70%) for acceptance decisions
+        - Acceptance threshold: true_threshold + 0.15 until t=0.7,
+          then gradually decreases to true_threshold - 0.1 by t=1.0
+        - Near deadline (t>0.98): Accepts if offer >= true_threshold - 0.1
+
+    **Opponent Modeling:**
+        - Minimal tracking: stores opponent bids but doesn't use for
+          strategy adaptation
+        - Strategy relies on hiding own preferences rather than
+          exploiting opponent's
 
     Args:
         bluff_factor: How much to bluff (default 0.3)

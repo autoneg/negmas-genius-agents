@@ -1,13 +1,4 @@
-"""
-MadAgent - ANAC 2017 Finalist.
-
-This module contains the reimplementation of MadAgent from ANAC 2017.
-Original: agents.anac.y2017.madagent.MadAgent
-
-References:
-    ANAC 2017 competition proceedings.
-    https://ii.tudelft.nl/nego/node/7
-"""
+"""MadAgent from ANAC 2017."""
 
 from __future__ import annotations
 
@@ -32,9 +23,20 @@ class MadAgent(SAONegotiator):
     """
     MadAgent from ANAC 2017.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This is a reimplementation of MadAgent from ANAC 2017.
+    Original: agents.anac.y2017.madagent.MadAgent
+
     MadAgent uses an unpredictable, "mad" negotiation strategy with
     random elements to confuse opponent modeling while maintaining
     reasonable utility.
+
+    References:
+        ANAC 2017 competition proceedings.
+        https://ii.tudelft.nl/nego/node/7
 
     **Offering Strategy:**
         Combines quadratic time-based concession with random oscillation

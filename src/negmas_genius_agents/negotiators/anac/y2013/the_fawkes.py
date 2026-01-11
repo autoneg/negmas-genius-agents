@@ -1,18 +1,4 @@
-"""
-TheFawkes from ANAC 2013 - The winning agent.
-
-This module implements TheFawkes, the winner of ANAC 2013. TheFawkes uses a
-BOA (Bidding-Opponent modeling-Acceptance) framework with frequency-based
-opponent modeling and the AC_Next acceptance condition.
-
-References:
-    - Dirkzwager, A., de Weerdt, M. (2013). "TheFawkes: An Agent That Learns
-      Opponent Preferences To Make Pareto-Optimal Offers." ANAC 2013.
-    - Baarslag, T., et al. (2013). "Evaluating Practical Negotiating Agents:
-      Results and Analysis of the 2013 International Competition."
-      Artificial Intelligence, 198, 73-103.
-    - Original Java implementation: agents.anac.y2013.TheFawkes.TheFawkes
-"""
+"""TheFawkes from ANAC 2013."""
 
 from __future__ import annotations
 
@@ -41,6 +27,15 @@ class TheFawkes(SAONegotiator):
     framework. The key innovation is combining frequency-based opponent modeling
     with Pareto-efficient bid selection that maximizes estimated opponent utility
     while maintaining acceptable own utility.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        Original Genius class: ``agents.anac.y2013.TheFawkes.TheFawkes``
+
+        ANAC 2013: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
         Time-dependent concession using Boulware formula: threshold = max -

@@ -1,18 +1,4 @@
-"""
-MeanBot from ANAC 2015.
-
-MeanBot uses a mean-based strategy:
-1. Tracks mean of opponent offers
-2. Adjusts threshold based on average opponent behavior
-3. Time-dependent concession with mean consideration
-4. Statistical approach to acceptance
-
-Original: agents.anac.y2015.meanBot.meanBot
-
-References:
-    - https://ii.tudelft.nl/negotiation/node/12 (ANAC 2015)
-    - Genius negotiation framework: https://ii.tudelft.nl/genius/
-"""
+"""MeanBot from ANAC 2015."""
 
 from __future__ import annotations
 
@@ -35,19 +21,43 @@ __all__ = ["MeanBot"]
 
 class MeanBot(SAONegotiator):
     """
-    MeanBot from ANAC 2015.
+    MeanBot negotiation agent from ANAC 2015.
 
-    MeanBot uses a mean-based strategy:
-    1. Tracks mean of opponent offers
-    2. Adjusts threshold based on average opponent behavior
-    3. Time-dependent concession with mean consideration
-    4. Statistical approach to acceptance
+    MeanBot uses a mean-based strategy that tracks opponent offer statistics
+    to adjust its negotiation threshold and acceptance decisions.
 
-    Key features:
-    - Statistical analysis of opponent offers
-    - Mean-based threshold adjustment
-    - Adaptive concession rate
-    - Data-driven acceptance
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2015.meanBot.meanBot
+
+    References:
+        ANAC 2015 competition:
+        https://ii.tudelft.nl/negotiation/node/12
+
+    **Offering Strategy:**
+        - Three-phase concession with mean-based targets:
+          * Early (t<0.2): Stays high at 93% of max utility
+          * Main (0.2<t<0.8): Concedes toward mean-based target
+            (mean opponent utility + 0.1 or 0.6, whichever is higher)
+          * End (t>0.8): More aggressive concession toward minimum
+        - Adaptive rate: firmer (e * 0.8) if mean opponent > 50%,
+          more flexible (e * 1.3) if mean opponent < 30%
+        - Random selection from candidates above threshold
+
+    **Acceptance Strategy:**
+        - AC_Time: Accepts if offer utility >= computed threshold
+        - Statistical acceptance: Accepts if offer >= mean + 0.2
+          AND offer >= minimum acceptable
+        - End-game (t>0.95): Accepts if offer >= best opponent utility
+          OR offer >= minimum acceptable
+
+    **Opponent Modeling:**
+        - Tracks all opponent utilities to compute running mean
+        - Maintains best opponent utility for end-game reference
+        - Uses mean to adjust target utility in main phase
+        - Statistical approach influences both offering and acceptance
 
     Args:
         e: Concession exponent (default 0.2)

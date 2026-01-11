@@ -1,16 +1,4 @@
-"""
-SimpleAgent2017 - ANAC 2017 Finalist.
-
-This module contains the reimplementation of SimpleAgent from ANAC 2017.
-Original: agents.anac.y2017.simpleagent.SimpleAgent
-
-SimpleAgent serves as a baseline implementation demonstrating that
-effective negotiation can be achieved with straightforward strategies.
-
-References:
-    ANAC 2017 competition proceedings.
-    https://ii.tudelft.nl/nego/node/7
-"""
+"""SimpleAgent2017 from ANAC 2017."""
 
 from __future__ import annotations
 
@@ -34,8 +22,19 @@ class SimpleAgent2017(SAONegotiator):
     """
     SimpleAgent from ANAC 2017.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This is a reimplementation of SimpleAgent from ANAC 2017.
+    Original: agents.anac.y2017.simpleagent.SimpleAgent
+
     SimpleAgent serves as a baseline implementation demonstrating that
     effective negotiation can be achieved with straightforward strategies.
+
+    References:
+        ANAC 2017 competition proceedings.
+        https://ii.tudelft.nl/nego/node/7
 
     **Offering Strategy:**
         Uses simple linear time-based decay from initial_threshold to

@@ -1,15 +1,4 @@
-"""
-Gangster from ANAC 2014 - 3rd place agent.
-
-This module implements Gangster, the third-place finisher in the Automated
-Negotiating Agents Competition (ANAC) 2014. Gangster uses a unique
-multi-strategy voting mechanism where internal "gang members" vote on
-negotiation decisions.
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Original Genius implementation: agents.anac.y2014.Gangster.Gangster
-"""
+"""Gangster from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -37,6 +26,14 @@ class Gangster(SAONegotiator):
     Gangster achieved third place in ANAC 2014 using a distinctive multi-strategy
     voting approach. A "gang" of internal strategies vote on acceptance decisions,
     with votes aggregated using time-dependent weights.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
+        - Original Genius implementation: agents.anac.y2014.Gangster.Gangster
 
     **Offering Strategy:**
         Conservative-to-aggressive concession with opponent consideration:

@@ -1,19 +1,4 @@
-"""
-KakeSoba from ANAC 2019 - 2nd place agent.
-
-This module contains the Python reimplementation of KakeSoba,
-which placed 2nd in ANAC 2019. KakeSoba uses a unique bid
-diversification strategy with a fixed utility threshold.
-
-References:
-    Baarslag, T., Fujita, K., Gerding, E. H., Hindriks, K., Ito, T.,
-    Jennings, N. R., ... & Williams, C. R. (2019). The Tenth International
-    Automated Negotiating Agents Competition (ANAC 2019).
-    In Proceedings of the International Joint Conference on Autonomous
-    Agents and Multiagent Systems (AAMAS).
-
-Original Genius class: agents.anac.y2019.kakesoba.KakeSoba
-"""
+"""KakeSoba from ANAC 2019."""
 
 from __future__ import annotations
 
@@ -42,6 +27,10 @@ class KakeSoba(SAONegotiator):
     that maintains a fixed high utility threshold while diversifying
     offers to explore opponent preferences. This conservative approach
     avoids poor deals while still enabling agreement through diversity.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
 
     **Offering Strategy:**
         - Fixed utility threshold at 0.85 (no time-based concession!)

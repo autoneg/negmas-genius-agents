@@ -1,14 +1,4 @@
-"""
-KGAgent from ANAC 2014.
-
-This module implements KGAgent, a negotiation agent from the Automated
-Negotiating Agents Competition (ANAC) 2014. KGAgent uses a knowledge-guided
-approach with adaptive strategy based on learned opponent behavior.
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Original Genius implementation: agents.anac.y2014.KGAgent.KGAgent
-"""
+"""KGAgent from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -37,6 +27,14 @@ class KGAgent(SAONegotiator):
     based on learned opponent behavior patterns. It estimates opponent
     concession rates and modifies its own concession accordingly, using
     a simplified Kalman-filter-like state estimation approach.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
+        - Original Genius implementation: agents.anac.y2014.KGAgent.KGAgent
 
     **Offering Strategy:**
         Adaptive target with opponent-responsive concession:

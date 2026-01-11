@@ -32,6 +32,10 @@ class AgentF(SAONegotiator):
     """
     AgentF from ANAC 2017.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     AgentF uses a simple but effective time-dependent strategy with
     linear concession and opponent adaptation.
 

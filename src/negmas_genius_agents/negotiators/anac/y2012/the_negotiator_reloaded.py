@@ -1,16 +1,4 @@
-"""
-TheNegotiatorReloaded - Improved negotiation agent from ANAC 2012.
-
-This module implements TheNegotiatorReloaded negotiation agent, an improved
-version of TheNegotiator from ANAC 2011. Developed by TU Delft, it features
-enhanced adaptive concession strategies and improved opponent behavior tracking.
-
-References:
-    ANAC 2012 Competition Results and Agent Descriptions.
-    Baarslag, T., Hindriks, K., Hendrikx, M., Dirkzwager, A., & Jonker, C. (2014).
-    Decoupling Negotiating Agents to Explore the Space of Negotiation Strategies.
-    Novel Insights in Agent-based Complex Automated Negotiation, 61-83.
-"""
+"""TheNegotiatorReloaded from ANAC 2012."""
 
 from __future__ import annotations
 
@@ -35,9 +23,17 @@ class TheNegotiatorReloaded(SAONegotiator):
     """
     TheNegotiatorReloaded negotiation agent from ANAC 2012.
 
-    TheNegotiatorReloaded is an improved version of TheNegotiator from ANAC 2011,
-    developed by TU Delft. It features adaptive Boulware-like concession with
-    opponent toughness estimation.
+    TheNegotiatorReloaded is an improved version of TheNegotiator from ANAC 2011.
+    It features adaptive Boulware-like concession with opponent toughness estimation.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        Original Genius class: ``agents.anac.y2012.TheNegotiatorReloaded.TheNegotiatorReloaded``
+
+        ANAC 2012: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
         Uses adaptive time-dependent Boulware concession:

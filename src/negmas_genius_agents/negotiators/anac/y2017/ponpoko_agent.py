@@ -1,17 +1,4 @@
-"""
-PonPokoAgent - ANAC 2017 Winner.
-
-This module contains the reimplementation of PonPokoAgent, the winning agent
-from the Automated Negotiating Agents Competition (ANAC) 2017.
-
-PonPokoAgent achieved 1st place in ANAC 2017 with a deceptively simple
-strategy using randomized threshold patterns. The name "PonPoko" comes from
-the Japanese folklore about tanuki (raccoon dogs).
-
-References:
-    ANAC 2017 competition proceedings.
-    https://ii.tudelft.nl/nego/node/7
-"""
+"""PonPokoAgent from ANAC 2017."""
 
 from __future__ import annotations
 
@@ -36,8 +23,20 @@ class PonPokoAgent(SAONegotiator):
     """
     PonPokoAgent from ANAC 2017 - The winning agent.
 
-    PonPokoAgent won ANAC 2017 with a deceptively simple strategy using
-    randomized threshold patterns and a pre-sorted bid pool.
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This is a reimplementation of PonPokoAgent, the winning agent from the
+    Automated Negotiating Agents Competition (ANAC) 2017.
+
+    PonPokoAgent achieved 1st place in ANAC 2017 with a deceptively simple
+    strategy using randomized threshold patterns. The name "PonPoko" comes from
+    the Japanese folklore about tanuki (raccoon dogs).
+
+    References:
+        ANAC 2017 competition proceedings.
+        https://ii.tudelft.nl/nego/node/7
 
     **Offering Strategy:**
         Randomly selects one of 5 threshold patterns at negotiation start:

@@ -1,20 +1,4 @@
-"""
-CUHKAgent - The winning agent from ANAC 2012.
-
-This module implements the CUHKAgent negotiation agent developed by the Chinese
-University of Hong Kong which won first place in the Automated Negotiating Agents
-Competition (ANAC) 2012. The agent uses adaptive time-based concession with
-opponent behavior tracking.
-
-References:
-    ANAC 2012 Competition Results and Agent Descriptions.
-    Hao, J., & Leung, H. (2012). CUHKAgent: An Adaptive Negotiation Strategy for
-    Bilateral Negotiations over Multiple Items. ANAC 2012 Proceedings.
-    Baarslag, T., Fujita, K., Gerding, E. H., Hindriks, K., Ito, T., Jennings, N. R.,
-    Jonker, C., Kraus, S., Lin, R., Robu, V., & Williams, C. R. (2013).
-    Evaluating Practical Negotiating Agents: Results and Analysis of the 2011
-    International Competition. Artificial Intelligence, 198, 73-103.
-"""
+"""CUHKAgent from ANAC 2012."""
 
 from __future__ import annotations
 
@@ -42,6 +26,15 @@ class CUHKAgent(SAONegotiator):
     CUHKAgent (Chinese University of Hong Kong Agent) won the ANAC 2012
     competition using an adaptive time-based concession strategy with
     opponent behavior tracking and discount factor adaptation.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        Original Genius class: ``agents.anac.y2012.CUHKAgent.CUHKAgent``
+
+        ANAC 2012: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
         Uses a two-phase time-dependent concession with adaptive threshold:

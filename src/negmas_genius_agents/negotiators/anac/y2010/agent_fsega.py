@@ -1,33 +1,4 @@
-"""
-AgentFSEGA from ANAC 2010.
-
-AgentFSEGA (Faculty of Science, Economics, Geography, and Applications) was
-developed by Liviu Dan Serban and colleagues at West University of Timisoara,
-Romania. It combines time-dependent concession with opponent modeling.
-
-This implementation faithfully reproduces AgentFSEGA's core strategies:
-- Polynomial time-dependent concession with Boulware-style exponent
-- Opponent reservation value estimation from observed offers
-- Adaptive minimum utility adjustment
-- Comparative acceptance based on target and opponent behavior
-
-References:
-    Serban, L.D., et al. (2011). "AgentFSEGA: Time Constrained Reasoning Model
-    for Bilateral Multi-Issue Negotiations" New Trends in Agent-based Complex
-    Automated Negotiations, pp. 167-173.
-
-    @inproceedings{serban2011agentfsega,
-      title={AgentFSEGA: Time constrained reasoning model for bilateral
-             multi-issue negotiations},
-      author={Serban, Liviu Dan and others},
-      booktitle={New Trends in Agent-based Complex Automated Negotiations},
-      series={Studies in Computational Intelligence},
-      volume={383},
-      pages={167--173},
-      year={2011},
-      publisher={Springer}
-    }
-"""
+"""AgentFSEGA from ANAC 2010."""
 
 from __future__ import annotations
 
@@ -52,29 +23,45 @@ class AgentFSEGA(SAONegotiator):
     """
     AgentFSEGA from ANAC 2010.
 
-    AgentFSEGA uses time-dependent concession with opponent modeling.
+    This agent combines time-dependent concession with opponent modeling.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This implementation faithfully reproduces AgentFSEGA's core strategies:
+
+    - Polynomial time-dependent concession with Boulware-style exponent
+    - Opponent reservation value estimation from observed offers
+    - Adaptive minimum utility adjustment
+    - Comparative acceptance based on target and opponent behavior
+
+    References:
+        Original Genius class: ``agents.anac.y2010.AgentFSEGA.AgentFSEGA``
+
+        ANAC 2010: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
-    - Polynomial time-dependent concession: `target = Pmax - (Pmax-Pmin) * t^(1/e)`
-    - Default e=0.2 (Boulware-style, slow early concession)
-    - Bid selection closest to current target utility
-    - Target decreases from Pmax (1.0) toward Pmin over time
+        - Polynomial time-dependent concession: `target = Pmax - (Pmax-Pmin) * t^(1/e)`
+        - Default e=0.2 (Boulware-style, slow early concession)
+        - Bid selection closest to current target utility
+        - Target decreases from Pmax (1.0) toward Pmin over time
 
     **Acceptance Strategy:**
-    - Accept if offer utility >= current target utility
-    - Target calculated using same formula as bidding
-    - Considers opponent's estimated reservation value in Pmin
+        - Accept if offer utility >= current target utility
+        - Target calculated using same formula as bidding
+        - Considers opponent's estimated reservation value in Pmin
 
     **Opponent Modeling:**
-    - Tracks opponent's offers to estimate their reservation value
-    - Uses minimum observed opponent utility as reservation estimate
-    - Adjusts Pmin based on opponent model: Pmin = max(reservation, opponent_min)
-    - Adapts strategy based on opponent's concession pattern
+        - Tracks opponent's offers to estimate their reservation value
+        - Uses minimum observed opponent utility as reservation estimate
+        - Adjusts Pmin based on opponent model: Pmin = max(reservation, opponent_min)
+        - Adapts strategy based on opponent's concession pattern
 
     Key parameters:
-    - Pmax: Maximum utility (1.0, best possible for self)
-    - Pmin: Minimum acceptable (adjusted by opponent model)
-    - e: Concession exponent (0.2 = Boulware, <1 slow start)
+        - Pmax: Maximum utility (1.0, best possible for self)
+        - Pmin: Minimum acceptable (adjusted by opponent model)
+        - e: Concession exponent (0.2 = Boulware, <1 slow start)
 
     Args:
         reservation: Minimum acceptable utility (default 0.6).

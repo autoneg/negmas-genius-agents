@@ -1,35 +1,4 @@
-"""
-AgentK from ANAC 2010 - The winning agent (1st place).
-
-AgentK was developed by Shogo Kawaguchi, Katsuhide Fujita, and Takayuki Ito from
-Nagoya Institute of Technology, Japan. It won the first ANAC competition with
-its innovative adaptive negotiation strategy based on statistical analysis of
-opponent behavior.
-
-This implementation faithfully reproduces AgentK's core strategies:
-- Statistical tracking of opponent offers (mean, variance, deviation)
-- Dynamic target adjustment using estimated maximum attainable utility
-- Probabilistic acceptance with time-dependent thresholds
-- "Tremor" mechanism for controlled randomness in decision-making
-
-References:
-    Kawaguchi, S., Fujita, K., & Ito, T. (2011).
-    "AgentK: Compromising strategy based on estimated maximum utility
-    for automated negotiating agents"
-    New Trends in Agent-based Complex Automated Negotiations, pp. 137-144.
-
-    @inproceedings{kawaguchi2011agentk,
-      title={AgentK: Compromising strategy based on estimated maximum utility
-             for automated negotiating agents},
-      author={Kawaguchi, Shogo and Fujita, Katsuhide and Ito, Takayuki},
-      booktitle={New Trends in Agent-based Complex Automated Negotiations},
-      series={Studies in Computational Intelligence},
-      volume={383},
-      pages={137--144},
-      year={2011},
-      publisher={Springer}
-    }
-"""
+"""AgentK from ANAC 2010."""
 
 from __future__ import annotations
 
@@ -52,33 +21,52 @@ class AgentK(SAONegotiator):
     """
     AgentK from ANAC 2010 - The winning agent (1st place).
 
-    AgentK is an adaptive negotiation agent developed by Kawaguchi et al.
-    that won ANAC 2010 with its innovative statistical approach.
+    AgentK won the first ANAC competition with its innovative adaptive
+    negotiation strategy based on statistical analysis of opponent behavior.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This implementation reproduces AgentK's core strategies:
+
+    - Statistical tracking of opponent offers (mean, variance, deviation)
+    - Dynamic target adjustment using estimated maximum attainable utility
+    - Probabilistic acceptance with time-dependent thresholds
+    - "Tremor" mechanism for controlled randomness in decision-making
+
+    References:
+        Original Genius class: ``agents.anac.y2010.AgentK.Agent_K``
+
+        ANAC 2010 results and army descriptions in:
+        Baarslag, T., et al. (2012). "The First Automated Negotiating Agents
+        Competition (ANAC 2010)". New Trends in Agent-based Complex Automated
+        Negotiations. Studies in Computational Intelligence, vol 383. Springer.
 
     **Offering Strategy:**
-    - Random bid generation with adaptive target utility
-    - First checks if opponent's previous offers exceed current target
-    - Falls back to random search for bids meeting `bid_target`
-    - Target decreases by 0.01 after every 500 failed search attempts
+        - Random bid generation with adaptive target utility
+        - First checks if opponent's previous offers exceed current target
+        - Falls back to random search for bids meeting `bid_target`
+        - Target decreases by 0.01 after every 500 failed search attempts
 
     **Acceptance Strategy:**
-    - Probabilistic acceptance based on statistical analysis
-    - Tracks mean and variance of opponent offers
-    - Estimates maximum attainable utility: `estimateMax = mean + (1-mean)*deviation`
-    - Calculates acceptance probability:
-      `p = (time^alpha)/5 + (offer - estimateMax) + (offer - target)`
-    - Uses "tremor" parameter for randomness in alpha calculation
+        - Probabilistic acceptance based on statistical analysis
+        - Tracks mean and variance of opponent offers
+        - Estimates maximum attainable utility: `estimateMax = mean + (1-mean)*deviation`
+        - Calculates acceptance probability:
+          `p = (time^alpha)/5 + (offer - estimateMax) + (offer - target)`
+        - Uses "tremor" parameter for randomness in alpha calculation
 
     **Opponent Modeling:**
-    - Running statistics: sum, sum of squares, round count
-    - Mean and variance tracking of opponent utilities
-    - Deviation estimate (scaled by sqrt(12) for uniform distribution)
-    - `estimateMax` predicts best achievable utility from opponent
+        - Running statistics: sum, sum of squares, round count
+        - Mean and variance tracking of opponent utilities
+        - Deviation estimate (scaled by sqrt(12) for uniform distribution)
+        - `estimateMax` predicts best achievable utility from opponent
 
     Key formulas:
-    - alpha = 1 + tremor + 10*mean - 2*tremor*mean
-    - preTarget = 1 - time^alpha * (1 - estimateMax)
-    - ratio = (deviation + 0.1) / (1 - preTarget)
+        - alpha = 1 + tremor + 10*mean - 2*tremor*mean
+        - preTarget = 1 - time^alpha * (1 - estimateMax)
+        - ratio = (deviation + 0.1) / (1 - preTarget)
 
     Args:
         tremor: Randomness factor (default 2.0)

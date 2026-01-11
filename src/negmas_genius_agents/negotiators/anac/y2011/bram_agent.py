@@ -1,30 +1,4 @@
-"""
-BRAMAgent from ANAC 2011.
-
-BRAMAgent (Bilateral Rational Agent with Modeling) was developed by researchers
-as a straightforward but effective negotiation agent combining time-dependent
-concession with basic opponent modeling.
-
-This implementation faithfully reproduces BRAMAgent's core strategies:
-- Boulware-like time-dependent concession function with configurable beta
-- Frequency-based opponent modeling tracking value selections per issue
-- Bid selection that prefers outcomes estimated to be good for the opponent
-- Acceptance that compares offers to both target utility and planned offers
-
-References:
-    ANAC 2011 Proceedings (2012).
-    In: Ito, T., Zhang, M., Robu, V., Fatima, S., Matsuo, T. (eds)
-    Complex Automated Negotiations: Theories, Models, and Software Competitions.
-    Studies in Computational Intelligence, vol 435. Springer, Berlin, Heidelberg.
-
-    @inproceedings{bramagent2011,
-      title={BRAMAgent},
-      author={ANAC 2011 Participant},
-      booktitle={Complex Automated Negotiations: Theories, Models, and Software Competitions},
-      year={2012},
-      publisher={Springer}
-    }
-"""
+"""BRAMAgent from ANAC 2011."""
 
 from __future__ import annotations
 
@@ -49,8 +23,21 @@ class BramAgent(SAONegotiator):
     """
     BRAMAgent from ANAC 2011.
 
-    A straightforward but effective agent combining Boulware time-dependent
-    concession with frequency-based opponent modeling for mutual benefit.
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This implementation faithfully reproduces BRAMAgent's core strategies:
+
+    - Boulware-like time-dependent concession function with configurable beta
+    - Frequency-based opponent modeling tracking value selections per issue
+    - Bid selection that prefers outcomes estimated to be good for the opponent
+    - Acceptance that compares offers to both target utility and planned offers
+
+    References:
+        Original Genius class: ``agents.anac.y2011.BramAgent.BRAMAgent``
+
+        ANAC 2011: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
     - Boulware-like concession: target(t) = max - (max - min) * t^(1/beta)

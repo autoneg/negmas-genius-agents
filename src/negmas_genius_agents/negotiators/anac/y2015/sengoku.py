@@ -1,18 +1,4 @@
-"""
-SENGOKU from ANAC 2015.
-
-SENGOKU (Warring States) uses a battle-inspired strategy:
-1. Strategic territorial defense of high-value outcomes
-2. Tactical concession in stages
-3. Alliance-seeking through mutual benefit
-4. Victory-oriented end-game
-
-Original: agents.anac.y2015.SENGOKU.SENGOKU
-
-References:
-    - https://ii.tudelft.nl/negotiation/node/12 (ANAC 2015)
-    - Genius negotiation framework: https://ii.tudelft.nl/genius/
-"""
+"""SENGOKU from ANAC 2015."""
 
 from __future__ import annotations
 
@@ -35,19 +21,42 @@ __all__ = ["SENGOKU"]
 
 class SENGOKU(SAONegotiator):
     """
-    SENGOKU from ANAC 2015.
+    SENGOKU negotiation agent from ANAC 2015.
 
-    SENGOKU (Warring States) uses a battle-inspired strategy:
-    1. Strategic territorial defense of high-value outcomes
-    2. Tactical concession in stages
-    3. Alliance-seeking through mutual benefit
-    4. Victory-oriented end-game
+    SENGOKU (Warring States) uses a battle-inspired strategy with territorial
+    defense, tactical concession, and alliance-seeking behavior.
 
-    Key features:
-    - Territory defense (high utility protection)
-    - Staged tactical concession
-    - Opponent alliance assessment
-    - Victory-focused decisions
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2015.SENGOKU.SENGOKU
+
+    References:
+        ANAC 2015 competition:
+        https://ii.tudelft.nl/negotiation/node/12
+
+    **Offering Strategy:**
+        - Four-phase battle strategy (e=0.1, very Boulware):
+          * Defense (t<0.4): Defends territory at 85% utility, prefers
+            top 20% of candidates
+          * Tactical (0.4<t<0.7): Boulware concession toward 65%
+          * Alliance (0.7<t<0.9): Concedes toward max(55%, best_opponent + 0.1)
+          * Victory (t>0.9): 70% concession toward max(45%, min_util + 0.1)
+        - Alliance bonus: concedes faster (e * 1.2) for cooperative opponents
+          (alliance score > 0.5)
+
+    **Acceptance Strategy:**
+        - AC_Time: Accepts if offer utility >= computed threshold
+        - Victory phase: Accepts if offer >= best opponent utility
+          OR offer >= min_utility + 0.1
+
+    **Opponent Modeling:**
+        - Tracks opponent bids and best utility
+        - Calculates "alliance score" based on average recent offer quality:
+          * Increases (+0.1) if avg recent offers > 50%
+          * Decreases (-0.05) otherwise
+        - Uses alliance score to adjust concession rate
 
     Args:
         e: Concession exponent (default 0.1, very Boulware)

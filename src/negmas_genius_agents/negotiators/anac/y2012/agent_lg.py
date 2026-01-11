@@ -1,16 +1,4 @@
-"""
-AgentLG - 2nd place agent from ANAC 2012.
-
-This module implements the AgentLG negotiation agent which achieved second place
-in the Automated Negotiating Agents Competition (ANAC) 2012.
-
-References:
-    ANAC 2012 Competition Results and Agent Descriptions.
-    Baarslag, T., Fujita, K., Gerding, E. H., Hindriks, K., Ito, T., Jennings, N. R.,
-    Jonker, C., Kraus, S., Lin, R., Robu, V., & Williams, C. R. (2013).
-    Evaluating Practical Negotiating Agents: Results and Analysis of the 2011
-    International Competition. Artificial Intelligence, 198, 73-103.
-"""
+"""AgentLG from ANAC 2012."""
 
 from __future__ import annotations
 
@@ -38,6 +26,15 @@ class AgentLG(SAONegotiator):
     AgentLG is a "mostly stubborn but compromises in the end" negotiation agent
     that uses a phased bidding approach with conditional concession based on
     opponent behavior.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        Original Genius class: ``agents.anac.y2012.AgentLG.AgentLG``
+
+        ANAC 2012: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
         The agent uses a phased time-dependent bidding strategy:

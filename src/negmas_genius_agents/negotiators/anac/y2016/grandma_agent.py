@@ -1,19 +1,4 @@
-"""
-GrandmaAgent negotiation agent from ANAC 2016.
-
-This module implements GrandmaAgent, a patient and conservative negotiation
-agent that takes time to understand opponent behavior before making
-significant concessions.
-
-Original Java class: agents.anac.y2016.grandma.GrandmaAgent
-
-References:
-    Fujita, K., et al. (2016). "The Sixth Automated Negotiating Agents Competition
-    (ANAC 2016)". In: Proceedings of the International Joint Conference on
-    Artificial Intelligence (IJCAI).
-
-    ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
-"""
+"""GrandmaAgent from ANAC 2016."""
 
 from __future__ import annotations
 
@@ -38,9 +23,27 @@ class GrandmaAgent(SAONegotiator):
     """
     GrandmaAgent negotiation agent from ANAC 2016.
 
-    GrandmaAgent uses a patient, conservative strategy with minimal early
-    concession followed by accelerated end-game adaptation based on
-    observed opponent behavior.
+    GrandmaAgent is a patient and conservative negotiation agent that takes
+    time to understand opponent behavior before making significant concessions.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2016.grandma.GrandmaAgent
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{fujita2016anac,
+                title={The Sixth Automated Negotiating Agents Competition (ANAC 2016)},
+                author={Fujita, Katsuhide and others},
+                booktitle={Proceedings of the International Joint Conference on
+                    Artificial Intelligence (IJCAI)},
+                year={2016}
+            }
+
+        ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
     Two-phase patience-based concession:

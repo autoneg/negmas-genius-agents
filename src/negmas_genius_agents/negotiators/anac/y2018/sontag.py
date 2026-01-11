@@ -1,14 +1,4 @@
-"""
-Sontag from ANAC 2018.
-
-Sontag is a negotiating agent that competed in the Automated
-Negotiating Agents Competition (ANAC) 2018.
-
-References:
-    - https://ii.tudelft.nl/negotiation/node/12 (ANAC 2018)
-    - Genius negotiation framework: https://ii.tudelft.nl/genius/
-    - Package: agents.anac.y2018.sontag.Sontag
-"""
+"""Sontag from ANAC 2018."""
 
 from __future__ import annotations
 
@@ -32,6 +22,10 @@ __all__ = ["Sontag"]
 class Sontag(SAONegotiator):
     """
     Sontag from ANAC 2018.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
 
     Sontag implements a sophisticated strategy combining:
 

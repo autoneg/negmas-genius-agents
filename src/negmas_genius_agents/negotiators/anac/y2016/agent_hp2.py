@@ -1,20 +1,4 @@
-"""
-AgentHP2 negotiation agent from ANAC 2016.
-
-This module implements AgentHP2, an evolved version of AgentHP from ANAC 2015
-with enhanced performance optimizations and improved bidding strategies.
-The agent features multi-phase concession, opponent trend detection, and
-efficient bid caching for faster computation.
-
-Original Java class: agents.anac.y2016.agenthp2.AgentHP2
-
-References:
-    Fujita, K., et al. (2016). "The Sixth Automated Negotiating Agents Competition
-    (ANAC 2016)". In: Proceedings of the International Joint Conference on
-    Artificial Intelligence (IJCAI).
-
-    ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
-"""
+"""AgentHP2 from ANAC 2016."""
 
 from __future__ import annotations
 
@@ -39,9 +23,28 @@ class AgentHP2(SAONegotiator):
     """
     AgentHP2 negotiation agent from ANAC 2016.
 
-    AgentHP2 is an enhanced version of AgentHP from ANAC 2015, featuring
+    AgentHP2 is an evolved version of AgentHP from ANAC 2015, featuring
     optimized bid caching, multi-phase time-dependent concession, and
     opponent trend analysis for adaptive negotiation behavior.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2016.agenthp2.AgentHP2
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{fujita2016anac,
+                title={The Sixth Automated Negotiating Agents Competition (ANAC 2016)},
+                author={Fujita, Katsuhide and others},
+                booktitle={Proceedings of the International Joint Conference on
+                    Artificial Intelligence (IJCAI)},
+                year={2016}
+            }
+
+        ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
     Uses a multi-phase time-dependent concession approach:

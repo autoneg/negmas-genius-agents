@@ -1,16 +1,4 @@
-"""
-MetaAgent2013 from ANAC 2013 - 2nd place agent.
-
-This module implements MetaAgent2013, a meta-learning agent that selects strategies
-based on domain features. The original version used CART decision trees and
-UCB-MAB for portfolio selection among different negotiation strategies.
-
-References:
-    - Baarslag, T., et al. (2013). "Evaluating Practical Negotiating Agents:
-      Results and Analysis of the 2013 International Competition."
-      Artificial Intelligence, 198, 73-103.
-    - Original Java implementation: agents.anac.y2013.MetaAgent.MetaAgent
-"""
+"""MetaAgent2013 from ANAC 2013."""
 
 from __future__ import annotations
 
@@ -38,6 +26,15 @@ class MetaAgent2013(SAONegotiator):
     MetaAgent2013 is a meta-learning agent that selects negotiation strategies
     based on domain features. The original used CART decision trees and UCB-MAB
     for portfolio selection among strategies.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        Original Genius class: ``agents.anac.y2013.MetaAgent.MetaAgent``
+
+        ANAC 2013: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
         Selects between three strategies based on domain analysis:

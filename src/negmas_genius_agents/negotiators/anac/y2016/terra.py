@@ -1,19 +1,4 @@
-"""
-Terra negotiation agent from ANAC 2016.
-
-This module implements Terra, a grounded and stable negotiation agent that
-maintains firm positions while adapting to opponent behavior through
-careful observation.
-
-Original Java class: agents.anac.y2016.terra.Terra
-
-References:
-    Fujita, K., et al. (2016). "The Sixth Automated Negotiating Agents Competition
-    (ANAC 2016)". In: Proceedings of the International Joint Conference on
-    Artificial Intelligence (IJCAI).
-
-    ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
-"""
+"""Terra from ANAC 2016."""
 
 from __future__ import annotations
 
@@ -38,9 +23,27 @@ class Terra(SAONegotiator):
     """
     Terra negotiation agent from ANAC 2016.
 
-    Terra uses a grounded, stable negotiation approach with firm early
-    positions followed by gradual adaptation based on opponent behavior
-    observation.
+    Terra is a grounded and stable negotiation agent that maintains firm
+    positions while adapting to opponent behavior through careful observation.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2016.terra.Terra
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{fujita2016anac,
+                title={The Sixth Automated Negotiating Agents Competition (ANAC 2016)},
+                author={Fujita, Katsuhide and others},
+                booktitle={Proceedings of the International Joint Conference on
+                    Artificial Intelligence (IJCAI)},
+                year={2016}
+            }
+
+        ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
     Three-phase firm-to-flexible concession:

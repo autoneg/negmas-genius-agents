@@ -1,19 +1,4 @@
-"""
-AgentM from ANAC 2014 - The winning agent.
-
-This module implements AgentM, the winner of the Automated Negotiating Agents
-Competition (ANAC) 2014. AgentM uses simulated annealing for bid search
-combined with adaptive acceptance based on opponent concession patterns.
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Baarslag, T., et al. (2015). "The Automated Negotiating Agents Competition,
-      2010-2015." AI Magazine, 36(4), 115-118.
-
-Note:
-    This is a simplified reimplementation focusing on the core strategy
-    principles of the original AgentM.
-"""
+"""AgentM from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -42,6 +27,13 @@ class AgentM(SAONegotiator):
     Automated Negotiating Agents Competition (ANAC 2014). It employs simulated
     annealing for efficient bid space exploration and adapts its acceptance
     strategy based on learned opponent concession patterns.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
 
     **Offering Strategy:**
         Uses simulated annealing (SA) to search the bid space for high-utility

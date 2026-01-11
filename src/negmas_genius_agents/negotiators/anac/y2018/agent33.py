@@ -1,18 +1,4 @@
-"""
-Agent33 from ANAC 2018.
-
-This module implements Agent33, a negotiating agent that competed in the
-Automated Negotiating Agents Competition (ANAC) 2018. Agent33 employs a
-straightforward time-dependent strategy with linear concession and best
-offer tracking.
-
-References:
-    - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
-    - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
-      Competition (ANAC 2018)." IJCAI 2019.
-    - Genius framework: https://ii.tudelft.nl/genius/
-    - Original package: agents.anac.y2018.agent33.Agent33
-"""
+"""Agent33 from ANAC 2018."""
 
 from __future__ import annotations
 
@@ -37,10 +23,21 @@ class Agent33(SAONegotiator):
     """
     Agent33 from ANAC 2018.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     Agent33 uses a simple but effective two-phase time-dependent strategy with
     linear concession. The agent maintains high aspirations early, then linearly
     concedes toward the minimum utility threshold while tracking the best
     received offer for deadline decisions.
+
+    References:
+        - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
+        - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
+          Competition (ANAC 2018)." IJCAI 2019.
+        - Genius framework: https://ii.tudelft.nl/genius/
+        - Original package: agents.anac.y2018.agent33.Agent33
 
     **Offering Strategy:**
         Two-phase approach: (1) Before concession_start, maintains high initial

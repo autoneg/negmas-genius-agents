@@ -1,14 +1,4 @@
-"""
-ArisawaYaki from ANAC 2014.
-
-This module implements ArisawaYaki, a negotiation agent from the Automated
-Negotiating Agents Competition (ANAC) 2014. ArisawaYaki uses a distinctive
-wave-based oscillation strategy for concession timing.
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Original Genius implementation: agents.anac.y2014.ArisawaYaki.ArisawaYaki
-"""
+"""ArisawaYaki from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -36,6 +26,14 @@ class ArisawaYaki(SAONegotiator):
     ArisawaYaki employs a unique wave-based oscillation strategy, alternating
     between tougher and more conciliatory phases. This creates uncertainty
     for opponents while maintaining overall concession progress toward deadline.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
+        - Original Genius implementation: agents.anac.y2014.ArisawaYaki.ArisawaYaki
 
     **Offering Strategy:**
         Combines linear base concession with sinusoidal oscillation:

@@ -1,20 +1,4 @@
-"""
-OMACAgent - 3rd place agent from ANAC 2012.
-
-This module implements the OMACAgent (Opponent Model-based Adaptive Concession)
-negotiation agent which achieved third place in the Automated Negotiating Agents
-Competition (ANAC) 2012. The agent uses opponent modeling to estimate reservation
-values and adapts its concession strategy accordingly.
-
-References:
-    ANAC 2012 Competition Results and Agent Descriptions.
-    Chen, S., & Weiss, G. (2012). OMAC: A Discrete Wavelet Transformation Based
-    Negotiation Agent. ANAC 2012 Proceedings.
-    Baarslag, T., Fujita, K., Gerding, E. H., Hindriks, K., Ito, T., Jennings, N. R.,
-    Jonker, C., Kraus, S., Lin, R., Robu, V., & Williams, C. R. (2013).
-    Evaluating Practical Negotiating Agents: Results and Analysis of the 2011
-    International Competition. Artificial Intelligence, 198, 73-103.
-"""
+"""OMACAgent from ANAC 2012."""
 
 from __future__ import annotations
 
@@ -42,6 +26,15 @@ class OMACAgent(SAONegotiator):
     OMAC (Opponent Model-based Adaptive Concession) uses opponent modeling to
     estimate reservation values and dynamically adjusts its Boulware-like
     concession strategy based on opponent behavior.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        Original Genius class: ``agents.anac.y2012.OMACagent.OMACagent``
+
+        ANAC 2012: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
         Uses adaptive Boulware concession with dynamic beta parameter:

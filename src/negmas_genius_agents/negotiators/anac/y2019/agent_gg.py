@@ -1,19 +1,4 @@
-"""
-AgentGG from ANAC 2019 - The winning agent.
-
-This module contains the Python reimplementation of AgentGG,
-the winner of ANAC 2019. AgentGG uses an importance-based bidding
-strategy with Nash point estimation for effective negotiation.
-
-References:
-    Baarslag, T., Fujita, K., Gerding, E. H., Hindriks, K., Ito, T.,
-    Jennings, N. R., ... & Williams, C. R. (2019). The Tenth International
-    Automated Negotiating Agents Competition (ANAC 2019).
-    In Proceedings of the International Joint Conference on Autonomous
-    Agents and Multiagent Systems (AAMAS).
-
-Original Genius class: agents.anac.y2019.agentgg.AgentGG
-"""
+"""AgentGG from ANAC 2019."""
 
 from __future__ import annotations
 
@@ -42,6 +27,26 @@ class AgentGG(SAONegotiator):
     focuses on understanding which issue values contribute most to utility,
     rather than just evaluating complete bids. This allows for more nuanced
     bid generation and opponent modeling.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{baarslag2019tenth,
+                title={The Tenth International Automated Negotiating Agents
+                       Competition (ANAC 2019)},
+                author={Baarslag, Tim and Fujita, Katsuhide and Gerding,
+                        Enrico H and Hindriks, Koen and Ito, Takayuki and
+                        Jennings, Nicholas R and others},
+                booktitle={Proceedings of the International Joint Conference
+                           on Autonomous Agents and Multiagent Systems (AAMAS)},
+                year={2019}
+            }
+
+        Original Genius class: ``agents.anac.y2019.agentgg.AgentGG``
 
     **Offering Strategy:**
         - Computes "importance" values for each issue value based on average

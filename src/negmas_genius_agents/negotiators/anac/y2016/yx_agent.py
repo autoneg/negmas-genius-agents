@@ -1,19 +1,4 @@
-"""
-YXAgent negotiation agent from ANAC 2016 - 2nd place.
-
-This module implements YXAgent, which achieved 2nd place in ANAC 2016.
-The agent uses a conservative threshold-based strategy with opponent
-hardness estimation based on value variance analysis.
-
-Original Java class: agents.anac.y2016.yxagent.YXAgent
-
-References:
-    Fujita, K., et al. (2016). "The Sixth Automated Negotiating Agents Competition
-    (ANAC 2016)". In: Proceedings of the International Joint Conference on
-    Artificial Intelligence (IJCAI).
-
-    ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
-"""
+"""YXAgent from ANAC 2016."""
 
 from __future__ import annotations
 
@@ -38,9 +23,28 @@ class YXAgent(SAONegotiator):
     """
     YXAgent negotiation agent from ANAC 2016 - 2nd place.
 
-    YXAgent uses a conservative threshold-based strategy with opponent
-    hardness estimation, adapting its acceptance threshold based on
-    detected opponent negotiation style.
+    YXAgent achieved 2nd place in ANAC 2016. The agent uses a conservative
+    threshold-based strategy with opponent hardness estimation based on
+    value variance analysis.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2016.yxagent.YXAgent
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{fujita2016anac,
+                title={The Sixth Automated Negotiating Agents Competition (ANAC 2016)},
+                author={Fujita, Katsuhide and others},
+                booktitle={Proceedings of the International Joint Conference on
+                    Artificial Intelligence (IJCAI)},
+                year={2016}
+            }
+
+        ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
     Conservative threshold-based bidding:

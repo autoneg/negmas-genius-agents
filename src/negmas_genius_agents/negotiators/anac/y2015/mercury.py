@@ -1,18 +1,4 @@
-"""
-Mercury from ANAC 2015.
-
-Mercury uses a fluid, quick-moving strategy:
-1. Fast adaptation to opponent behavior
-2. Quick concession when needed
-3. Fluid bid selection with variety
-4. Swift deal-making in end-game
-
-Original: agents.anac.y2015.Mercury.Mercury
-
-References:
-    - https://ii.tudelft.nl/negotiation/node/12 (ANAC 2015)
-    - Genius negotiation framework: https://ii.tudelft.nl/genius/
-"""
+"""Mercury from ANAC 2015."""
 
 from __future__ import annotations
 
@@ -35,19 +21,41 @@ __all__ = ["Mercury"]
 
 class Mercury(SAONegotiator):
     """
-    Mercury from ANAC 2015.
+    Mercury negotiation agent from ANAC 2015.
 
-    Mercury uses a fluid, quick-moving strategy:
-    1. Fast adaptation to opponent behavior
-    2. Quick concession when needed
-    3. Fluid bid selection with variety
-    4. Swift deal-making in end-game
+    Mercury uses a fluid, quick-moving strategy with fast adaptation
+    to opponent behavior and swift deal-making in the end-game.
 
-    Key features:
-    - Rapid behavior adaptation
-    - Flexible concession rate
-    - Varied bid selection
-    - Quick end-game decisions
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2015.Mercury.Mercury
+
+    References:
+        ANAC 2015 competition:
+        https://ii.tudelft.nl/negotiation/node/12
+
+    **Offering Strategy:**
+        - Fluid concession with adaptive rate multiplier:
+          threshold = max_util - (max_util - min_acceptable) * t^(1/(e*fluid_rate))
+        - Minimum acceptable floor at 45% or min_utility + 0.1
+        - Fluid rate adapts: 0.7 if opponent conceding (slows down),
+          1.3 if opponent hardening (speeds up), 1.0 otherwise
+        - Varied bid selection from candidates above threshold
+
+    **Acceptance Strategy:**
+        - AC_Time: Accepts if offer utility >= computed threshold
+        - AC_Next: Accepts if offer >= utility of our next bid
+        - Swift end-game (t>0.93): Accepts if offer >= best opponent
+          utility OR offer >= minimum acceptable
+
+    **Opponent Modeling:**
+        - Tracks opponent utilities to calculate trend (derivative)
+        - Trend based on last 3 offers: (recent - older) / 2
+        - Positive trend (>0.02): opponent conceding, slow down
+        - Negative trend (<-0.02): opponent hardening, speed up
+        - Updates fluid rate multiplier based on trend
 
     Args:
         e: Base concession exponent (default 0.25)

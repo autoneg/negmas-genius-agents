@@ -32,6 +32,10 @@ class BetaOne(SAONegotiator):
     """
     BetaOne from ANAC 2017 - 3rd place agent.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     BetaOne uses a sophisticated strategy combining Bayesian opponent modeling
     with adaptive concession across three negotiation phases.
 

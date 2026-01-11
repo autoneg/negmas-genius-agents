@@ -1,18 +1,4 @@
-"""
-ConDAgent from ANAC 2018.
-
-This module implements ConDAgent (Conditional Dependent Agent), a negotiating
-agent that competed in the Automated Negotiating Agents Competition (ANAC) 2018.
-ConDAgent adapts its concession rate and acceptance thresholds based on whether
-the opponent is cooperative or competitive.
-
-References:
-    - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
-    - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
-      Competition (ANAC 2018)." IJCAI 2019.
-    - Genius framework: https://ii.tudelft.nl/genius/
-    - Original package: agents.anac.y2018.condagent.ConDAgent
-"""
+"""ConDAgent from ANAC 2018."""
 
 from __future__ import annotations
 
@@ -37,9 +23,20 @@ class ConDAgent(SAONegotiator):
     """
     ConDAgent (Conditional Dependent Agent) from ANAC 2018.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     ConDAgent adapts its negotiation strategy based on opponent cooperation level.
     The agent monitors opponent concession patterns and switches between cooperative
     (faster concession) and competitive (slower concession) modes accordingly.
+
+    References:
+        - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
+        - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
+          Competition (ANAC 2018)." IJCAI 2019.
+        - Genius framework: https://ii.tudelft.nl/genius/
+        - Original package: agents.anac.y2018.condagent.ConDAgent
 
     **Offering Strategy:**
         Uses exponential concession: target = 1 - t^(1/rate) where the rate is

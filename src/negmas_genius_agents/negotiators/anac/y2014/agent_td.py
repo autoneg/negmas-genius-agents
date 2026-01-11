@@ -1,16 +1,4 @@
-"""
-AgentTD from ANAC 2014.
-
-This module implements AgentTD (Time-Dependent Agent), a negotiation agent
-from the Automated Negotiating Agents Competition (ANAC) 2014. AgentTD
-uses a classic time-dependent strategy with configurable concession curves.
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Faratin, P., Sierra, C., & Jennings, N. R. (1998). "Negotiation decision
-      functions for autonomous agents." Robotics and Autonomous Systems.
-    - Original Genius implementation: agents.anac.y2014.AgentTD.AgentTD
-"""
+"""AgentTD from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -38,6 +26,14 @@ class AgentTD(SAONegotiator):
     AgentTD implements a classic time-dependent negotiation strategy based on
     the foundational work by Faratin et al. The agent's behavior is primarily
     driven by time pressure, with configurable concession curves.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
+        - Original Genius implementation: agents.anac.y2014.AgentTD.AgentTD
 
     **Offering Strategy:**
         Uses the generalized time-dependent function:

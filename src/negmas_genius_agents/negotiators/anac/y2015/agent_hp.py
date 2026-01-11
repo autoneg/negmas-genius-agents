@@ -1,21 +1,4 @@
-"""
-AgentHP negotiation agent from ANAC 2015.
-
-This module implements AgentHP (High Performance), a negotiation agent that
-competed in the Sixth International Automated Negotiating Agents Competition
-(ANAC 2015). AgentHP uses efficient bid caching and a streamlined strategy.
-
-Original Java class: agents.anac.y2015.AgentHP.AgentHP
-
-References:
-    ANAC 2015 competition:
-    https://ii.tudelft.nl/negotiation/node/12
-
-    Aydogan, R., Festen, D., Hindriks, K., & Jonker, C. (2017).
-    Alternating Offers Protocols for Multilateral Negotiation.
-    In Modern Approaches to Agent-based Complex Automated Negotiation.
-    Springer. (ANAC 2015 Proceedings)
-"""
+"""AgentHP from ANAC 2015."""
 
 from __future__ import annotations
 
@@ -42,6 +25,16 @@ class AgentHP(SAONegotiator):
 
     AgentHP emphasizes computational efficiency with bid caching and
     streamlined decision-making for fast negotiation performance.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2015.AgentHP.AgentHP
+
+    References:
+        ANAC 2015 competition:
+        https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
         - Time-dependent Boulware-like concession with formula:

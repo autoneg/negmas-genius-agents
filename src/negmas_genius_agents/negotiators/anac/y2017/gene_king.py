@@ -1,13 +1,4 @@
-"""
-GeneKing - ANAC 2017 Finalist.
-
-This module contains the reimplementation of GeneKing from ANAC 2017.
-Original: agents.anac.y2017.geneking.GeneKing
-
-References:
-    ANAC 2017 competition proceedings.
-    https://ii.tudelft.nl/nego/node/7
-"""
+"""GeneKing from ANAC 2017."""
 
 from __future__ import annotations
 
@@ -32,8 +23,19 @@ class GeneKing(SAONegotiator):
     """
     GeneKing from ANAC 2017.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This is a reimplementation of GeneKing from ANAC 2017.
+    Original: agents.anac.y2017.geneking.GeneKing
+
     GeneKing uses a genetic algorithm-inspired approach for bid selection,
     maintaining a population of good bids for diverse exploration.
+
+    References:
+        ANAC 2017 competition proceedings.
+        https://ii.tudelft.nl/nego/node/7
 
     **Offering Strategy:**
         Maintains a population of top-utility bids initialized from the

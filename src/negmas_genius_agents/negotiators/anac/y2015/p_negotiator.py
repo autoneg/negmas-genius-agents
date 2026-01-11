@@ -1,18 +1,4 @@
-"""
-PNegotiator from ANAC 2015.
-
-PNegotiator uses a probabilistic strategy:
-1. Probability-based bid selection
-2. Time-dependent threshold with probabilistic acceptance
-3. Opponent modeling for probability estimation
-4. Expected utility optimization
-
-Original: agents.anac.y2015.pnegotiator.PNegotiator
-
-References:
-    - https://ii.tudelft.nl/negotiation/node/12 (ANAC 2015)
-    - Genius negotiation framework: https://ii.tudelft.nl/genius/
-"""
+"""PNegotiator from ANAC 2015."""
 
 from __future__ import annotations
 
@@ -35,19 +21,40 @@ __all__ = ["PNegotiator"]
 
 class PNegotiator(SAONegotiator):
     """
-    PNegotiator from ANAC 2015.
+    PNegotiator negotiation agent from ANAC 2015.
 
-    PNegotiator uses a probabilistic strategy:
-    1. Probability-based bid selection
-    2. Time-dependent threshold with probabilistic acceptance
-    3. Opponent modeling for probability estimation
-    4. Expected utility optimization
+    PNegotiator uses a probabilistic strategy with expected utility
+    optimization and risk-aware decision making.
 
-    Key features:
-    - Probabilistic bid selection
-    - Expected value calculations
-    - Opponent acceptance probability estimation
-    - Risk-aware decision making
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2015.pnegotiator.PNegotiator
+
+    References:
+        ANAC 2015 competition:
+        https://ii.tudelft.nl/negotiation/node/12
+
+    **Offering Strategy:**
+        - Standard Boulware-like concession:
+          threshold = max_util - (max_util - min_acceptable) * t^(1/e)
+        - Expected utility bid selection: for each candidate, estimates
+          acceptance probability and computes expected value
+        - Acceptance probability formula: 0.2 + 0.6*(1-our_util) + 0.2*t^2
+        - Selects bid with highest expected utility from top 30 candidates
+
+    **Acceptance Strategy:**
+        - AC_Time: Accepts if offer utility >= computed threshold
+        - Probabilistic acceptance (t>0.7): May accept sub-threshold offers
+          with probability proportional to (offer - min) / (threshold - min) * t
+        - End-game (t>0.95): Accepts if offer >= best opponent utility
+          OR offer >= minimum acceptable
+
+    **Opponent Modeling:**
+        - Tracks opponent utilities to estimate opponent threshold
+        - Estimates opponent's minimum acceptable as max(0.3, 1 - best_opponent_utility)
+        - Uses opponent model in acceptance probability estimation
 
     Args:
         e: Concession exponent (default 0.18)

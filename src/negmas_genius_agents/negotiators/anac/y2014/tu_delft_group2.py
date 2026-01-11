@@ -1,14 +1,4 @@
-"""
-TUDelftGroup2 (Group2Agent) from ANAC 2014.
-
-This module implements TUDelftGroup2, a negotiation agent from the Automated
-Negotiating Agents Competition (ANAC) 2014. Developed by a team at TU Delft,
-it combines time-dependent concession with weighted opponent modeling.
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Original Genius implementation: agents.anac.y2014.TUDelftGroup2.Group2Agent
-"""
+"""TUDelftGroup2 from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -36,6 +26,15 @@ class TUDelftGroup2(SAONegotiator):
     Developed by a team at Delft University of Technology, this agent combines
     polynomial time-dependent concession with sophisticated opponent modeling
     that learns both value preferences and issue importance.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
+        - Original Genius implementation:
+          agents.anac.y2014.TUDelftGroup2.Group2Agent
 
     **Offering Strategy:**
         Polynomial concession with issue-weighted opponent consideration:

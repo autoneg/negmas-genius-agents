@@ -1,18 +1,4 @@
-"""
-AgreeableAgent2018 from ANAC 2018 - Competition Winner.
-
-This module implements AgreeableAgent2018, the winning agent of the Automated
-Negotiating Agents Competition (ANAC) 2018. The agent combines sophisticated
-opponent modeling with a Boulware-style concession strategy and roulette wheel
-bid selection based on estimated opponent preferences.
-
-References:
-    - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
-    - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
-      Competition (ANAC 2018)." IJCAI 2019.
-    - Genius framework: https://ii.tudelft.nl/genius/
-    - Original package: agents.anac.y2018.agreeableagent2018.AgreeableAgent2018
-"""
+"""AgreeableAgent2018 from ANAC 2018."""
 
 from __future__ import annotations
 
@@ -37,10 +23,21 @@ class AgreeableAgent2018(SAONegotiator):
     """
     AgreeableAgent2018 from ANAC 2018 - Competition Winner (1st Place).
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     AgreeableAgent2018 won ANAC 2018 by combining sophisticated opponent modeling
     with strategic bid selection. The agent uses frequency analysis to estimate
     opponent preferences, computes issue weights from frequency variance, and
     employs roulette wheel selection to find mutually beneficial outcomes.
+
+    References:
+        - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
+        - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
+          Competition (ANAC 2018)." IJCAI 2019.
+        - Genius framework: https://ii.tudelft.nl/genius/
+        - Original package: agents.anac.y2018.agreeableagent2018.AgreeableAgent2018
 
     **Offering Strategy:**
         Uses a Boulware-style concession curve: target = 1 - f(t) where

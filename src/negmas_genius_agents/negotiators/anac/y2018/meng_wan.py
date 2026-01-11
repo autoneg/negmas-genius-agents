@@ -1,18 +1,4 @@
-"""
-MengWan (Agent36) from ANAC 2018 - 2nd Place.
-
-This module implements MengWan (also known as Agent36), the 2nd place agent
-in the Automated Negotiating Agents Competition (ANAC) 2018. MengWan uses
-very conservative Boulware concession with frequency-based opponent modeling
-and time-dependent acceptance thresholds.
-
-References:
-    - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
-    - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
-      Competition (ANAC 2018)." IJCAI 2019.
-    - Genius framework: https://ii.tudelft.nl/genius/
-    - Original package: agents.anac.y2018.meng_wan.Agent36
-"""
+"""MengWan from ANAC 2018."""
 
 from __future__ import annotations
 
@@ -37,10 +23,21 @@ class MengWan(SAONegotiator):
     """
     MengWan (Agent36) from ANAC 2018 - 2nd Place.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     MengWan achieved 2nd place in ANAC 2018 with a very conservative Boulware
     strategy combined with frequency-based opponent modeling. The agent uses
     extremely slow concession (e=5) and time-varying acceptance thresholds that
     become more lenient as the deadline approaches.
+
+    References:
+        - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
+        - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
+          Competition (ANAC 2018)." IJCAI 2019.
+        - Genius framework: https://ii.tudelft.nl/genius/
+        - Original package: agents.anac.y2018.meng_wan.Agent36
 
     **Offering Strategy:**
         Uses very conservative Boulware concession: target = 1 - t^5 which

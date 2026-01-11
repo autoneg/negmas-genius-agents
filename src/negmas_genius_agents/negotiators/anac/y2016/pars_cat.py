@@ -1,19 +1,4 @@
-"""
-ParsCat negotiation agent from ANAC 2016.
-
-This module implements ParsCat, an agent that uses time-dependent concession
-strategy with opponent modeling and Nash product-based bid selection for
-win-win negotiation outcomes.
-
-Original Java class: agents.anac.y2016.parscat.ParsCat
-
-References:
-    Fujita, K., et al. (2016). "The Sixth Automated Negotiating Agents Competition
-    (ANAC 2016)". In: Proceedings of the International Joint Conference on
-    Artificial Intelligence (IJCAI).
-
-    ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
-"""
+"""ParsCat from ANAC 2016."""
 
 from __future__ import annotations
 
@@ -38,9 +23,27 @@ class ParsCat(SAONegotiator):
     """
     ParsCat negotiation agent from ANAC 2016.
 
-    ParsCat combines Boulware time-dependent concession with frequency-based
-    opponent modeling and Nash product bid selection for mutually beneficial
-    negotiation outcomes.
+    ParsCat uses time-dependent concession strategy with opponent modeling and
+    Nash product-based bid selection for win-win negotiation outcomes.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2016.parscat.ParsCat
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{fujita2016anac,
+                title={The Sixth Automated Negotiating Agents Competition (ANAC 2016)},
+                author={Fujita, Katsuhide and others},
+                booktitle={Proceedings of the International Joint Conference on
+                    Artificial Intelligence (IJCAI)},
+                year={2016}
+            }
+
+        ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
     Boulware concession with domain-adaptive reservation:

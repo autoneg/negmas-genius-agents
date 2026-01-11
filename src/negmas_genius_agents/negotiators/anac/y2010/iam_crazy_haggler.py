@@ -1,34 +1,4 @@
-"""
-IAMcrazyHaggler from ANAC 2010.
-
-IAMcrazyHaggler (I AM crazy Haggler) was developed by the Southampton team
-(Colin R. Williams, Valentin Robu, Enrico H. Gerding, Nicholas R. Jennings)
-as part of the IAM agent family. It uses a deliberately "irrational" random
-bidding strategy combined with stubborn acceptance.
-
-This implementation faithfully reproduces IAMcrazyHaggler's core strategies:
-- Random high-utility bid selection (appears "crazy" to opponents)
-- Boulware-style acceptance (very reluctant to accept)
-- No strategic concession - maintains tough stance throughout
-- Deadline concession to avoid negotiation breakdown
-
-References:
-    Williams, C.R., Robu, V., Gerding, E.H., Jennings, N.R. (2011).
-    "Iamhaggler: A Negotiation Agent for Complex Environments"
-    New Trends in Agent-based Complex Automated Negotiations, pp. 151-158.
-
-    @inproceedings{williams2011iamhaggler,
-      title={Iamhaggler: A Negotiation Agent for Complex Environments},
-      author={Williams, Colin R and Robu, Valentin and Gerding, Enrico H
-              and Jennings, Nicholas R},
-      booktitle={New Trends in Agent-based Complex Automated Negotiations},
-      series={Studies in Computational Intelligence},
-      volume={383},
-      pages={151--158},
-      year={2011},
-      publisher={Springer}
-    }
-"""
+"""IAMcrazyHaggler from ANAC 2010."""
 
 from __future__ import annotations
 
@@ -52,24 +22,38 @@ class IAMcrazyHaggler(SAONegotiator):
     """
     IAMcrazyHaggler from ANAC 2010.
 
-    IAMcrazyHaggler uses random high-utility bidding with stubborn acceptance.
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This implementation faithfully reproduces IAMcrazyHaggler's core strategies:
+
+    - Random high-utility bid selection (appears "crazy" to opponents)
+    - Boulware-style acceptance (very reluctant to accept)
+    - No strategic concession - maintains tough stance throughout
+    - Deadline concession to avoid negotiation breakdown
+
+    References:
+        Original Genius class: ``agents.anac.y2010.IAMcrazyHaggler.IAMcrazyHaggler``
+
+        ANAC 2010: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
-    - Random bid selection from outcomes with utility >= bid_threshold (0.9)
-    - No time-dependent concession - maintains high demands throughout
-    - Appears "crazy" due to random jumping between high-utility bids
-    - Does not respond to opponent's behavior in bid selection
+        - Random bid selection from outcomes with utility >= bid_threshold (0.9)
+        - No time-dependent concession - maintains high demands throughout
+        - Appears "crazy" due to random jumping between high-utility bids
+        - Does not respond to opponent's behavior in bid selection
 
     **Acceptance Strategy:**
-    - Boulware-like: very reluctant to accept
-    - Normal phase (t < 0.95): Accept only if utility >= acceptance_threshold (0.9)
-    - Deadline phase (t >= 0.95): Accept if utility >= deadline_threshold (0.7)
-    - This prevents negotiation breakdown while maximizing utility
+        - Boulware-like: very reluctant to accept
+        - Normal phase (t < 0.95): Accept only if utility >= acceptance_threshold (0.9)
+        - Deadline phase (t >= 0.95): Accept if utility >= deadline_threshold (0.7)
+        - This prevents negotiation breakdown while maximizing utility
 
     **Opponent Modeling:**
-    - None - IAMcrazyHaggler deliberately ignores opponent behavior
-    - The "crazy" appearance is a strategy to confuse opponents
-    - Works well against conceding opponents who fear breakdown
+        - None - IAMcrazyHaggler deliberately ignores opponent behavior
+        - The "crazy" appearance is a strategy to confuse opponents
+        - Works well against conceding opponents who fear breakdown
 
     This agent exploits risk-averse opponents who concede to avoid
     breakdown, but performs poorly against similarly stubborn agents.

@@ -1,18 +1,4 @@
-"""
-PhoenixParty from ANAC 2015.
-
-PhoenixParty uses a rebirth strategy:
-1. Starts aggressive, willing to restart negotiation style
-2. Learns from opponent patterns to improve offers
-3. Uses strategic timing for concessions
-4. Phoenix-like adaptation - rises from failed negotiations
-
-Original: agents.anac.y2015.Phoenix.PhoenixParty
-
-References:
-    - https://ii.tudelft.nl/negotiation/node/12 (ANAC 2015)
-    - Genius negotiation framework: https://ii.tudelft.nl/genius/
-"""
+"""PhoenixParty from ANAC 2015."""
 
 from __future__ import annotations
 
@@ -35,19 +21,42 @@ __all__ = ["PhoenixParty"]
 
 class PhoenixParty(SAONegotiator):
     """
-    PhoenixParty from ANAC 2015.
+    PhoenixParty negotiation agent from ANAC 2015.
 
-    PhoenixParty uses a rebirth strategy:
-    1. Starts aggressive, willing to restart negotiation style
-    2. Learns from opponent patterns to improve offers
-    3. Uses strategic timing for concessions
-    4. Phoenix-like adaptation - rises from failed negotiations
+    PhoenixParty uses a rebirth strategy with aggressive initial stance
+    and adaptive phase transitions when negotiations stall.
 
-    Key features:
-    - Aggressive initial stance
-    - Pattern learning from opponent
-    - Strategic concession timing
-    - Adaptive rebirth when stuck
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2015.Phoenix.PhoenixParty
+
+    References:
+        ANAC 2015 competition:
+        https://ii.tudelft.nl/negotiation/node/12
+
+    **Offering Strategy:**
+        - Three-phase rebirth mechanism:
+          * Phase 1 - Aggressive (t<0.6): Starts at initial_threshold (98%),
+            concedes 15% by t=0.6, prefers top 20% of candidates
+          * Phase 2 - Adaptive (0.6<t<0.8): Concedes toward
+            max(best_opponent + 0.1, min_threshold + 0.2), varied selection
+          * Phase 3 - Final (t>0.8): Concedes 70% toward min_threshold + 0.1
+        - "Rebirth" triggers phase transition when stuck (3+ rounds of
+          <5% variance in opponent offers)
+
+    **Acceptance Strategy:**
+        - AC_Time: Accepts if offer utility >= computed threshold
+        - Near deadline (t>0.98): Accepts if offer >= best opponent utility
+          AND offer >= minimum threshold
+
+    **Opponent Modeling:**
+        - Tracks opponent utility pattern to detect stuck negotiation
+        - Monitors best opponent utility for adaptive targeting
+        - "Stuck counter" increments when opponent offers show <5% variance
+          over 5 rounds
+        - Rebirth decision based on stuck counter reaching 3
 
     Args:
         initial_threshold: Starting threshold (default 0.98)

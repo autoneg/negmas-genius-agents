@@ -1,16 +1,4 @@
-"""
-TaxiBox - ANAC 2017 Finalist.
-
-This module contains the reimplementation of TaxiBox from ANAC 2017.
-Original: agents.anac.y2017.tangxun.taxibox.TaxiBox
-
-TaxiBox uses a "fare meter" metaphor where concession accumulates over
-time similar to how a taxi fare increases during a ride.
-
-References:
-    ANAC 2017 competition proceedings.
-    https://ii.tudelft.nl/nego/node/7
-"""
+"""TaxiBox from ANAC 2017."""
 
 from __future__ import annotations
 
@@ -35,8 +23,19 @@ class TaxiBox(SAONegotiator):
     """
     TaxiBox from ANAC 2017.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This is a reimplementation of TaxiBox from ANAC 2017.
+    Original: agents.anac.y2017.tangxun.taxibox.TaxiBox
+
     TaxiBox uses a "fare meter" inspired strategy where concession
     accumulates over time like a taxi fare increases during a ride.
+
+    References:
+        ANAC 2017 competition proceedings.
+        https://ii.tudelft.nl/nego/node/7
 
     **Offering Strategy:**
         Accumulates concession continuously: accumulated += time_delta * rate.

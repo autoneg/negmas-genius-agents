@@ -1,27 +1,4 @@
-"""
-Atlas3 negotiation agent from ANAC 2015 - Winner of ANAC 2015.
-
-This module implements Atlas3, the winning agent of the Sixth International
-Automated Negotiating Agents Competition (ANAC 2015). Atlas3 was designed
-for multilateral negotiation but also performs well in bilateral settings.
-This is a bilateral reimplementation of the original Java agent.
-
-Original Java class: agents.anac.y2015.Atlas3.Atlas3
-
-References:
-    ANAC 2015 competition:
-    https://ii.tudelft.nl/negotiation/node/12
-
-    Aydogan, R., Festen, D., Hindriks, K., & Jonker, C. (2017).
-    Alternating Offers Protocols for Multilateral Negotiation.
-    In Modern Approaches to Agent-based Complex Automated Negotiation.
-    Springer. (ANAC 2015 Proceedings)
-
-    Kawaguchi, S., Fujita, K., & Ito, T. (2016).
-    AgentK: Compromising strategy based on estimated maximum utility
-    for automated negotiating agents. In New Trends in Agent-Based
-    Complex Automated Negotiations. Springer.
-"""
+"""Atlas3 from ANAC 2015."""
 
 from __future__ import annotations
 
@@ -49,6 +26,17 @@ class Atlas3(SAONegotiator):
     Atlas3 was designed for multilateral negotiation but also excels in
     bilateral settings. It uses time-dependent concession with special
     end-game handling and tracks popular bids for final-phase proposals.
+    This is a bilateral reimplementation of the original Java agent.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2015.Atlas3.Atlas3
+
+    References:
+        ANAC 2015 competition:
+        https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
         - Three-phase Boulware concession (e=0.1):

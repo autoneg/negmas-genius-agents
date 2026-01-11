@@ -1,15 +1,4 @@
-"""
-GAgent from ANAC 2013.
-
-This module implements GAgent (originally AgentI), a general purpose adaptive
-negotiator that uses Nash-optimal bid selection and opponent modeling.
-
-References:
-    - Baarslag, T., et al. (2013). "Evaluating Practical Negotiating Agents:
-      Results and Analysis of the 2013 International Competition."
-      Artificial Intelligence, 198, 73-103.
-    - Original Java implementation: agents.anac.y2013.GAgent.AgentI
-"""
+"""GAgent from ANAC 2013."""
 
 from __future__ import annotations
 
@@ -37,6 +26,15 @@ class GAgent(SAONegotiator):
     GAgent (originally AgentI) is a general purpose adaptive negotiator that
     aims to find mutually beneficial agreements through Nash-optimal bid
     selection and adaptive concession strategies.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        Original Genius class: ``agents.anac.y2013.GAgent.AgentI``
+
+        ANAC 2013: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
         Selects bids that balance own utility with estimated opponent utility

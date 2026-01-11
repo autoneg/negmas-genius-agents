@@ -1,31 +1,4 @@
-"""
-Nozomi from ANAC 2010 - 3rd place agent.
-
-Nozomi was developed by Takayuki Ito's team and uses a threat-based negotiation
-strategy with adaptive concession based on opponent modeling. The key insight is
-that negotiation is a strategic interaction where revealing too much willingness
-to concede can be exploited.
-
-This implementation includes:
-1. Threat-based concession: mirrors opponent's concession behavior
-2. Bayesian opponent preference modeling for predicting opponent reactions
-3. Time-pressure aware acceptance with multiple criteria
-4. Weighted random bid selection biased toward higher utility
-
-References:
-    Niimi, M., et al. (2010). "Nozomi: A Negotiation Agent Based on Opponent
-    Behavior Prediction in Bilateral Multi-Issue Negotiation"
-    New Trends in Agent-Based Complex Automated Negotiations, pp. 159-166.
-
-    @inproceedings{niimi2010nozomi,
-      title={Nozomi: A negotiation agent based on opponent behavior prediction},
-      author={Niimi, Masafumi and others},
-      booktitle={New Trends in Agent-based Complex Automated Negotiations},
-      pages={159--166},
-      year={2010},
-      publisher={Springer}
-    }
-"""
+"""Nozomi from ANAC 2010."""
 
 from __future__ import annotations
 
@@ -231,24 +204,42 @@ class Nozomi(SAONegotiator):
     """
     Nozomi from ANAC 2010 - 3rd place agent.
 
-    Nozomi uses a threat-based negotiation strategy that mirrors opponent behavior.
+    This agent uses a threat-based negotiation strategy with adaptive concession
+    based on opponent modeling. The key insight is that negotiation is a strategic
+    interaction where revealing too much willingness to concede can be exploited.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This implementation includes:
+
+    1. Threat-based concession: mirrors opponent's concession behavior
+    2. Bayesian opponent preference modeling for predicting opponent reactions
+    3. Time-pressure aware acceptance with multiple criteria
+    4. Weighted random bid selection biased toward higher utility
+
+    References:
+        Original Genius class: ``agents.anac.y2010.Nozomi.Nozomi``
+
+        ANAC 2010: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
-    - Time-dependent concession with cubic curve: target(t) = max - (max-min) * t^3
-    - Threat mechanism: If opponent doesn't concede, Nozomi slows concession by 70%
-    - Weighted random bid selection among candidates, biased toward higher utility
-    - Near deadline (t > 0.95): considers opponent's best offer as fallback
+        - Time-dependent concession with cubic curve: target(t) = max - (max-min) * t^3
+        - Threat mechanism: If opponent doesn't concede, Nozomi slows concession by 70%
+        - Weighted random bid selection among candidates, biased toward higher utility
+        - Near deadline (t > 0.95): considers opponent's best offer as fallback
 
     **Acceptance Strategy:**
-    - Accept if offer utility >= current target utility
-    - Accept if very near deadline (t >= 0.99) and offer >= minimum utility
-    - Multiple acceptance windows based on time pressure
+        - Accept if offer utility >= current target utility
+        - Accept if very near deadline (t >= 0.99) and offer >= minimum utility
+        - Multiple acceptance windows based on time pressure
 
     **Opponent Modeling:**
-    - Tracks opponent's concession rate (first third vs last third of offers)
-    - Monitors best offer received for deadline strategy
-    - Value frequency analysis for predicting opponent preferences
-    - "Threat response": mirrors non-conceding behavior
+        - Tracks opponent's concession rate (first third vs last third of offers)
+        - Monitors best offer received for deadline strategy
+        - Value frequency analysis for predicting opponent preferences
+        - "Threat response": mirrors non-conceding behavior
 
     Args:
         initial_target: Initial target utility (default 0.95).

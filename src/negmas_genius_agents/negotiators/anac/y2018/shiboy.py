@@ -1,18 +1,4 @@
-"""
-Shiboy from ANAC 2018.
-
-This module implements Shiboy, a negotiating agent that competed in the
-Automated Negotiating Agents Competition (ANAC) 2018. Shiboy uses a very
-conservative Boulware strategy with best offer tracking and rapid deadline
-concession.
-
-References:
-    - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
-    - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
-      Competition (ANAC 2018)." IJCAI 2019.
-    - Genius framework: https://ii.tudelft.nl/genius/
-    - Original package: agents.anac.y2018.shiboy.Shiboy
-"""
+"""Shiboy from ANAC 2018."""
 
 from __future__ import annotations
 
@@ -37,22 +23,51 @@ class Shiboy(SAONegotiator):
     """
     Shiboy from ANAC 2018.
 
-    Shiboy uses a conservative time-dependent strategy with opponent awareness:
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
 
-    1. Very slow (Boulware) concession in early negotiation
-    2. Tracks best offer received from opponent
-    3. Uses opponent best offer to guide acceptance
-    4. Accelerates concession near deadline
+    Shiboy is a negotiating agent that competed in ANAC 2018, employing a very
+    conservative Boulware strategy with best offer tracking. It maintains high
+    demands for most of the negotiation and only concedes significantly near the
+    deadline.
 
-    Key features:
-    - Conservative early strategy to maximize utility
-    - Tracks opponent's best offer for reference
-    - Adaptive acceptance threshold
-    - Rapid concession in final phase
+    Original Java class: ``agents.anac.y2018.shiboy.Shiboy``
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{baarslag2019anac,
+                title={The Ninth Automated Negotiating Agents Competition (ANAC 2018)},
+                author={Baarslag, Tim and Fujita, Katsuhide and Gerding, Enrico H and
+                        Hindriks, Koen and Ito, Takayuki and Jennings, Nicholas R},
+                booktitle={Proceedings of the International Joint Conference on
+                           Artificial Intelligence (IJCAI)},
+                year={2019}
+            }
+
+    **Offering Strategy:**
+        - Uses extremely conservative Boulware concession with e=10.0 (default)
+        - Target utility formula: 1 - t^e, staying near 1.0 for most of negotiation
+        - Two-phase concession: slow until t=0.85, then accelerated quadratic drop
+        - Bids selected randomly from candidates near target utility (+/- 0.03)
+        - Always offers best bid on first round before receiving opponent offer
+
+    **Acceptance Strategy:**
+        - Accept if offer utility >= current Boulware target
+        - Near deadline (t >= 0.9): accept offers above minimum utility parameter
+        - Very near deadline (t >= 0.99): accept offers above domain minimum or
+          offers at least 98% of best received offer
+        - Uses best received offer as reference for deadline decisions
+
+    **Opponent Modeling:**
+        - Minimal modeling: only tracks best offer received from opponent
+        - Best received utility used for deadline acceptance fallback
+        - No frequency analysis or preference learning
 
     Args:
-        e: Concession exponent (default 10.0, very Boulware)
-        min_utility: Minimum acceptable utility (default 0.55)
+        e: Concession exponent (default 10.0, very Boulware - slow concession).
+        min_utility: Minimum acceptable utility threshold (default 0.55).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.

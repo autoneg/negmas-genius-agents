@@ -1,14 +1,4 @@
-"""
-E2Agent (AnacSampleAgent) from ANAC 2014.
-
-This module implements E2Agent, a negotiation agent from the Automated
-Negotiating Agents Competition (ANAC) 2014. E2Agent uses a simple but
-effective exploration-exploitation approach with linear concession.
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Original Genius implementation: agents.anac.y2014.E2Agent.AnacSampleAgent
-"""
+"""E2Agent from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -35,6 +25,14 @@ class E2Agent(SAONegotiator):
     E2Agent implements a straightforward negotiation strategy with clear
     exploration-exploitation phases. Its simplicity makes it computationally
     efficient while still achieving reasonable performance across domains.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
+        - Original Genius implementation: agents.anac.y2014.E2Agent.AnacSampleAgent
 
     **Offering Strategy:**
         Linear time-based concession with exploration-exploitation phases:

@@ -1,22 +1,4 @@
-"""
-AgentH negotiation agent from ANAC 2015.
-
-This module implements AgentH, a negotiation agent that competed in the
-Sixth International Automated Negotiating Agents Competition (ANAC 2015).
-AgentH uses a hybrid approach combining adaptive concession with
-opponent modeling.
-
-Original Java class: agents.anac.y2015.agenth.AgentH
-
-References:
-    ANAC 2015 competition:
-    https://ii.tudelft.nl/negotiation/node/12
-
-    Aydogan, R., Festen, D., Hindriks, K., & Jonker, C. (2017).
-    Alternating Offers Protocols for Multilateral Negotiation.
-    In Modern Approaches to Agent-based Complex Automated Negotiation.
-    Springer. (ANAC 2015 Proceedings)
-"""
+"""AgentH from ANAC 2015."""
 
 from __future__ import annotations
 
@@ -43,6 +25,16 @@ class AgentH(SAONegotiator):
 
     AgentH uses a hybrid approach combining adaptive concession with
     frequency-based opponent modeling for strategic bid selection.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2015.agenth.AgentH
+
+    References:
+        ANAC 2015 competition:
+        https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
         - Time-dependent concession using Boulware-like formula

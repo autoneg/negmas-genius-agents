@@ -1,13 +1,4 @@
-"""
-Gin - ANAC 2017 Finalist.
-
-This module contains the reimplementation of Gin from ANAC 2017.
-Original: agents.anac.y2017.gin.Gin
-
-References:
-    ANAC 2017 competition proceedings.
-    https://ii.tudelft.nl/nego/node/7
-"""
+"""Gin from ANAC 2017."""
 
 from __future__ import annotations
 
@@ -32,8 +23,19 @@ class Gin(SAONegotiator):
     """
     Gin from ANAC 2017.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This is a reimplementation of Gin from ANAC 2017.
+    Original: agents.anac.y2017.gin.Gin
+
     Gin uses a smooth, gradual concession strategy inspired by
     the smoothness of gin (the drink).
+
+    References:
+        ANAC 2017 competition proceedings.
+        https://ii.tudelft.nl/nego/node/7
 
     **Offering Strategy:**
         Uses polynomial concession curve (time^smoothness) for smooth,

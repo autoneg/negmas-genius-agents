@@ -1,17 +1,4 @@
-"""
-ParsAgent3 (ShahAgent) - ANAC 2017 Finalist.
-
-This module contains the reimplementation of ParsAgent3 from ANAC 2017.
-Original: agents.anac.y2017.parsagent3.ShahAgent
-
-ParsAgent3 is the 2017 version of the successful ParsAgent series that
-competed in ANAC 2015 (ParsAgent) and ANAC 2016 (ParsCat). The series
-is known for its adaptive opponent modeling and Nash product optimization.
-
-References:
-    ANAC 2017 competition proceedings.
-    https://ii.tudelft.nl/nego/node/7
-"""
+"""ParsAgent3 (ShahAgent) from ANAC 2017."""
 
 from __future__ import annotations
 
@@ -36,8 +23,20 @@ class ParsAgent3(SAONegotiator):
     """
     ParsAgent3 (ShahAgent) from ANAC 2017.
 
-    ParsAgent3 continues the ParsAgent tradition with improved opponent modeling
-    and Nash product optimization for bid selection.
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This is a reimplementation of ParsAgent3 from ANAC 2017.
+    Original: agents.anac.y2017.parsagent3.ShahAgent
+
+    ParsAgent3 is the 2017 version of the successful ParsAgent series that
+    competed in ANAC 2015 (ParsAgent) and ANAC 2016 (ParsCat). The series
+    is known for its adaptive opponent modeling and Nash product optimization.
+
+    References:
+        ANAC 2017 competition proceedings.
+        https://ii.tudelft.nl/nego/node/7
 
     **Offering Strategy:**
         Three-phase approach:

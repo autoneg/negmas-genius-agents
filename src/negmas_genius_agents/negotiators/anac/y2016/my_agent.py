@@ -1,20 +1,4 @@
-"""
-MyAgent (Rubick) negotiation agent from ANAC 2016 - 3rd place.
-
-This module implements MyAgent (also known as Rubick), which achieved 3rd
-place in ANAC 2016. The agent uses Nash equilibrium estimation combined
-with multi-phase time-dependent concession and comprehensive opponent
-modeling.
-
-Original Java class: agents.anac.y2016.myagent.MyAgent
-
-References:
-    Fujita, K., et al. (2016). "The Sixth Automated Negotiating Agents Competition
-    (ANAC 2016)". In: Proceedings of the International Joint Conference on
-    Artificial Intelligence (IJCAI).
-
-    ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
-"""
+"""MyAgent from ANAC 2016."""
 
 from __future__ import annotations
 
@@ -39,9 +23,28 @@ class MyAgent(SAONegotiator):
     """
     MyAgent (Rubick) negotiation agent from ANAC 2016 - 3rd place.
 
-    MyAgent uses Nash equilibrium estimation as a reference point combined
-    with multi-phase time-dependent concession and comprehensive opponent
-    modeling for balanced negotiation outcomes.
+    MyAgent (also known as Rubick) achieved 3rd place in ANAC 2016. The agent
+    uses Nash equilibrium estimation combined with multi-phase time-dependent
+    concession and comprehensive opponent modeling.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2016.myagent.MyAgent
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{fujita2016anac,
+                title={The Sixth Automated Negotiating Agents Competition (ANAC 2016)},
+                author={Fujita, Katsuhide and others},
+                booktitle={Proceedings of the International Joint Conference on
+                    Artificial Intelligence (IJCAI)},
+                year={2016}
+            }
+
+        ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
     Three-phase concession toward estimated Nash point:

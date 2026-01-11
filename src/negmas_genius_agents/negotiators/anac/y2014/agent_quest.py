@@ -1,14 +1,4 @@
-"""
-AgentQuest from ANAC 2014.
-
-This module implements AgentQuest, a negotiation agent from the Automated
-Negotiating Agents Competition (ANAC) 2014. AgentQuest uses a quest-based
-approach with dynamic goal adjustment and opponent preference learning.
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Original Genius implementation: agents.anac.y2014.AgentQuest.AgentQuest
-"""
+"""AgentQuest from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -36,6 +26,14 @@ class AgentQuest(SAONegotiator):
     AgentQuest employs a quest-based metaphor for negotiation, setting
     sequential utility targets ("quests") that guide its bidding behavior.
     The agent adapts its goals based on time pressure and opponent behavior.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
+        - Original Genius implementation: agents.anac.y2014.AgentQuest.AgentQuest
 
     **Offering Strategy:**
         Maintains a dynamic "quest goal" that represents the current utility

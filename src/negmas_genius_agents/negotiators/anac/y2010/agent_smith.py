@@ -1,33 +1,4 @@
-"""
-AgentSmith from ANAC 2010.
-
-AgentSmith was developed by Koen Hindriks and colleagues at Delft University
-of Technology, Netherlands. It features adaptive strategy selection based on
-opponent classification, making it robust against different negotiation styles.
-
-This implementation faithfully reproduces AgentSmith's core strategies:
-- Opponent type classification (HardHead, Conceder, Random, TFT-like)
-- Strategy adaptation based on opponent model
-- Multiple concession functions for different scenarios
-- Smart acceptance with opponent-dependent thresholds
-
-References:
-    Hindriks, K., Tykhonov, D. (2008). "Opponent Modelling in Automated
-    Multi-Issue Negotiation Using Bayesian Learning"
-    AAMAS '08: Proceedings of the 7th International Conference on
-    Autonomous Agents and Multiagent Systems.
-
-    @inproceedings{hindriks2008opponent,
-      title={Opponent modelling in automated multi-issue negotiation
-             using Bayesian learning},
-      author={Hindriks, Koen and Tykhonov, Dmytro},
-      booktitle={AAMAS '08: Proceedings of the 7th International Conference
-                 on Autonomous Agents and Multiagent Systems},
-      pages={331--338},
-      year={2008},
-      organization={IFAAMAS}
-    }
-"""
+"""AgentSmith from ANAC 2010."""
 
 from __future__ import annotations
 
@@ -63,33 +34,50 @@ class AgentSmith(SAONegotiator):
     """
     AgentSmith from ANAC 2010.
 
-    AgentSmith uses adaptive strategy selection based on opponent classification.
+    This agent features adaptive strategy selection based on opponent classification,
+    making it robust against different negotiation styles.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This implementation faithfully reproduces AgentSmith's core strategies:
+
+    - Opponent type classification (HardHead, Conceder, Random, TFT-like)
+    - Strategy adaptation based on opponent model
+    - Multiple concession functions for different scenarios
+    - Smart acceptance with opponent-dependent thresholds
+
+    References:
+        Original Genius class: ``agents.anac.y2010.AgentSmith.AgentSmith``
+
+        ANAC 2010: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
-    - Classifies opponent type, then selects appropriate concession function
-    - Against HardHead: Slow Boulware-style concession (e=0.2)
-    - Against Conceder: Match opponent's concession speed
-    - Against Random: Use optimal fixed strategy with moderate concession
-    - Against TFT-like: Cooperative gradual concession
-    - Bid selection closest to target utility
+        - Classifies opponent type, then selects appropriate concession function
+        - Against HardHead: Slow Boulware-style concession (e=0.2)
+        - Against Conceder: Match opponent's concession speed
+        - Against Random: Use optimal fixed strategy with moderate concession
+        - Against TFT-like: Cooperative gradual concession
+        - Bid selection closest to target utility
 
     **Acceptance Strategy:**
-    - Accept if offer >= current target utility
-    - Target threshold depends on opponent type:
-      - HardHead: Higher threshold (patient)
-      - Conceder: Lower threshold (exploit their concessions)
-      - Random: Moderate threshold
-      - TFT-like: Cooperative threshold
+        - Accept if offer >= current target utility
+        - Target threshold depends on opponent type:
+          - HardHead: Higher threshold (patient)
+          - Conceder: Lower threshold (exploit their concessions)
+          - Random: Moderate threshold
+          - TFT-like: Cooperative threshold
 
     **Opponent Modeling:**
-    - Tracks variance of opponent offers
-    - Monitors utility trend (increasing/decreasing)
-    - Classifies into: HardHead, Conceder, Random, TFT-like
-    - Classification uses statistical patterns:
-      - Low variance + high demands = HardHead
-      - Increasing utilities over time = Conceder
-      - High variance = Random
-      - Correlation with own concessions = TFT-like
+        - Tracks variance of opponent offers
+        - Monitors utility trend (increasing/decreasing)
+        - Classifies into: HardHead, Conceder, Random, TFT-like
+        - Classification uses statistical patterns:
+          - Low variance + high demands = HardHead
+          - Increasing utilities over time = Conceder
+          - High variance = Random
+          - Correlation with own concessions = TFT-like
 
     Args:
         preferences: NegMAS preferences/utility function.

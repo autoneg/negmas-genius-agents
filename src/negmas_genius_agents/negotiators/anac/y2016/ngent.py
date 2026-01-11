@@ -1,18 +1,4 @@
-"""
-Ngent negotiation agent from ANAC 2016.
-
-This module implements Ngent, an agent that uses a "gentle" concession
-strategy with careful opponent analysis for balanced negotiation outcomes.
-
-Original Java class: agents.anac.y2016.ngent.Ngent
-
-References:
-    Fujita, K., et al. (2016). "The Sixth Automated Negotiating Agents Competition
-    (ANAC 2016)". In: Proceedings of the International Joint Conference on
-    Artificial Intelligence (IJCAI).
-
-    ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
-"""
+"""Ngent from ANAC 2016."""
 
 from __future__ import annotations
 
@@ -37,9 +23,27 @@ class Ngent(SAONegotiator):
     """
     Ngent negotiation agent from ANAC 2016.
 
-    Ngent implements a "gentle" negotiation strategy with controlled
-    concession and opponent preference estimation for achieving
-    mutually acceptable agreements.
+    Ngent uses a "gentle" concession strategy with careful opponent analysis
+    for balanced negotiation outcomes.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2016.ngent.Ngent
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{fujita2016anac,
+                title={The Sixth Automated Negotiating Agents Competition (ANAC 2016)},
+                author={Fujita, Katsuhide and others},
+                booktitle={Proceedings of the International Joint Conference on
+                    Artificial Intelligence (IJCAI)},
+                year={2016}
+            }
+
+        ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
     Gentle Boulware-style concession:

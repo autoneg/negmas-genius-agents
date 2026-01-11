@@ -1,19 +1,4 @@
-"""
-DandikAgent from ANAC 2019.
-
-This module contains the Python reimplementation of DandikAgent,
-which uses a Boulware-style concession strategy combined with
-frequency-based opponent modeling for bid selection.
-
-References:
-    Baarslag, T., Fujita, K., Gerding, E. H., Hindriks, K., Ito, T.,
-    Jennings, N. R., ... & Williams, C. R. (2019). The Tenth International
-    Automated Negotiating Agents Competition (ANAC 2019).
-    In Proceedings of the International Joint Conference on Autonomous
-    Agents and Multiagent Systems (AAMAS).
-
-Original Genius class: agents.anac.y2019.dandikagent.dandikAgent
-"""
+"""DandikAgent from ANAC 2019."""
 
 from __future__ import annotations
 
@@ -42,6 +27,26 @@ class DandikAgent(SAONegotiator):
     high demands early in the negotiation and concedes more rapidly as
     the deadline approaches. This strategy aims to extract maximum value
     while avoiding failed negotiations.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{baarslag2019tenth,
+                title={The Tenth International Automated Negotiating Agents
+                       Competition (ANAC 2019)},
+                author={Baarslag, Tim and Fujita, Katsuhide and Gerding,
+                        Enrico H and Hindriks, Koen and Ito, Takayuki and
+                        Jennings, Nicholas R and others},
+                booktitle={Proceedings of the International Joint Conference
+                           on Autonomous Agents and Multiagent Systems (AAMAS)},
+                year={2019}
+            }
+
+        Original Genius class: ``agents.anac.y2019.dandikagent.dandikAgent``
 
     **Offering Strategy:**
         - Boulware concession curve: target = max - (max - min) * t^(1/e)

@@ -33,6 +33,10 @@ class Yeela(SAONegotiator):
     """
     Yeela from ANAC 2018.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     Yeela uses a hybrid approach combining time-dependent strategy with
     opponent modeling:
 

@@ -36,6 +36,10 @@ class AgentKN(SAONegotiator):
     """
     AgentKN from ANAC 2017.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     AgentKN uses a sophisticated time-dependent strategy with adaptive
     concession, building on the legacy of the Agent K family.
 

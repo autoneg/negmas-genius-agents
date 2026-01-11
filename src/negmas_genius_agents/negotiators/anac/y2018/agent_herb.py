@@ -1,18 +1,4 @@
-"""
-AgentHerb from ANAC 2018.
-
-This module implements AgentHerb, a negotiating agent that competed in the
-Automated Negotiating Agents Competition (ANAC) 2018. AgentHerb combines
-time-dependent concession with opponent modeling to achieve mutually
-beneficial agreements.
-
-References:
-    - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
-    - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
-      Competition (ANAC 2018)." IJCAI 2019.
-    - Genius framework: https://ii.tudelft.nl/genius/
-    - Original package: agents.anac.y2018.agentherb.AgentHerb
-"""
+"""AgentHerb from ANAC 2018."""
 
 from __future__ import annotations
 
@@ -37,10 +23,21 @@ class AgentHerb(SAONegotiator):
     """
     AgentHerb from ANAC 2018.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     AgentHerb combines exponential time-dependent concession with frequency-based
     opponent modeling to find mutually beneficial outcomes. The agent adapts its
     concession rate based on observed opponent behavior, conceding more slowly when
     the opponent is cooperative and more quickly when facing a hard-liner.
+
+    References:
+        - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
+        - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
+          Competition (ANAC 2018)." IJCAI 2019.
+        - Genius framework: https://ii.tudelft.nl/genius/
+        - Original package: agents.anac.y2018.agentherb.AgentHerb
 
     **Offering Strategy:**
         Uses an exponential concession curve: target = 1 - t^(1/alpha). Bids are

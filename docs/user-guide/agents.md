@@ -2,20 +2,47 @@
 
 This page lists all 124 negotiating agents available in the library, organized by ANAC competition year. Each agent is a Python reimplementation of its original Java Genius counterpart.
 
+!!! warning "AI-Generated Implementations"
+    All agents in this library are AI-generated reimplementations based on the original
+    Java source code from the Genius framework. While we strive for behavioral fidelity,
+    they may not behave identically to the originals in all cases.
+
 ## Quick Reference
 
-| Year | Winner | Total Agents |
-|------|--------|--------------|
-| 2010 | AgentK | 7 |
-| 2011 | HardHeaded | 6 |
-| 2012 | CUHKAgent | 7 |
-| 2013 | TheFawkes | 7 |
-| 2014 | AgentM | 15 |
-| 2015 | Atlas3 | 22 |
-| 2016 | Caduceus | 14 |
-| 2017 | PonPokoAgent | 17 |
-| 2018 | AgreeableAgent2018 | 15 |
-| 2019 | AgentGG | 14 |
+| Group | Winner | Total Agents |
+|-------|--------|--------------|
+| basic | TimeDependentAgent | 5 |
+| anac2010 | AgentK | 7 |
+| anac2011 | HardHeaded | 6 |
+| anac2012 | CUHKAgent | 7 |
+| anac2013 | TheFawkes | 7 |
+| anac2014 | AgentM | 15 |
+| anac2015 | Atlas3 | 22 |
+| anac2016 | Caduceus | 14 |
+| anac2017 | PonPokoAgent | 17 |
+| anac2018 | AgreeableAgent2018 | 15 |
+| anac2019 | AgentGG | 14 |
+
+---
+
+## Basic Agents
+
+The `basic` group contains fundamental time-dependent agents that serve as baselines and building blocks.
+
+```python
+from negmas_genius_agents import get_agents
+
+# Get all basic agents
+basic_agents = get_agents(group="basic")
+```
+
+| Agent | Parameter | Strategy Summary |
+|-------|-----------|------------------|
+| `TimeDependentAgent` | e=custom | Base class with formula: `target(t) = Pmin + (Pmax-Pmin) * (1 - t^(1/e))` |
+| `TimeDependentAgentBoulware` | e=0.2 | Tough negotiator; concedes slowly, mainly near deadline |
+| `TimeDependentAgentConceder` | e=2.0 | Cooperative; concedes quickly early in negotiation |
+| `TimeDependentAgentLinear` | e=1.0 | Constant concession rate throughout |
+| `TimeDependentAgentHardliner` | e=0 | Never concedes; always offers best bid for self |
 
 ---
 
@@ -106,7 +133,7 @@ Atlas3 was the winning agent and became highly influential in subsequent years.
 | `AresParty` | - | War-themed aggressive then cooperative |
 | `CUHKAgent2015` | - | Updated CUHK strategy with improved opponent model |
 | `DrageKnight` | - | Knight-themed defensive strategy |
-| `Group2` | - | Team-based development, balanced approach |
+| `Y2015Group2` | - | Team-based development, balanced approach |
 | `JonnyBlack` | - | Dark-themed hardball strategy |
 | `Kawaii` | - | "Cute" adaptive strategy (actually quite aggressive) |
 | `MeanBot` | - | Mean/average-based decision making |
@@ -114,7 +141,7 @@ Atlas3 was the winning agent and became highly influential in subsequent years.
 | `PNegotiator` | - | Probabilistic acceptance with exploration |
 | `PhoenixParty` | - | Rising from rejection with adaptive recovery |
 | `PokerFace` | - | Bluffing-inspired concealment of intentions |
-| `Sengoku` | - | Japanese warfare-inspired multi-phase |
+| `SENGOKU` | - | Japanese warfare-inspired multi-phase |
 | `XianFaAgent` | - | Chinese strategy with wisdom-based decisions |
 
 ## ANAC 2016
@@ -127,7 +154,7 @@ Atlas3 was the winning agent and became highly influential in subsequent years.
 | `AgentHP2` | - | Multi-phase concession with trend detection |
 | `AgentLight` | - | Lightweight Boulware with minimal overhead |
 | `AgentSmith2016` | - | Updated Smith with Nash-based selection |
-| `Atlas3_2016` | - | Atlas3 with four-phase refinement |
+| `Atlas32016` | - | Atlas3 with four-phase refinement |
 | `ClockworkAgent` | - | Precision timing with phase-based strategy |
 | `Farma` | - | Frequency-based opponent model, adaptive concession |
 | `GrandmaAgent` | - | Patient conservative with late concession |
@@ -157,7 +184,7 @@ PonPokoAgent won with a surprisingly simple but effective randomized approach.
 | `Mosa` | - | Simulated annealing-inspired cooling schedule |
 | `ParsAgent3` | - | Third generation Pars with Nash optimization |
 | `Rubick` | - | Adaptive concession based on opponent behavior |
-| `SimpleAgent` | - | Baseline linear strategy for benchmarking |
+| `SimpleAgent2017` | - | Baseline linear strategy for benchmarking |
 | `TaxiBox` | - | "Fare meter" accumulated concession |
 
 ## ANAC 2018
@@ -198,20 +225,6 @@ PonPokoAgent won with a surprisingly simple but effective randomized approach.
 | `KAgent` | - | AgentK-inspired adaptive concession |
 | `MINF` | - | Minimal information for robustness |
 | `WinkyAgent` | 1st (Nash) | Nash product maximization strategy |
-
----
-
-## Time-Dependent Base Agents
-
-These classic agents use time-based concession strategies and serve as baselines:
-
-| Agent | Parameter | Strategy Summary |
-|-------|-----------|------------------|
-| `TimeDependentAgent` | e=custom | Base class with formula: `target(t) = Pmin + (Pmax-Pmin) * (1 - t^(1/e))` |
-| `TimeDependentAgentBoulware` | e=0.2 | Tough negotiator; concedes slowly, mainly near deadline |
-| `TimeDependentAgentConceder` | e=2.0 | Cooperative; concedes quickly early in negotiation |
-| `TimeDependentAgentLinear` | e=1.0 | Constant concession rate throughout |
-| `TimeDependentAgentHardliner` | e=0 | Never concedes; always offers best bid for self |
 
 ---
 

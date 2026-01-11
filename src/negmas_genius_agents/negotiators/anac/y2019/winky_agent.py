@@ -43,6 +43,10 @@ class WinkyAgent(SAONegotiator):
     aims to find mutually beneficial outcomes that approximate the
     Nash bargaining solution.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     **Offering Strategy:**
         - Polynomial concession: target = max - (max - min) * t^(1/e)
         - With default e=0.2, this is a conceder-like curve

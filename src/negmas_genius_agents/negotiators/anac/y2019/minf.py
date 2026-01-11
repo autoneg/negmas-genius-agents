@@ -43,6 +43,10 @@ class MINF(SAONegotiator):
     The philosophy is that simple, predictable behavior can be more
     robust than sophisticated but potentially brittle strategies.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     **Offering Strategy:**
         - Polynomial concession: target = max - (max - min) * t^rate
         - With default rate=1.0, this is linear concession

@@ -1,16 +1,4 @@
-"""
-Mosa - ANAC 2017 Finalist.
-
-This module contains the reimplementation of Mosa from ANAC 2017.
-Original: agents.anac.y2017.mosateam.Mosa
-
-Mosa uses a simulated annealing-inspired approach to concession,
-treating the negotiation as an optimization problem with a cooling schedule.
-
-References:
-    ANAC 2017 competition proceedings.
-    https://ii.tudelft.nl/nego/node/7
-"""
+"""Mosa from ANAC 2017."""
 
 from __future__ import annotations
 
@@ -35,8 +23,20 @@ class Mosa(SAONegotiator):
     """
     Mosa from ANAC 2017.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This is a reimplementation of Mosa from ANAC 2017.
+    Original: agents.anac.y2017.mosateam.Mosa
+
     Mosa (Multi-Objective Simulated Annealing inspired) uses a cooling
-    schedule similar to simulated annealing for concession control.
+    schedule similar to simulated annealing for concession control. It
+    treats the negotiation as an optimization problem with a cooling schedule.
+
+    References:
+        ANAC 2017 competition proceedings.
+        https://ii.tudelft.nl/nego/node/7
 
     **Offering Strategy:**
         Uses exponential cooling schedule: T = T0 * cooling_rate^(time*100).

@@ -1,18 +1,4 @@
-"""
-MetaAgent2012 - Meta-learning negotiation agent from ANAC 2012.
-
-This module implements the MetaAgent2012 negotiation agent which competed in
-the Automated Negotiating Agents Competition (ANAC) 2012. The agent uses a
-meta-learning approach to combine multiple negotiation strategies (Boulware,
-Linear, Conceder) and dynamically adjusts weights based on domain characteristics
-and opponent behavior.
-
-References:
-    ANAC 2012 Competition Results and Agent Descriptions.
-    Baarslag, T., Hindriks, K., Hendrikx, M., Dirkzwager, A., & Jonker, C. (2014).
-    Decoupling Negotiating Agents to Explore the Space of Negotiation Strategies.
-    Novel Insights in Agent-based Complex Automated Negotiation, 61-83.
-"""
+"""MetaAgent2012 from ANAC 2012."""
 
 from __future__ import annotations
 
@@ -40,6 +26,15 @@ class MetaAgent2012(SAONegotiator):
     MetaAgent2012 uses a meta-learning approach to combine multiple negotiation
     strategies (Boulware, Linear, Conceder) and dynamically adjusts weights
     based on domain characteristics and opponent behavior.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        Original Genius class: ``agents.anac.y2012.MetaAgent.MetaAgent``
+
+        ANAC 2012: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
         Blends three base strategies with adaptive weighting:

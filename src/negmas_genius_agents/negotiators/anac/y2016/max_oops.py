@@ -1,19 +1,4 @@
-"""
-MaxOops negotiation agent from ANAC 2016.
-
-This module implements MaxOops, an aggressive negotiation agent that aims to
-maximize utility while featuring recovery mechanisms for adapting to difficult
-negotiation situations.
-
-Original Java class: agents.anac.y2016.maxoops.MaxOops
-
-References:
-    Fujita, K., et al. (2016). "The Sixth Automated Negotiating Agents Competition
-    (ANAC 2016)". In: Proceedings of the International Joint Conference on
-    Artificial Intelligence (IJCAI).
-
-    ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
-"""
+"""MaxOops from ANAC 2016."""
 
 from __future__ import annotations
 
@@ -38,9 +23,28 @@ class MaxOops(SAONegotiator):
     """
     MaxOops negotiation agent from ANAC 2016.
 
-    MaxOops is an aggressive agent with built-in recovery mechanisms for
-    adapting when negotiations are not progressing well, switching between
-    aggressive and flexible modes based on opponent behavior.
+    MaxOops is an aggressive negotiation agent that aims to maximize utility
+    while featuring recovery mechanisms for adapting to difficult negotiation
+    situations.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2016.maxoops.MaxOops
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{fujita2016anac,
+                title={The Sixth Automated Negotiating Agents Competition (ANAC 2016)},
+                author={Fujita, Katsuhide and others},
+                booktitle={Proceedings of the International Joint Conference on
+                    Artificial Intelligence (IJCAI)},
+                year={2016}
+            }
+
+        ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
     Mode-dependent aggressive strategy with recovery:

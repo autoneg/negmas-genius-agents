@@ -1,14 +1,4 @@
-"""
-Aster from ANAC 2014.
-
-This module implements Aster, a negotiation agent from the Automated
-Negotiating Agents Competition (ANAC) 2014. Aster uses a star-pattern
-multi-criteria approach that considers multiple factors simultaneously.
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Original Genius implementation: agents.anac.y2014.Aster.Aster
-"""
+"""Aster from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -37,6 +27,14 @@ class Aster(SAONegotiator):
     multiple decision criteria. Named for its multi-pointed approach to
     negotiation decisions, it balances own utility, opponent satisfaction,
     and time pressure in an integrated framework.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
+        - Original Genius implementation: agents.anac.y2014.Aster.Aster
 
     **Offering Strategy:**
         Adaptive threshold-based bidding with opponent consideration:

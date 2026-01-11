@@ -1,31 +1,4 @@
-"""
-HardHeaded from ANAC 2011 - 1st place (winning) agent.
-
-HardHeaded was developed by Siamak Hajizadeh, Thijs van Krimpen, and Daphne Looije
-from Delft University of Technology. It won the ANAC 2011 competition by employing
-a tough negotiation stance combined with sophisticated opponent modeling.
-
-This implementation faithfully reproduces HardHeaded's core strategies:
-- Very slow concession using a Boulware-like time-dependent function
-- Frequency-based opponent modeling that tracks issue preferences
-- Bid selection that maximizes estimated opponent utility while meeting targets
-- Acceptance strategy that compares offers to its own concession trajectory
-
-References:
-    van Krimpen, T.,"; Looije, D., & Hajizadeh, S. (2012). "HardHeaded"
-    In: Ito, T., Zhang, M., Robu, V., Fatima, S., Matsuo, T. (eds)
-    Complex Automated Negotiations: Theories, Models, and Software Competitions.
-    Studies in Computational Intelligence, vol 435. Springer, Berlin, Heidelberg.
-
-    @inproceedings{hardheaded2011,
-      title={HardHeaded},
-      author={van Krimpen, Thijs and Looije, Daphne and Hajizadeh, Siamak},
-      booktitle={Complex Automated Negotiations: Theories, Models, and Software Competitions},
-      pages={223--227},
-      year={2012},
-      publisher={Springer}
-    }
-"""
+"""HardHeaded from ANAC 2011."""
 
 from __future__ import annotations
 
@@ -60,8 +33,21 @@ class HardHeaded(SAONegotiator):
     """
     HardHeaded from ANAC 2011 - 1st place (winning) agent.
 
-    A tough negotiating agent that uses frequency-based opponent modeling and
-    a very slow Boulware-like concession strategy to maximize its outcomes.
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This implementation faithfully reproduces HardHeaded's core strategies:
+
+    - Very slow concession using a Boulware-like time-dependent function
+    - Frequency-based opponent modeling that tracks issue preferences
+    - Bid selection that maximizes estimated opponent utility while meeting targets
+    - Acceptance strategy that compares offers to its own concession trajectory
+
+    References:
+        Original Genius class: ``agents.anac.y2011.HardHeaded.KLH``
+
+        ANAC 2011: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
     - Uses time-dependent target: p(t) = min + (1 - Fa) * (max - min)

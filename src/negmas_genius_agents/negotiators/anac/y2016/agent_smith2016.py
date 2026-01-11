@@ -1,19 +1,4 @@
-"""
-AgentSmith2016 negotiation agent from ANAC 2016.
-
-This module implements AgentSmith2016, an evolved version of the original
-AgentSmith from ANAC 2010 with enhanced opponent modeling, adaptive
-concession strategies, and Nash-based bid selection.
-
-Original Java class: agents.anac.y2016.agentsmith2016.AgentSmith2016
-
-References:
-    Fujita, K., et al. (2016). "The Sixth Automated Negotiating Agents Competition
-    (ANAC 2016)". In: Proceedings of the International Joint Conference on
-    Artificial Intelligence (IJCAI).
-
-    ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
-"""
+"""AgentSmith2016 from ANAC 2016."""
 
 from __future__ import annotations
 
@@ -38,9 +23,28 @@ class AgentSmith2016(SAONegotiator):
     """
     AgentSmith2016 negotiation agent from ANAC 2016.
 
-    AgentSmith2016 is an evolved version of AgentSmith (ANAC 2010) featuring
-    enhanced opponent preference learning, adaptive concession based on
-    opponent behavior, and Nash product-based bid selection.
+    AgentSmith2016 is an evolved version of the original AgentSmith from
+    ANAC 2010 with enhanced opponent modeling, adaptive concession strategies,
+    and Nash-based bid selection.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2016.agentsmith2016.AgentSmith2016
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{fujita2016anac,
+                title={The Sixth Automated Negotiating Agents Competition (ANAC 2016)},
+                author={Fujita, Katsuhide and others},
+                booktitle={Proceedings of the International Joint Conference on
+                    Artificial Intelligence (IJCAI)},
+                year={2016}
+            }
+
+        ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
     Uses a multi-phase adaptive concession strategy:

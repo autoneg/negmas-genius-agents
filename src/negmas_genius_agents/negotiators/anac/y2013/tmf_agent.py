@@ -1,16 +1,4 @@
-"""
-TMFAgent from ANAC 2013 - 3rd place agent.
-
-This module implements TMFAgent (The Mischief of Fortune), the 3rd place
-agent at ANAC 2013. TMFAgent combines adaptive time-dependent concession
-with frequency-based opponent modeling for near-Pareto bid exploration.
-
-References:
-    - Baarslag, T., et al. (2013). "Evaluating Practical Negotiating Agents:
-      Results and Analysis of the 2013 International Competition."
-      Artificial Intelligence, 198, 73-103.
-    - Original Java implementation: agents.anac.y2013.TMFAgent.TMFAgent
-"""
+"""TMFAgent from ANAC 2013."""
 
 from __future__ import annotations
 
@@ -39,6 +27,15 @@ class TMFAgent(SAONegotiator):
     concession with frequency-based opponent modeling. It balances
     exploitation of opponent preferences with exploration of the Pareto
     frontier.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        Original Genius class: ``agents.anac.y2013.TMFAgent.TMFAgent``
+
+        ANAC 2013: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
         Adaptive time-dependent concession: threshold = max - (max - min) *

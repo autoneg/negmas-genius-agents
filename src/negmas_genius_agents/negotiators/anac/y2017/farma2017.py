@@ -1,16 +1,4 @@
-"""
-Farma2017 (Farma17) - ANAC 2017 Finalist.
-
-This module contains the reimplementation of Farma17 from ANAC 2017.
-Original: agents.anac.y2017.farma.Farma17
-
-Farma is a series of agents that competed in multiple ANAC years,
-including ANAC 2016 with Farma (original version).
-
-References:
-    ANAC 2017 competition proceedings.
-    https://ii.tudelft.nl/nego/node/7
-"""
+"""Farma2017 (Farma17) from ANAC 2017."""
 
 from __future__ import annotations
 
@@ -35,8 +23,21 @@ class Farma2017(SAONegotiator):
     """
     Farma17 from ANAC 2017.
 
-    Farma17 uses a hybrid strategy combining time-dependent concession
-    with opponent behavior analysis and Nash-inspired bid selection.
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This is a reimplementation of Farma17 from ANAC 2017.
+    Original: agents.anac.y2017.farma.Farma17
+
+    Farma is a series of agents that competed in multiple ANAC years,
+    including ANAC 2016 with Farma (original version). Farma17 uses a
+    hybrid strategy combining time-dependent concession with opponent
+    behavior analysis and Nash-inspired bid selection.
+
+    References:
+        ANAC 2017 competition proceedings.
+        https://ii.tudelft.nl/nego/node/7
 
     **Offering Strategy:**
         Uses exponential concession curve (time^(1/e)) for smooth, gradual

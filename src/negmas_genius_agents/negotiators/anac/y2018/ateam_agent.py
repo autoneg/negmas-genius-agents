@@ -1,18 +1,4 @@
-"""
-AteamAgent from ANAC 2018.
-
-This module implements AteamAgent, a negotiating agent that competed in the
-Automated Negotiating Agents Competition (ANAC) 2018. AteamAgent uses a
-sigmoid-based concession strategy with opponent cooperation detection and
-frequency-based modeling for win-win bid selection.
-
-References:
-    - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
-    - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
-      Competition (ANAC 2018)." IJCAI 2019.
-    - Genius framework: https://ii.tudelft.nl/genius/
-    - Original package: agents.anac.y2018.ateamagent.ATeamAgent
-"""
+"""AteamAgent from ANAC 2018."""
 
 from __future__ import annotations
 
@@ -37,10 +23,21 @@ class AteamAgent(SAONegotiator):
     """
     AteamAgent from ANAC 2018.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     AteamAgent implements a team-inspired collaborative strategy using sigmoid-based
     concession that allows rapid adaptation in the late game. The agent monitors
     opponent cooperation and adjusts its behavior accordingly, seeking win-win
     outcomes through opponent modeling.
+
+    References:
+        - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
+        - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
+          Competition (ANAC 2018)." IJCAI 2019.
+        - Genius framework: https://ii.tudelft.nl/genius/
+        - Original package: agents.anac.y2018.ateamagent.ATeamAgent
 
     **Offering Strategy:**
         Uses a sigmoid concession curve: S(t) = 1 / (1 + e^(k*(t-0.7))) which

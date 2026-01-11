@@ -1,16 +1,4 @@
-"""
-ParsAgent from ANAC 2015 - 2nd place agent.
-
-ParsAgent is designed for multilateral negotiations:
-1. Time-dependent concession with Boulware-like e parameter
-2. Frequency-based opponent modeling
-3. Mutual issue exploitation (finds values both opponents prefer)
-4. Uses accepted bids as Nash-like points
-
-References:
-    - https://ii.tudelft.nl/negotiation/node/12 (ANAC 2015)
-    - Genius negotiation framework: https://ii.tudelft.nl/genius/
-"""
+"""ParsAgent from ANAC 2015."""
 
 from __future__ import annotations
 
@@ -33,18 +21,39 @@ __all__ = ["ParsAgent"]
 
 class ParsAgent(SAONegotiator):
     """
-    ParsAgent from ANAC 2015 - 2nd place agent.
+    ParsAgent negotiation agent from ANAC 2015 - 2nd place agent.
 
-    ParsAgent is designed for multilateral negotiations:
-    1. Time-dependent concession with Boulware-like e parameter
-    2. Frequency-based opponent modeling
-    3. Mutual issue exploitation (finds values both opponents prefer)
-    4. Uses accepted bids as Nash-like points
+    ParsAgent is designed for multilateral negotiations with frequency-based
+    opponent modeling and mutual issue exploitation.
 
-    Key features:
-    - Minimum threshold of 0.7 utility
-    - Tracks issue-value frequencies for opponent modeling
-    - Offers bids near mutual preferences when available
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2015.ParsAgent.ParsAgent
+
+    References:
+        ANAC 2015 competition:
+        https://ii.tudelft.nl/negotiation/node/12
+
+    **Offering Strategy:**
+        - Standard Boulware-like concession (e=0.15):
+          target = max_util - (max_util - min_threshold) * t^(1/e)
+        - Minimum threshold of 0.7 utility
+        - Three-tier bid selection:
+          1. First tries previously accepted bids above target
+          2. Then tries mutual preference bids (using opponent model)
+          3. Falls back to random selection from candidates
+        - Mutual bid selection scores candidates by opponent value frequencies
+
+    **Acceptance Strategy:**
+        - Accepts if offer utility >= max(target, min_threshold of 0.7)
+
+    **Opponent Modeling:**
+        - Frequency-based model tracking issue-value occurrences
+        - Builds preference profile from opponent bid history
+        - Uses frequencies to find mutually beneficial bids
+        - Tracks accepted bids for future reference
 
     Args:
         e: Concession exponent (default 0.15 without discount, 0.20 with)

@@ -1,19 +1,4 @@
-"""
-ClockworkAgent negotiation agent from ANAC 2016.
-
-This module implements ClockworkAgent, a precision-timed negotiation agent
-that operates with clockwork-like regularity in its concession and bidding
-patterns using discrete negotiation phases.
-
-Original Java class: agents.anac.y2016.clockworkagent.ClockworkAgent
-
-References:
-    Fujita, K., et al. (2016). "The Sixth Automated Negotiating Agents Competition
-    (ANAC 2016)". In: Proceedings of the International Joint Conference on
-    Artificial Intelligence (IJCAI).
-
-    ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
-"""
+"""ClockworkAgent from ANAC 2016."""
 
 from __future__ import annotations
 
@@ -38,9 +23,28 @@ class ClockworkAgent(SAONegotiator):
     """
     ClockworkAgent negotiation agent from ANAC 2016.
 
-    ClockworkAgent operates with precision timing through discrete phases,
-    providing predictable and systematic concession behavior with
-    Nash-inspired bid selection.
+    ClockworkAgent is a precision-timed negotiation agent that operates with
+    clockwork-like regularity in its concession and bidding patterns using
+    discrete negotiation phases.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2016.clockworkagent.ClockworkAgent
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{fujita2016anac,
+                title={The Sixth Automated Negotiating Agents Competition (ANAC 2016)},
+                author={Fujita, Katsuhide and others},
+                booktitle={Proceedings of the International Joint Conference on
+                    Artificial Intelligence (IJCAI)},
+                year={2016}
+            }
+
+        ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
     Phase-based concession with pre-computed thresholds:

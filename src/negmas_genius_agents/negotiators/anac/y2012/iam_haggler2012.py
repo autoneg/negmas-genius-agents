@@ -1,20 +1,4 @@
-"""
-IAMhaggler2012 - Improved IAMhaggler agent from ANAC 2012.
-
-This module implements the IAMhaggler2012 negotiation agent, an improved version
-of the IAMhaggler agent from previous ANAC competitions. Developed by the
-University of Southampton team, it features enhanced opponent modeling using
-Gaussian Process-inspired approaches.
-
-References:
-    ANAC 2012 Competition Results and Agent Descriptions.
-    Williams, C. R., Robu, V., Gerding, E. H., & Jennings, N. R. (2012).
-    IAMhaggler2012: A Negotiating Agent Based on Utility Prediction.
-    ANAC 2012 Proceedings.
-    Williams, C. R., Robu, V., Gerding, E. H., & Jennings, N. R. (2011).
-    Using Gaussian Processes to Optimise Concession in Complex Negotiations
-    Against Unknown Opponents. IJCAI 2011, 432-438.
-"""
+"""IAMhaggler2012 from ANAC 2012."""
 
 from __future__ import annotations
 
@@ -39,10 +23,18 @@ class IAMhaggler2012(SAONegotiator):
     """
     IAMhaggler2012 negotiation agent from ANAC 2012.
 
-    IAMhaggler2012 is an improved version of IAMhaggler (from ANAC 2010/2011)
-    developed by the University of Southampton team. It features enhanced
-    opponent modeling using Gaussian Process-inspired approaches and
-    Nash-product based bid selection.
+    IAMhaggler2012 is an improved version of IAMhaggler (from ANAC 2010/2011).
+    It features enhanced opponent modeling using Gaussian Process-inspired
+    approaches and Nash-product based bid selection.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        Original Genius class: ``agents.anac.y2012.IAMhaggler2012.IAMhaggler2012``
+
+        ANAC 2012: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
         Uses adaptive time-dependent Boulware concession with Nash optimization:

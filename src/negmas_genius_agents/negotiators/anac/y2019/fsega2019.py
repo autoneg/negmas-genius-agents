@@ -1,23 +1,4 @@
-"""
-FSEGA2019 from ANAC 2019.
-
-This agent placed 2nd in the Nash-based category in ANAC 2019.
-A successor to the AgentFSEGA from ANAC 2010, this version features
-enhanced opponent modeling and adaptive concession strategies.
-
-References:
-    Baarslag, T., Fujita, K., Gerding, E. H., Hindriks, K., Ito, T.,
-    Jennings, N. R., ... & Williams, C. R. (2019). The Tenth International
-    Automated Negotiating Agents Competition (ANAC 2019).
-    In Proceedings of the International Joint Conference on Autonomous
-    Agents and Multiagent Systems (AAMAS).
-
-    Luca, L., Ciortea, E. M., & Szilagyi, A. (2010). Agent FSEGA -
-    A Negotiating Agent from the West University of Timisoara.
-    ANAC 2010.
-
-Original Genius class: agents.anac.y2019.fsega2019.agent.FSEGA2019
-"""
+"""FSEGA2019 from ANAC 2019."""
 
 from __future__ import annotations
 
@@ -46,6 +27,35 @@ class FSEGA2019(SAONegotiator):
     opponent modeling and adaptive concession. The agent monitors
     opponent concession patterns and adjusts its own strategy to
     reach mutually beneficial outcomes.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{baarslag2019tenth,
+                title={The Tenth International Automated Negotiating Agents
+                       Competition (ANAC 2019)},
+                author={Baarslag, Tim and Fujita, Katsuhide and Gerding,
+                        Enrico H and Hindriks, Koen and Ito, Takayuki and
+                        Jennings, Nicholas R and others},
+                booktitle={Proceedings of the International Joint Conference
+                           on Autonomous Agents and Multiagent Systems (AAMAS)},
+                year={2019}
+            }
+
+            @inproceedings{luca2010agentfsega,
+                title={Agent FSEGA - A Negotiating Agent from the West
+                       University of Timisoara},
+                author={Luca, Liviu and Ciortea, Ecaterina Madalina and
+                        Szilagyi, Attila},
+                booktitle={ANAC 2010},
+                year={2010}
+            }
+
+        Original Genius class: ``agents.anac.y2019.fsega2019.agent.FSEGA2019``
 
     **Offering Strategy:**
         - Quadratic base concession: target = initial - (initial - min) * t^2

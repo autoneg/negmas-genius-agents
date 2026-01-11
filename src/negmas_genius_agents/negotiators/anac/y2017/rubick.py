@@ -1,17 +1,4 @@
-"""
-Rubick - ANAC 2017 Finalist.
-
-This module contains the reimplementation of Rubick from ANAC 2017.
-Original: agents.anac.y2017.rubick.Rubick
-
-Rubick is named after the Dota 2 character known for "stealing" opponent
-abilities. The agent learns from and adapts to opponent behavior during
-negotiation.
-
-References:
-    ANAC 2017 competition proceedings.
-    https://ii.tudelft.nl/nego/node/7
-"""
+"""Rubick from ANAC 2017."""
 
 from __future__ import annotations
 
@@ -36,8 +23,19 @@ class Rubick(SAONegotiator):
     """
     Rubick from ANAC 2017.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This is a reimplementation of Rubick from ANAC 2017.
+    Original: agents.anac.y2017.rubick.Rubick
+
     Rubick is named after the Dota 2 character known for stealing abilities.
     The agent learns from and adapts to opponent behavior.
+
+    References:
+        ANAC 2017 competition proceedings.
+        https://ii.tudelft.nl/nego/node/7
 
     **Offering Strategy:**
         Uses linear time-based decay (initial - 0.35*time) as base threshold,

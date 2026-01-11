@@ -1,14 +1,4 @@
-"""
-AgentYK from ANAC 2014.
-
-This module implements AgentYK, a negotiation agent from the Automated
-Negotiating Agents Competition (ANAC) 2014. AgentYK uses a phase-based
-hybrid concession strategy with opponent preference learning.
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Original Genius implementation: agents.anac.y2014.AgentYK.AgentYK
-"""
+"""AgentYK from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -36,6 +26,14 @@ class AgentYK(SAONegotiator):
     AgentYK implements a phase-based negotiation strategy that transitions
     through distinct behavioral phases: hardball, concession, and final
     acceptance. The agent learns opponent preferences to improve bid selection.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
+        - Original Genius implementation: agents.anac.y2014.AgentYK.AgentYK
 
     **Offering Strategy:**
         Three-phase approach based on negotiation time:

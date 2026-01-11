@@ -1,14 +1,4 @@
-"""
-AgentTRP from ANAC 2014.
-
-This module implements AgentTRP (Trade-off, Risk, and Pressure), a negotiation
-agent from the Automated Negotiating Agents Competition (ANAC) 2014. AgentTRP
-balances multiple factors in its decision-making process.
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Original Genius implementation: agents.anac.y2014.AgentTRP.AgentTRP
-"""
+"""AgentTRP from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -36,6 +26,14 @@ class AgentTRP(SAONegotiator):
     AgentTRP employs a multi-criteria decision framework that explicitly
     balances three key factors: finding mutually beneficial trade-offs,
     managing negotiation failure risk, and responding to time pressure.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
+        - Original Genius implementation: agents.anac.y2014.AgentTRP.AgentTRP
 
     **Offering Strategy:**
         Combines time pressure with trade-off analysis for bid selection:

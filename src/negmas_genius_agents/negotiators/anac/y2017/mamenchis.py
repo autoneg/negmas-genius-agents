@@ -1,16 +1,4 @@
-"""
-Mamenchis - ANAC 2017 Finalist.
-
-This module contains the reimplementation of Mamenchis from ANAC 2017.
-Original: agents.anac.y2017.mamenchis.Mamenchis
-
-Named after the Mamenchisaurus dinosaur, known for its extremely long neck,
-symbolizing the agent's patient, long-reaching negotiation strategy.
-
-References:
-    ANAC 2017 competition proceedings.
-    https://ii.tudelft.nl/nego/node/7
-"""
+"""Mamenchis from ANAC 2017."""
 
 from __future__ import annotations
 
@@ -35,9 +23,20 @@ class Mamenchis(SAONegotiator):
     """
     Mamenchis from ANAC 2017.
 
-    Mamenchis uses a patient, long-game strategy (like its dinosaur namesake's
-    long neck reaching for food). High patience parameter results in very
-    slow early concession.
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This is a reimplementation of Mamenchis from ANAC 2017.
+    Original: agents.anac.y2017.mamenchis.Mamenchis
+
+    Named after the Mamenchisaurus dinosaur, known for its extremely long neck,
+    symbolizing the agent's patient, long-reaching negotiation strategy.
+    High patience parameter results in very slow early concession.
+
+    References:
+        ANAC 2017 competition proceedings.
+        https://ii.tudelft.nl/nego/node/7
 
     **Offering Strategy:**
         Uses power function (time^patience) for threshold decay, where

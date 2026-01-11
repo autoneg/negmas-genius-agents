@@ -1,16 +1,4 @@
-"""
-SlavaAgent from ANAC 2013.
-
-This module implements SlavaAgent, a concession-based negotiation agent that
-combines opponent modeling with adaptive concession strategies to find
-mutually beneficial agreements.
-
-References:
-    - Baarslag, T., et al. (2013). "Evaluating Practical Negotiating Agents:
-      Results and Analysis of the 2013 International Competition."
-      Artificial Intelligence, 198, 73-103.
-    - Original Java implementation: agents.anac.y2013.SlavaAgent.SlavaAgent
-"""
+"""SlavaAgent from ANAC 2013."""
 
 from __future__ import annotations
 
@@ -38,6 +26,15 @@ class SlavaAgent(SAONegotiator):
     SlavaAgent is a concession-based negotiation agent that combines opponent
     modeling with adaptive concession strategies to find mutually beneficial
     agreements while protecting its own interests.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        Original Genius class: ``agents.anac.y2013.SlavaAgent.SlavaAgent``
+
+        ANAC 2013: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
         Computes a target utility using time-dependent concession:

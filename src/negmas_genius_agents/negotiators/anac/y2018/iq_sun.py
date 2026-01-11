@@ -1,18 +1,4 @@
-"""
-IQSun2018 from ANAC 2018.
-
-This module implements IQSun2018, a negotiating agent that competed in the
-Automated Negotiating Agents Competition (ANAC) 2018. IQSun2018 combines
-Boulware-style concession with frequency-based opponent modeling and
-multi-phase acceptance strategies.
-
-References:
-    - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
-    - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
-      Competition (ANAC 2018)." IJCAI 2019.
-    - Genius framework: https://ii.tudelft.nl/genius/
-    - Original package: agents.anac.y2018.iqson.IQSun2018
-"""
+"""IQSun2018 from ANAC 2018."""
 
 from __future__ import annotations
 
@@ -37,10 +23,21 @@ class IQSun2018(SAONegotiator):
     """
     IQSun2018 from ANAC 2018.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     IQSun2018 uses a hybrid strategy combining Boulware-style time-dependent
     concession with frequency-based opponent modeling. The agent maintains
     conservative early behavior and uses opponent preference estimates to
     select bids that maximize likelihood of acceptance.
+
+    References:
+        - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
+        - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
+          Competition (ANAC 2018)." IJCAI 2019.
+        - Genius framework: https://ii.tudelft.nl/genius/
+        - Original package: agents.anac.y2018.iqson.IQSun2018
 
     **Offering Strategy:**
         Uses Boulware concession: target = 1 - t^(1/e) where e=0.2 creates

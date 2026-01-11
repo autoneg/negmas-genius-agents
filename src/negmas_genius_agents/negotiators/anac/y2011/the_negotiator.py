@@ -1,30 +1,4 @@
-"""
-TheNegotiator from ANAC 2011.
-
-TheNegotiator was developed as an adaptive negotiation agent that adjusts its
-strategy based on domain characteristics and opponent behavior, using multiple
-negotiation phases with different concession rates.
-
-This implementation faithfully reproduces TheNegotiator's core strategies:
-- Four-phase negotiation with varying concession rates (early/middle/late/final)
-- Opponent behavior analysis to classify tough vs. cooperative opponents
-- Adaptive concession that speeds up against tough opponents
-- Nash-like bid selection maximizing product of both parties' utilities
-
-References:
-    ANAC 2011 Proceedings (2012).
-    In: Ito, T., Zhang, M., Robu, V., Fatima, S., Matsuo, T. (eds)
-    Complex Automated Negotiations: Theories, Models, and Software Competitions.
-    Studies in Computational Intelligence, vol 435. Springer, Berlin, Heidelberg.
-
-    @inproceedings{thenegotiator2011,
-      title={TheNegotiator},
-      author={ANAC 2011 Participant},
-      booktitle={Complex Automated Negotiations: Theories, Models, and Software Competitions},
-      year={2012},
-      publisher={Springer}
-    }
-"""
+"""TheNegotiator from ANAC 2011."""
 
 from __future__ import annotations
 
@@ -49,8 +23,21 @@ class TheNegotiator(SAONegotiator):
     """
     TheNegotiator from ANAC 2011.
 
-    An adaptive agent that adjusts its strategy based on negotiation phase
-    and opponent behavior classification (tough vs. cooperative).
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This implementation faithfully reproduces TheNegotiator's core strategies:
+
+    - Four-phase negotiation with varying concession rates (early/middle/late/final)
+    - Opponent behavior analysis to classify tough vs. cooperative opponents
+    - Adaptive concession that speeds up against tough opponents
+    - Nash-like bid selection maximizing product of both parties' utilities
+
+    References:
+        Original Genius class: ``agents.anac.y2011.TheNegotiator.TheNegotiator``
+
+        ANAC 2011: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
     - Four-phase concession with varying rates:

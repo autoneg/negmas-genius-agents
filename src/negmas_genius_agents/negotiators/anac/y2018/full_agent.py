@@ -1,18 +1,4 @@
-"""
-FullAgent from ANAC 2018.
-
-This module implements FullAgent, a negotiating agent that competed in the
-Automated Negotiating Agents Competition (ANAC) 2018. FullAgent uses a
-comprehensive strategy combining domain-adaptive concession, frequency-based
-opponent modeling, and Nash welfare maximization for bid selection.
-
-References:
-    - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
-    - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
-      Competition (ANAC 2018)." IJCAI 2019.
-    - Genius framework: https://ii.tudelft.nl/genius/
-    - Original package: agents.anac.y2018.fullagent.FullAgent
-"""
+"""FullAgent from ANAC 2018."""
 
 from __future__ import annotations
 
@@ -37,10 +23,21 @@ class FullAgent(SAONegotiator):
     """
     FullAgent from ANAC 2018.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     FullAgent uses a comprehensive strategy combining domain-adaptive concession,
     opponent modeling with issue weight estimation, and Nash welfare maximization.
     The agent adjusts its concession rate based on domain size and uses frequency
     analysis to estimate opponent preferences for mutually beneficial bid selection.
+
+    References:
+        - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
+        - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
+          Competition (ANAC 2018)." IJCAI 2019.
+        - Genius framework: https://ii.tudelft.nl/genius/
+        - Original package: agents.anac.y2018.fullagent.FullAgent
 
     **Offering Strategy:**
         Uses domain-adaptive exponential concession: target = 1 - t^(1/effective_beta)

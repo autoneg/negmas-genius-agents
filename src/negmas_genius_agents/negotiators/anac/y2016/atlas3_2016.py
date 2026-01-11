@@ -1,19 +1,4 @@
-"""
-Atlas32016 negotiation agent from ANAC 2016.
-
-This module implements Atlas32016, an updated version of Atlas3 from ANAC 2015
-adapted for the 2016 competition with improved opponent modeling, multi-phase
-concession strategy, and end-game optimization.
-
-Original Java class: agents.anac.y2016.atlas3.Atlas32016
-
-References:
-    Fujita, K., et al. (2016). "The Sixth Automated Negotiating Agents Competition
-    (ANAC 2016)". In: Proceedings of the International Joint Conference on
-    Artificial Intelligence (IJCAI).
-
-    ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
-"""
+"""Atlas32016 from ANAC 2016."""
 
 from __future__ import annotations
 
@@ -38,9 +23,28 @@ class Atlas32016(SAONegotiator):
     """
     Atlas32016 negotiation agent from ANAC 2016.
 
-    Atlas32016 is an evolved version of Atlas3 (ANAC 2015) featuring
-    multi-phase time-dependent concession, opponent modeling with bid
-    history analysis, and end-game optimization with best-bid exploration.
+    Atlas32016 is an updated version of Atlas3 from ANAC 2015 adapted for the
+    2016 competition with improved opponent modeling, multi-phase concession
+    strategy, and end-game optimization.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2016.atlas3.Atlas32016
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{fujita2016anac,
+                title={The Sixth Automated Negotiating Agents Competition (ANAC 2016)},
+                author={Fujita, Katsuhide and others},
+                booktitle={Proceedings of the International Joint Conference on
+                    Artificial Intelligence (IJCAI)},
+                year={2016}
+            }
+
+        ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
     Uses a four-phase time-dependent concession approach:

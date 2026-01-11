@@ -1,18 +1,4 @@
-"""
-DoNA from ANAC 2014 - 2nd place agent.
-
-This module implements DoNA (Deadline-oriented Negotiation Agent), the
-second-place finisher in the Automated Negotiating Agents Competition
-(ANAC) 2014. DoNA adapts its strategy based on domain characteristics
-and deadline considerations.
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Chen, S., & Weiss, G. (2014). "An Intelligent Agent for Bilateral
-      Negotiation with Unknown Opponents in Continuous-Time Domains."
-      ECAI.
-    - Original Genius implementation: agents.anac.y2014.DoNA.DoNA
-"""
+"""DoNA from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -40,6 +26,14 @@ class DoNA(SAONegotiator):
     DoNA achieved second place in ANAC 2014 by adapting its strategy based
     on domain analysis and discount factor. It uses statistical sampling for
     large domains and priority-based decision making for efficient negotiation.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
+        - Original Genius implementation: agents.anac.y2014.DoNA.DoNA
 
     **Offering Strategy:**
         Discount-factor-aware concession strategy:

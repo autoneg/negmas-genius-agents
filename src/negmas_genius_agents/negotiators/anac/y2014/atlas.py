@@ -1,16 +1,4 @@
-"""
-Atlas from ANAC 2014.
-
-This module implements Atlas, a negotiation agent from the Automated
-Negotiating Agents Competition (ANAC) 2014. Atlas is an early version
-of the successful Atlas agent series (precursor to Atlas3 which won ANAC 2015).
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Baarslag, T., et al. (2014). "Decoupling Negotiating Agents to Explore
-      the Space of Negotiation Strategies." AAMAS Workshop.
-    - Original Genius implementation: agents.anac.y2014.Atlas.Atlas
-"""
+"""Atlas from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -39,6 +27,14 @@ class Atlas(SAONegotiator):
     evolve into Atlas3 (winner of ANAC 2015). It uses opponent modeling
     combined with smooth time-dependent concession and Pareto frontier
     estimation for intelligent bid selection.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
+        - Original Genius implementation: agents.anac.y2014.Atlas.Atlas
 
     **Offering Strategy:**
         Smooth S-curve concession with Pareto estimation:

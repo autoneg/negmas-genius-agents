@@ -1,19 +1,4 @@
-"""
-ExpRubick from ANAC 2018.
-
-This module implements ExpRubick, an experimental evolution of Rubick (ANAC 2017)
-that competed in the Automated Negotiating Agents Competition (ANAC) 2018.
-ExpRubick features enhanced opponent modeling with issue weight estimation and
-adaptive concession based on opponent behavior.
-
-References:
-    - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
-    - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
-      Competition (ANAC 2018)." IJCAI 2019.
-    - Genius framework: https://ii.tudelft.nl/genius/
-    - Original package: agents.anac.y2018.exp_rubick.Exp_Rubick
-    - Based on Rubick from ANAC 2017
-"""
+"""ExpRubick from ANAC 2018."""
 
 from __future__ import annotations
 
@@ -38,10 +23,22 @@ class ExpRubick(SAONegotiator):
     """
     ExpRubick from ANAC 2018.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     ExpRubick is an experimental evolution of Rubick (ANAC 2017) with enhanced
     opponent modeling and adaptive concession. The agent learns issue weights
     from frequency variance, adapts its concession rate based on opponent
     behavior, and uses Nash product optimization for bid selection.
+
+    References:
+        - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
+        - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
+          Competition (ANAC 2018)." IJCAI 2019.
+        - Genius framework: https://ii.tudelft.nl/genius/
+        - Original package: agents.anac.y2018.exp_rubick.Exp_Rubick
+        - Based on Rubick from ANAC 2017
 
     **Offering Strategy:**
         Uses adaptive exponential concession: target = 1 - t^(1/factor) where

@@ -1,19 +1,4 @@
-"""
-Caduceus negotiation agent from ANAC 2016 - Winner.
-
-This module implements Caduceus, the winning agent of ANAC 2016. Caduceus
-uses a meta-strategy approach that combines multiple internal sub-strategies
-with weighted voting to make bidding and acceptance decisions.
-
-Original Java class: agents.anac.y2016.caduceus.Caduceus
-
-References:
-    Fujita, K., et al. (2016). "The Sixth Automated Negotiating Agents Competition
-    (ANAC 2016)". In: Proceedings of the International Joint Conference on
-    Artificial Intelligence (IJCAI).
-
-    ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
-"""
+"""Caduceus from ANAC 2016."""
 
 from __future__ import annotations
 
@@ -38,9 +23,28 @@ class Caduceus(SAONegotiator):
     """
     Caduceus negotiation agent from ANAC 2016 - Winner.
 
-    Caduceus won ANAC 2016 using a meta-strategy approach that maintains
-    multiple internal sub-strategies with different concession profiles.
-    Decisions are made through weighted voting among these strategies.
+    Caduceus won ANAC 2016 using a meta-strategy approach that combines
+    multiple internal sub-strategies with weighted voting to make bidding
+    and acceptance decisions.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2016.caduceus.Caduceus
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{fujita2016anac,
+                title={The Sixth Automated Negotiating Agents Competition (ANAC 2016)},
+                author={Fujita, Katsuhide and others},
+                booktitle={Proceedings of the International Joint Conference on
+                    Artificial Intelligence (IJCAI)},
+                year={2016}
+            }
+
+        ANAC 2016 Competition: https://ii.tudelft.nl/negotiation/node/12
 
     **Offering Strategy:**
     Two-phase bidding approach:

@@ -1,18 +1,4 @@
-"""
-XianFaAgent from ANAC 2015.
-
-XianFaAgent uses a constitutional approach:
-1. Follows fixed rules in early negotiation
-2. Adapts rules based on opponent behavior
-3. Uses strategic reserves for final phase
-4. Balances fairness with self-interest
-
-Original: agents.anac.y2015.xianfa.XianFaAgent
-
-References:
-    - https://ii.tudelft.nl/negotiation/node/12 (ANAC 2015)
-    - Genius negotiation framework: https://ii.tudelft.nl/genius/
-"""
+"""XianFaAgent from ANAC 2015."""
 
 from __future__ import annotations
 
@@ -35,19 +21,40 @@ __all__ = ["XianFaAgent"]
 
 class XianFaAgent(SAONegotiator):
     """
-    XianFaAgent from ANAC 2015.
+    XianFaAgent negotiation agent from ANAC 2015.
 
-    XianFaAgent uses a constitutional approach:
-    1. Follows fixed rules in early negotiation
-    2. Adapts rules based on opponent behavior
-    3. Uses strategic reserves for final phase
-    4. Balances fairness with self-interest
+    XianFaAgent uses a constitutional approach with fixed rules in early
+    negotiation and strategic reserves for the final phase.
 
-    Key features:
-    - Rule-based early phase
-    - Adaptive middle phase
-    - Strategic end-game reserves
-    - Fairness consideration
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    Original Java class: agents.anac.y2015.xianfa.XianFaAgent
+
+    References:
+        ANAC 2015 competition:
+        https://ii.tudelft.nl/negotiation/node/12
+
+    **Offering Strategy:**
+        - Four constitutional rules:
+          * Rule 1 (t<0.2): Start high at 95% of max utility
+          * Rule 2 (0.2<t<0.5): Slow Boulware concession of 15%
+          * Rule 3 (0.5<t<0.8): Adapt to opponent, concede toward
+            max(best_opponent + 0.05, constitutional_min)
+          * Rule 4 (t>0.8): Final 50% concession toward constitutional minimum
+        - Constitutional minimum of 60% utility
+        - Reserve bids (10 bids in 50-65% range) used in final phase
+
+    **Acceptance Strategy:**
+        - Constitutional acceptance: accepts if offer >= threshold
+        - Constitutional minimum is absolute until t=0.95
+        - Near deadline (t>0.98): Accepts any offer >= constitutional minimum
+
+    **Opponent Modeling:**
+        - Tracks opponent bids and best utility offered
+        - Uses best opponent utility to adjust Rule 3 target
+        - No complex preference estimation
 
     Args:
         e: Concession exponent (default 0.2)

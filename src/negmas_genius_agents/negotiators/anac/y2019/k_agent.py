@@ -1,23 +1,4 @@
-"""
-KAgent from ANAC 2019.
-
-This module contains the Python reimplementation of KAgent,
-inspired by the successful AgentK series from previous ANAC
-competitions, using adaptive concession based on opponent behavior.
-
-References:
-    Baarslag, T., Fujita, K., Gerding, E. H., Hindriks, K., Ito, T.,
-    Jennings, N. R., ... & Williams, C. R. (2019). The Tenth International
-    Automated Negotiating Agents Competition (ANAC 2019).
-    In Proceedings of the International Joint Conference on Autonomous
-    Agents and Multiagent Systems (AAMAS).
-
-    Kawaguchi, S., Fujita, K., & Ito, T. (2012). AgentK: Compromising
-    strategy based on estimated maximum utility for automated negotiating
-    agents. New Trends in Agent-based Complex Automated Negotiations.
-
-Original Genius class: agents.anac.y2019.kagent.KAgent
-"""
+"""KAgent from ANAC 2019."""
 
 from __future__ import annotations
 
@@ -45,6 +26,36 @@ class KAgent(SAONegotiator):
     KAgent is inspired by the successful AgentK series from previous
     ANAC competitions. It uses adaptive time-dependent concession that
     adjusts based on the expected utility from opponent offers.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{baarslag2019tenth,
+                title={The Tenth International Automated Negotiating Agents
+                       Competition (ANAC 2019)},
+                author={Baarslag, Tim and Fujita, Katsuhide and Gerding,
+                        Enrico H and Hindriks, Koen and Ito, Takayuki and
+                        Jennings, Nicholas R and others},
+                booktitle={Proceedings of the International Joint Conference
+                           on Autonomous Agents and Multiagent Systems (AAMAS)},
+                year={2019}
+            }
+
+            @article{kawaguchi2012agentk,
+                title={AgentK: Compromising strategy based on estimated
+                       maximum utility for automated negotiating agents},
+                author={Kawaguchi, Satoshi and Fujita, Katsuhide and
+                        Ito, Takayuki},
+                journal={New Trends in Agent-based Complex Automated
+                         Negotiations},
+                year={2012}
+            }
+
+        Original Genius class: ``agents.anac.y2019.kagent.KAgent``
 
     **Offering Strategy:**
         - Quadratic base concession: target = initial - (initial - min) * t^2

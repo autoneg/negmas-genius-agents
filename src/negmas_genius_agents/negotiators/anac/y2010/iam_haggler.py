@@ -1,30 +1,4 @@
-"""
-IAMhaggler from ANAC 2010 - 4th place agent.
-
-IAMhaggler (I AM haggler) was developed by the Southampton team (Colin R. Williams,
-Valentin Robu, Enrico H. Gerding, Nicholas R. Jennings) and uses a Bayesian learning
-approach to model the opponent and make strategic concessions.
-
-This implementation includes:
-1. Bayesian opponent preference modeling (issue weight + value estimation)
-2. Time-dependent concession with adaptive rate based on opponent behavior
-3. Nash-product bid selection for win-win outcomes
-4. Multiple acceptance criteria including deadline awareness
-
-References:
-    Williams, C.R., Robu, V., Gerding, E.H., Jennings, N.R. (2010).
-    "IAMhaggler: A Negotiation Agent for Complex Environments"
-    New Trends in Agent-Based Complex Automated Negotiations, pp. 151-158.
-
-    @inproceedings{williams2010iamhaggler,
-      title={IAMhaggler: A negotiation agent for complex environments},
-      author={Williams, Colin R and Robu, Valentin and Gerding, Enrico H and Jennings, Nicholas R},
-      booktitle={New Trends in Agent-based Complex Automated Negotiations},
-      pages={151--158},
-      year={2010},
-      publisher={Springer}
-    }
-"""
+"""IAMhaggler from ANAC 2010."""
 
 from __future__ import annotations
 
@@ -195,22 +169,39 @@ class IAMhaggler(SAONegotiator):
     """
     IAMhaggler from ANAC 2010 - 4th place agent.
 
-    IAMhaggler (I AM haggler) uses a Bayesian opponent modeling approach:
+    This agent uses a Bayesian learning approach to model the opponent and make
+    strategic concessions.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This implementation includes:
+
+    1. Bayesian opponent preference modeling (issue weight + value estimation)
+    2. Time-dependent concession with adaptive rate based on opponent behavior
+    3. Nash-product bid selection for win-win outcomes
+    4. Multiple acceptance criteria including deadline awareness
+
+    References:
+        Original Genius class: ``agents.anac.y2010.IAMhaggler.IAMhaggler``
+
+        ANAC 2010: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
-    - Time-dependent concession with polynomial curve: target(t) = max - (max-min) * t^(1/e)
-    - Adaptive concession rate based on opponent behavior (slower if opponent conceding)
-    - Nash-product bid selection: maximizes own_utility * estimated_opponent_utility
+        - Time-dependent concession with polynomial curve: target(t) = max - (max-min) * t^(1/e)
+        - Adaptive concession rate based on opponent behavior (slower if opponent conceding)
+        - Nash-product bid selection: maximizes own_utility * estimated_opponent_utility
 
     **Acceptance Strategy:**
-    - Accept if offer >= target utility at current time
-    - Accept if near deadline (t > 0.95) and offer >= 95% of best opponent offer
-    - Accept if very near deadline (t > 0.99) and offer >= reservation value
+        - Accept if offer >= target utility at current time
+        - Accept if near deadline (t > 0.95) and offer >= 95% of best opponent offer
+        - Accept if very near deadline (t > 0.99) and offer >= reservation value
 
     **Opponent Modeling:**
-    - Bayesian issue weight estimation from selection consistency
-    - Value preference learning with recency-weighted frequency tracking
-    - Opponent utility estimation for Nash-product bid selection
+        - Bayesian issue weight estimation from selection consistency
+        - Value preference learning with recency-weighted frequency tracking
+        - Opponent utility estimation for Nash-product bid selection
 
     Args:
         e: Concession exponent (default 2.0, Boulware-style)

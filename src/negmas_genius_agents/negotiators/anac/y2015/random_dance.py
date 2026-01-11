@@ -1,17 +1,4 @@
-"""
-RandomDance from ANAC 2015 - 3rd place agent.
-
-RandomDance uses a creative "dancing" strategy:
-1. Random bid selection within acceptable utility range
-2. Time-dependent utility threshold with linear concession
-3. "Dances" between different concession rates randomly
-4. Simple opponent tracking to avoid obviously bad deals
-5. Accepts offers above a minimum threshold that increases near deadline
-
-References:
-    - https://ii.tudelft.nl/negotiation/node/12 (ANAC 2015)
-    - Genius negotiation framework: https://ii.tudelft.nl/genius/
-"""
+"""RandomDance from ANAC 2015."""
 
 from __future__ import annotations
 
@@ -34,22 +21,40 @@ __all__ = ["RandomDance"]
 
 class RandomDance(SAONegotiator):
     """
-    RandomDance from ANAC 2015 - 3rd place agent.
+    RandomDance negotiation agent from ANAC 2015 - 3rd place agent.
 
     RandomDance uses a creative "dancing" strategy that adds unpredictability
-    to the negotiation while maintaining reasonable utility thresholds:
+    to the negotiation while maintaining reasonable utility thresholds.
 
-    1. Random bid selection within acceptable utility range
-    2. Time-dependent utility threshold with linear concession
-    3. "Dances" between different concession rates randomly
-    4. Simple opponent tracking to avoid obviously bad deals
-    5. Accepts offers above a minimum threshold that increases near deadline
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
 
-    Key features:
-    - Unpredictable concession behavior through random "dance" factor
-    - Minimum utility threshold of 0.5
-    - Tracks best opponent offer to inform acceptance decisions
-    - End-game acceptance threshold increases to avoid timeout
+    Original Java class: agents.anac.y2015.RandomDance.RandomDance
+
+    References:
+        ANAC 2015 competition:
+        https://ii.tudelft.nl/negotiation/node/12
+
+    **Offering Strategy:**
+        - Linear time-dependent concession:
+          threshold = max_util - (max_util - min_util) * t
+        - "Dance factor": random variance of +/- dance_variance (default 10%)
+          applied to threshold each round
+        - Random selection from candidates above adjusted threshold
+        - Threshold clamped to [min_utility, max_utility]
+
+    **Acceptance Strategy:**
+        - AC_Time: Accepts if offer utility >= acceptance threshold
+        - Final phase (t>0.9): Acceptance threshold decreases more
+          aggressively with urgency factor
+        - Near deadline (t>0.95): Accepts if offer >= best opponent utility
+          AND offer >= minimum utility
+
+    **Opponent Modeling:**
+        - Minimal modeling: tracks opponent bids and best utility
+        - Uses best opponent utility for end-game acceptance
+        - No preference estimation or behavior classification
 
     Args:
         min_utility: Minimum acceptable utility (default 0.5)

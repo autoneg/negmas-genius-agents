@@ -1,15 +1,4 @@
-"""
-AgentKF from ANAC 2013.
-
-This module implements AgentKF, an extension of the AgentK series with improved
-time-dependent concession and statistical opponent modeling features.
-
-References:
-    - Baarslag, T., et al. (2013). "Evaluating Practical Negotiating Agents:
-      Results and Analysis of the 2013 International Competition."
-      Artificial Intelligence, 198, 73-103.
-    - Original Java implementation: agents.anac.y2013.AgentKF.AgentKF
-"""
+"""AgentKF from ANAC 2013."""
 
 from __future__ import annotations
 
@@ -37,6 +26,15 @@ class AgentKF(SAONegotiator):
     AgentKF is an extension of the AgentK family (AgentK, AgentK2) with improved
     features for ANAC 2013, including statistical opponent modeling and adaptive
     concession behavior.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        Original Genius class: ``agents.anac.y2013.AgentKF.AgentKF``
+
+        ANAC 2013: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
         Uses a dynamic target utility that adapts based on statistical analysis

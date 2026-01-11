@@ -1,13 +1,4 @@
-"""
-Imitator - ANAC 2017 Finalist.
-
-This module contains the reimplementation of Imitator from ANAC 2017.
-Original: agents.anac.y2017.limitator.Imitator
-
-References:
-    ANAC 2017 competition proceedings.
-    https://ii.tudelft.nl/nego/node/7
-"""
+"""Imitator from ANAC 2017."""
 
 from __future__ import annotations
 
@@ -32,8 +23,19 @@ class Imitator(SAONegotiator):
     """
     Imitator from ANAC 2017.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This is a reimplementation of Imitator from ANAC 2017.
+    Original: agents.anac.y2017.limitator.Imitator
+
     Imitator uses a tit-for-tat inspired strategy that mirrors the
     opponent's concession behavior.
+
+    References:
+        ANAC 2017 competition proceedings.
+        https://ii.tudelft.nl/nego/node/7
 
     **Offering Strategy:**
         Adjusts concession rate to match opponent's behavior:

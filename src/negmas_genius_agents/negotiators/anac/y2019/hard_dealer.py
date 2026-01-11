@@ -1,19 +1,4 @@
-"""
-HardDealer from ANAC 2019.
-
-This module contains the Python reimplementation of HardDealer,
-an aggressive hardball negotiation agent that maintains very high
-demands until near the deadline.
-
-References:
-    Baarslag, T., Fujita, K., Gerding, E. H., Hindriks, K., Ito, T.,
-    Jennings, N. R., ... & Williams, C. R. (2019). The Tenth International
-    Automated Negotiating Agents Competition (ANAC 2019).
-    In Proceedings of the International Joint Conference on Autonomous
-    Agents and Multiagent Systems (AAMAS).
-
-Original Genius class: agents.anac.y2019.harddealer.HardDealer
-"""
+"""HardDealer from ANAC 2019."""
 
 from __future__ import annotations
 
@@ -42,6 +27,26 @@ class HardDealer(SAONegotiator):
     that maintains very high utility demands for most of the negotiation,
     only conceding significantly in the final moments before deadline.
     This strategy aims to extract maximum value from cooperative opponents.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{baarslag2019tenth,
+                title={The Tenth International Automated Negotiating Agents
+                       Competition (ANAC 2019)},
+                author={Baarslag, Tim and Fujita, Katsuhide and Gerding,
+                        Enrico H and Hindriks, Koen and Ito, Takayuki and
+                        Jennings, Nicholas R and others},
+                booktitle={Proceedings of the International Joint Conference
+                           on Autonomous Agents and Multiagent Systems (AAMAS)},
+                year={2019}
+            }
+
+        Original Genius class: ``agents.anac.y2019.harddealer.HardDealer``
 
     **Offering Strategy:**
         - Three-phase threshold system:

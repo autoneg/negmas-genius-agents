@@ -1,16 +1,4 @@
-"""
-InoxAgent from ANAC 2013.
-
-This module implements InoxAgent, a robust negotiation agent designed to maintain
-strategic integrity under various opponent behaviors. The name "Inox" refers to
-stainless steel, symbolizing the agent's resistance to exploitation.
-
-References:
-    - Baarslag, T., et al. (2013). "Evaluating Practical Negotiating Agents:
-      Results and Analysis of the 2013 International Competition."
-      Artificial Intelligence, 198, 73-103.
-    - Original Java implementation: agents.anac.y2013.InoxAgent.InoxAgent
-"""
+"""InoxAgent from ANAC 2013."""
 
 from __future__ import annotations
 
@@ -37,7 +25,17 @@ class InoxAgent(SAONegotiator):
 
     InoxAgent is a robust negotiation agent designed to be "inoxidable"
     (rustproof) - maintaining strategic integrity under various opponent
-    behaviors while protecting its reservation value.
+    behaviors while protecting its reservation value. The name "Inox" refers to
+    stainless steel, symbolizing the agent's resistance to exploitation.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        Original Genius class: ``agents.anac.y2013.InoxAgent.InoxAgent``
+
+        ANAC 2013: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
         Boulware-style time-dependent concession with two phases. Early game

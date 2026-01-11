@@ -1,14 +1,4 @@
-"""
-CaduceusDC16 - ANAC 2017 2nd Place.
-
-This module contains the reimplementation of CaduceusDC16, the 2nd place agent
-from the Automated Negotiating Agents Competition (ANAC) 2017. CaduceusDC16
-is an updated version of Caduceus, which won ANAC 2016.
-
-References:
-    ANAC 2017 competition proceedings.
-    https://ii.tudelft.nl/nego/node/7
-"""
+"""CaduceusDC16 from ANAC 2017."""
 
 from __future__ import annotations
 
@@ -32,6 +22,10 @@ __all__ = ["CaduceusDC16"]
 class CaduceusDC16(SAONegotiator):
     """
     CaduceusDC16 from ANAC 2017 - 2nd place agent.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
 
     CaduceusDC16 is a variant of Caduceus (the 2016 winner) adapted for 2017.
     It uses a multi-strategy ensemble approach with weighted voting.

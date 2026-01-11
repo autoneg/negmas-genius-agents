@@ -1,16 +1,4 @@
-"""
-WhaleAgent from ANAC 2014.
-
-This module implements WhaleAgent, a negotiation agent from the Automated
-Negotiating Agents Competition (ANAC) 2014. WhaleAgent uses Boulware-style
-time-dependent concession combined with Nash-product bid selection.
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Faratin, P., Sierra, C., & Jennings, N. R. (1998). "Negotiation decision
-      functions for autonomous agents." Robotics and Autonomous Systems.
-    - Original Genius implementation: agents.anac.y2014.AgentWhale.WhaleAgent
-"""
+"""WhaleAgent from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -38,6 +26,14 @@ class WhaleAgent(SAONegotiator):
     enhanced with opponent modeling for Nash-product-based bid selection.
     The name reflects its patient, "whale-like" approach of waiting before
     making concessions.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
+        - Original Genius implementation: agents.anac.y2014.AgentWhale.WhaleAgent
 
     **Offering Strategy:**
         Boulware concession curve with Nash-product optimization:

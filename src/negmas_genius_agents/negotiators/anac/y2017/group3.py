@@ -1,13 +1,4 @@
-"""
-Group3 - ANAC 2017 Finalist.
-
-This module contains the reimplementation of Group3 from ANAC 2017.
-Original: agents.anac.y2017.group3.Group3
-
-References:
-    ANAC 2017 competition proceedings.
-    https://ii.tudelft.nl/nego/node/7
-"""
+"""Group3 from ANAC 2017."""
 
 from __future__ import annotations
 
@@ -32,8 +23,19 @@ class Group3(SAONegotiator):
     """
     Group3 from ANAC 2017.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This is a reimplementation of Group3 from ANAC 2017.
+    Original: agents.anac.y2017.group3.Group3
+
     Group3 uses a clear three-phase negotiation strategy with distinct
     behaviors in each phase.
+
+    References:
+        ANAC 2017 competition proceedings.
+        https://ii.tudelft.nl/nego/node/7
 
     **Offering Strategy:**
         Three-phase approach:

@@ -1,19 +1,4 @@
-"""
-AgentLarry from ANAC 2019.
-
-This module contains the Python reimplementation of AgentLarry,
-a straightforward time-dependent negotiation agent that uses
-linear concession for simplicity and robustness.
-
-References:
-    Baarslag, T., Fujita, K., Gerding, E. H., Hindriks, K., Ito, T.,
-    Jennings, N. R., ... & Williams, C. R. (2019). The Tenth International
-    Automated Negotiating Agents Competition (ANAC 2019).
-    In Proceedings of the International Joint Conference on Autonomous
-    Agents and Multiagent Systems (AAMAS).
-
-Original Genius class: agents.anac.y2019.agentlarry.AgentLarry
-"""
+"""AgentLarry from ANAC 2019."""
 
 from __future__ import annotations
 
@@ -41,6 +26,26 @@ class AgentLarry(SAONegotiator):
     AgentLarry implements a simple, robust time-dependent concession
     strategy using linear concession. Its simplicity makes it predictable
     but also reliable across different negotiation scenarios.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        .. code-block:: bibtex
+
+            @inproceedings{baarslag2019tenth,
+                title={The Tenth International Automated Negotiating Agents
+                       Competition (ANAC 2019)},
+                author={Baarslag, Tim and Fujita, Katsuhide and Gerding,
+                        Enrico H and Hindriks, Koen and Ito, Takayuki and
+                        Jennings, Nicholas R and others},
+                booktitle={Proceedings of the International Joint Conference
+                           on Autonomous Agents and Multiagent Systems (AAMAS)},
+                year={2019}
+            }
+
+        Original Genius class: ``agents.anac.y2019.agentlarry.AgentLarry``
 
     **Offering Strategy:**
         - Linear concession: target = initial - (initial - min) * t

@@ -37,6 +37,10 @@ class Seto(SAONegotiator):
     """
     Seto from ANAC 2018 - 3rd Place.
 
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
     Seto achieved 3rd place in ANAC 2018 with a simple but effective three-phase
     time-dependent strategy. The agent maintains conservative behavior early,
     linearly concedes in the middle phase, and rapidly concedes near the

@@ -1,31 +1,4 @@
-"""
-IAMhaggler2011 from ANAC 2011 - 3rd place agent.
-
-IAMhaggler2011 was developed by Colin Williams, Valentin Robu, Enrico Gerding, and
-Nick Jennings from the University of Southampton. It builds on the IAMhaggler agent
-from ANAC 2010, using Gaussian Process regression for opponent modeling.
-
-This implementation faithfully reproduces IAMhaggler2011's core strategies:
-- Time-dependent concession with adaptive rate based on opponent behavior
-- Opponent preference estimation using running averages (simplified from GP)
-- Nash-like bid selection that maximizes product of both utilities
-- Multi-criteria acceptance that adapts threshold near the deadline
-
-References:
-    Williams, C.R., Robu, V., Gerding, E.H., & Jennings, N.R. (2012). "IAMhaggler2011"
-    In: Ito, T., Zhang, M., Robu, V., Fatima, S., Matsuo, T. (eds)
-    Complex Automated Negotiations: Theories, Models, and Software Competitions.
-    Studies in Computational Intelligence, vol 435. Springer, Berlin, Heidelberg.
-
-    @inproceedings{iamhaggler2011,
-      title={IAMhaggler2011},
-      author={Williams, Colin R. and Robu, Valentin and Gerding, Enrico H. and Jennings, Nicholas R.},
-      booktitle={Complex Automated Negotiations: Theories, Models, and Software Competitions},
-      pages={235--239},
-      year={2012},
-      publisher={Springer}
-    }
-"""
+"""IAMhaggler2011 from ANAC 2011."""
 
 from __future__ import annotations
 
@@ -50,8 +23,21 @@ class IAMhaggler2011(SAONegotiator):
     """
     IAMhaggler2011 from ANAC 2011 - 3rd place agent.
 
-    Uses opponent modeling inspired by Gaussian Process regression (simplified to
-    running averages) combined with Nash-like bid selection for mutual benefit.
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    This implementation faithfully reproduces IAMhaggler2011's core strategies:
+
+    - Time-dependent concession with adaptive rate based on opponent behavior
+    - Opponent preference estimation using running averages (simplified from GP)
+    - Nash-like bid selection that maximizes product of both utilities
+    - Multi-criteria acceptance that adapts threshold near the deadline
+
+    References:
+        Original Genius class: ``agents.anac.y2011.IAMhaggler2011.IAMhaggler2011``
+
+        ANAC 2011: https://ii.tudelft.nl/negotiation/
 
     **Offering Strategy:**
     - Time-dependent concession: u(t) = max - (max - min) * t^(1/e)

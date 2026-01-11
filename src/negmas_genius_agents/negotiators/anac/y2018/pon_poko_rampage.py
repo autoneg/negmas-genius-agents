@@ -1,19 +1,4 @@
-"""
-PonPokoRampage from ANAC 2018.
-
-This module implements PonPokoRampage, a negotiating agent that competed in the
-Automated Negotiating Agents Competition (ANAC) 2018. Based on the successful
-PonPokoAgent from ANAC 2017, PonPokoRampage features more aggressive threshold
-patterns with oscillating behavior for unpredictability.
-
-References:
-    - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
-    - Baarslag, T., et al. (2019). "The Ninth Automated Negotiating Agents
-      Competition (ANAC 2018)." IJCAI 2019.
-    - Genius framework: https://ii.tudelft.nl/genius/
-    - Original package: agents.anac.y2018.ponpokorampage.PonPokoRampage
-    - Based on PonPokoAgent from ANAC 2017
-"""
+"""PonPokoRampage from ANAC 2018."""
 
 from __future__ import annotations
 
@@ -37,6 +22,10 @@ __all__ = ["PonPokoRampage"]
 class PonPokoRampage(SAONegotiator):
     """
     PonPokoRampage from ANAC 2018.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
 
     PonPokoRampage builds on PonPokoAgent (ANAC 2017) with more aggressive
     concession patterns. The agent uses one of five randomized threshold

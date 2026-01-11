@@ -1,16 +1,4 @@
-"""
-BraveCat from ANAC 2014.
-
-This module implements BraveCat, a negotiation agent from the Automated
-Negotiating Agents Competition (ANAC) 2014. BraveCat uses combined acceptance
-conditions (AC_combi, AC_next) with adaptive opponent modeling.
-
-References:
-    - ANAC 2014 Competition Results and Agent Descriptions
-    - Baarslag, T., et al. (2013). "Acceptance Conditions in Automated
-      Negotiation." AAMAS Workshop on Agent-based Complex Automated Negotiations.
-    - Original Genius implementation: agents.anac.y2014.BraveCat.BraveCat
-"""
+"""BraveCat from ANAC 2014."""
 
 from __future__ import annotations
 
@@ -39,6 +27,14 @@ class BraveCat(SAONegotiator):
     strategy, Opponent model, Acceptance condition) framework with combined
     acceptance conditions. It was designed to perform well across diverse
     negotiation scenarios.
+
+    .. warning::
+        This is an AI-generated reimplementation based on the original Java code
+        from the Genius framework. It may not behave identically to the original.
+
+    References:
+        - ANAC 2014 Competition Results and Agent Descriptions
+        - Original Genius implementation: agents.anac.y2014.BraveCat.BraveCat
 
     **Offering Strategy:**
         Sigmoid-based concession curve with opponent utility maximization:

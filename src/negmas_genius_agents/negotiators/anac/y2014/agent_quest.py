@@ -27,7 +27,7 @@ class AgentQuest(SAONegotiator):
     sequential utility targets ("quests") that guide its bidding behavior.
     The agent adapts its goals based on time pressure and opponent behavior.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

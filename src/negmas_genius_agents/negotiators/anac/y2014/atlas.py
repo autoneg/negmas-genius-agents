@@ -28,7 +28,7 @@ class Atlas(SAONegotiator):
     combined with smooth time-dependent concession and Pareto frontier
     estimation for intelligent bid selection.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

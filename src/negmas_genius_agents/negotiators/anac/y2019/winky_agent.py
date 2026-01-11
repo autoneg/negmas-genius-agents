@@ -43,7 +43,7 @@ class WinkyAgent(SAONegotiator):
     aims to find mutually beneficial outcomes that approximate the
     Nash bargaining solution.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

@@ -27,7 +27,7 @@ class KAgent(SAONegotiator):
     ANAC competitions. It uses adaptive time-dependent concession that
     adjusts based on the expected utility from opponent offers.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

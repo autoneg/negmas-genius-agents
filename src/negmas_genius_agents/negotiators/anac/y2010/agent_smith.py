@@ -37,7 +37,7 @@ class AgentSmith(SAONegotiator):
     This agent features adaptive strategy selection based on opponent classification,
     making it robust against different negotiation styles.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

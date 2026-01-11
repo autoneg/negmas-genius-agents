@@ -26,7 +26,7 @@ class CUHKAgent2015(SAONegotiator):
     CUHKAgent2015 from the Chinese University of Hong Kong uses sophisticated
     opponent modeling with Nash bargaining solution approximation.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

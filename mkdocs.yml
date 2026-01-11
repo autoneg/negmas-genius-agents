@@ -1,10 +1,10 @@
 site_name: negmas-genius-agents
 site_description: Python reimplementations of Genius negotiating agents for NegMAS
 site_author: Yasser Mohammad
-site_url: https://yasserfarouk.github.io/negmas-genius-agents/
+site_url: https://autoneg.github.io/negmas-genius-agents/
 
-repo_name: yasserfarouk/negmas-genius-agents
-repo_url: https://github.com/yasserfarouk/negmas-genius-agents
+repo_name: autoneg/negmas-genius-agents
+repo_url: https://github.com/autoneg/negmas-genius-agents
 
 copyright: Copyright &copy; 2024-2026 Yasser Mohammad
 

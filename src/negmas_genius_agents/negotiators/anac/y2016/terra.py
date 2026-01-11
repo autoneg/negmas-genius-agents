@@ -26,7 +26,7 @@ class Terra(SAONegotiator):
     Terra is a grounded and stable negotiation agent that maintains firm
     positions while adapting to opponent behavior through careful observation.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

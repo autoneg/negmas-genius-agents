@@ -27,7 +27,7 @@ class AgentYK(SAONegotiator):
     through distinct behavioral phases: hardball, concession, and final
     acceptance. The agent learns opponent preferences to improve bid selection.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

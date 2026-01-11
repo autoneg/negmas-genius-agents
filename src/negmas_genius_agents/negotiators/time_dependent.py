@@ -4,7 +4,7 @@ Time-dependent negotiating agents reimplemented from Genius.
 This module contains Python reimplementations of the classic time-dependent
 negotiation strategies from Genius, including Boulware, Conceder, and Linear agents.
 
-.. warning::
+Note:
     These are AI-generated reimplementations based on the original Java code
     from the Genius framework. They may not behave identically to the originals.
 

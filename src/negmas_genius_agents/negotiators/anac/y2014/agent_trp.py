@@ -27,7 +27,7 @@ class AgentTRP(SAONegotiator):
     balances three key factors: finding mutually beneficial trade-offs,
     managing negotiation failure risk, and responding to time pressure.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

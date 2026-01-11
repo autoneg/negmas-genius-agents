@@ -26,7 +26,7 @@ class Y2015Group2(SAONegotiator):
     Group2 uses a balanced time-dependent concession strategy with
     simple but effective opponent tracking.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

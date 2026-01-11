@@ -172,7 +172,7 @@ class IAMhaggler(SAONegotiator):
     This agent uses a Bayesian learning approach to model the opponent and make
     strategic concessions.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

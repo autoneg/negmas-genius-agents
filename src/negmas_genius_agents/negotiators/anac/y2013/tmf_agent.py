@@ -28,7 +28,7 @@ class TMFAgent(SAONegotiator):
     exploitation of opponent preferences with exploration of the Pareto
     frontier.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

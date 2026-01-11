@@ -26,7 +26,7 @@ class AgentHP(SAONegotiator):
     AgentHP emphasizes computational efficiency with bid caching and
     streamlined decision-making for fast negotiation performance.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

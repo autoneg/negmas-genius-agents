@@ -44,7 +44,7 @@ class SAGA(SAONegotiator):
     population of candidate bids that evolves over the negotiation to
     balance self-interest and opponent satisfaction.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

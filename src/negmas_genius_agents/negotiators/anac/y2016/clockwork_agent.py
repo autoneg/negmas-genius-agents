@@ -27,7 +27,7 @@ class ClockworkAgent(SAONegotiator):
     clockwork-like regularity in its concession and bidding patterns using
     discrete negotiation phases.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

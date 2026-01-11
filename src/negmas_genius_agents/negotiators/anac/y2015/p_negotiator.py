@@ -26,7 +26,7 @@ class PNegotiator(SAONegotiator):
     PNegotiator uses a probabilistic strategy with expected utility
     optimization and risk-aware decision making.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

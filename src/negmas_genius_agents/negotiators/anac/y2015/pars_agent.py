@@ -26,7 +26,7 @@ class ParsAgent(SAONegotiator):
     ParsAgent is designed for multilateral negotiations with frequency-based
     opponent modeling and mutual issue exploitation.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

@@ -26,7 +26,7 @@ class DrageKnight(SAONegotiator):
     DrageKnight uses a bold initial stance with adaptive concession that
     responds to opponent behavior patterns.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

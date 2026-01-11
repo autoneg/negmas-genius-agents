@@ -26,7 +26,7 @@ class GrandmaAgent(SAONegotiator):
     GrandmaAgent is a patient and conservative negotiation agent that takes
     time to understand opponent behavior before making significant concessions.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

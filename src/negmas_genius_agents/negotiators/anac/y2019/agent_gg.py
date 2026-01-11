@@ -28,7 +28,7 @@ class AgentGG(SAONegotiator):
     rather than just evaluating complete bids. This allows for more nuanced
     bid generation and opponent modeling.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

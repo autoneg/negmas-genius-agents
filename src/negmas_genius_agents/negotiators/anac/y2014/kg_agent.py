@@ -28,7 +28,7 @@ class KGAgent(SAONegotiator):
     concession rates and modifies its own concession accordingly, using
     a simplified Kalman-filter-like state estimation approach.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

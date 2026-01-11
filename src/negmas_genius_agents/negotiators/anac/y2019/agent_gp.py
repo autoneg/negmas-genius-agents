@@ -27,7 +27,7 @@ class AgentGP(SAONegotiator):
     and bid selection, treating the negotiation as a multi-armed bandit
     problem with uncertainty in opponent preferences.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

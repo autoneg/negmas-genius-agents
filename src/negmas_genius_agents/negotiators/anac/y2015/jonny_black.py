@@ -26,7 +26,7 @@ class JonnyBlack(SAONegotiator):
     JonnyBlack uses unpredictable concession behavior with opponent
     exploitation when weakness (rapid concession) is detected.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

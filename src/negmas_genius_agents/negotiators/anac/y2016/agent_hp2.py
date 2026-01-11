@@ -27,7 +27,7 @@ class AgentHP2(SAONegotiator):
     optimized bid caching, multi-phase time-dependent concession, and
     opponent trend analysis for adaptive negotiation behavior.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

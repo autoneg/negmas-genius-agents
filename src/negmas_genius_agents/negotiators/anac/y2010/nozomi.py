@@ -208,7 +208,7 @@ class Nozomi(SAONegotiator):
     based on opponent modeling. The key insight is that negotiation is a strategic
     interaction where revealing too much willingness to concede can be exploited.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

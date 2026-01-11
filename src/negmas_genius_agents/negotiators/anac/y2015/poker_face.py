@@ -27,7 +27,7 @@ class PokerFace(SAONegotiator):
     by varying offers unpredictably while maintaining a consistent hidden
     acceptance threshold.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

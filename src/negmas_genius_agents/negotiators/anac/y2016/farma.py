@@ -26,7 +26,7 @@ class Farma(SAONegotiator):
     Farma uses frequency-based opponent modeling combined with adaptive
     time-dependent concession strategy for balanced negotiation outcomes.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

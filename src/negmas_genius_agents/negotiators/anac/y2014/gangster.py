@@ -27,7 +27,7 @@ class Gangster(SAONegotiator):
     voting approach. A "gang" of internal strategies vote on acceptance decisions,
     with votes aggregated using time-dependent weights.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

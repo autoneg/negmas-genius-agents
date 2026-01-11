@@ -26,7 +26,7 @@ class E2Agent(SAONegotiator):
     exploration-exploitation phases. Its simplicity makes it computationally
     efficient while still achieving reasonable performance across domains.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

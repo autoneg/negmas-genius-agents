@@ -27,7 +27,7 @@ class WhaleAgent(SAONegotiator):
     The name reflects its patient, "whale-like" approach of waiting before
     making concessions.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

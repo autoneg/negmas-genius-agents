@@ -28,7 +28,7 @@ class KakeSoba(SAONegotiator):
     offers to explore opponent preferences. This conservative approach
     avoids poor deals while still enabling agreement through diversity.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

@@ -27,7 +27,7 @@ class AgentKF(SAONegotiator):
     features for ANAC 2013, including statistical opponent modeling and adaptive
     concession behavior.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

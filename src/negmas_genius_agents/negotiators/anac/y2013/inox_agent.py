@@ -28,7 +28,7 @@ class InoxAgent(SAONegotiator):
     behaviors while protecting its reservation value. The name "Inox" refers to
     stainless steel, symbolizing the agent's resistance to exploitation.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

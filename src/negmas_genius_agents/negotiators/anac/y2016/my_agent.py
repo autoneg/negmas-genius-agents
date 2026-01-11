@@ -27,7 +27,7 @@ class MyAgent(SAONegotiator):
     uses Nash equilibrium estimation combined with multi-phase time-dependent
     concession and comprehensive opponent modeling.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

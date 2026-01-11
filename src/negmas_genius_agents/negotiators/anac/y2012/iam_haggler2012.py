@@ -27,7 +27,7 @@ class IAMhaggler2012(SAONegotiator):
     It features enhanced opponent modeling using Gaussian Process-inspired
     approaches and Nash-product based bid selection.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

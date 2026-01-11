@@ -26,7 +26,7 @@ class SENGOKU(SAONegotiator):
     SENGOKU (Warring States) uses a battle-inspired strategy with territorial
     defense, tactical concession, and alliance-seeking behavior.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

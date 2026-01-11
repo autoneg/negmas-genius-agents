@@ -26,7 +26,7 @@ class Mercury(SAONegotiator):
     Mercury uses a fluid, quick-moving strategy with fast adaptation
     to opponent behavior and swift deal-making in the end-game.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

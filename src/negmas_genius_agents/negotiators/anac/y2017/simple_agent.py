@@ -22,7 +22,7 @@ class SimpleAgent2017(SAONegotiator):
     """
     SimpleAgent from ANAC 2017.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

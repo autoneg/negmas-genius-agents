@@ -27,7 +27,7 @@ class SlavaAgent(SAONegotiator):
     modeling with adaptive concession strategies to find mutually beneficial
     agreements while protecting its own interests.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

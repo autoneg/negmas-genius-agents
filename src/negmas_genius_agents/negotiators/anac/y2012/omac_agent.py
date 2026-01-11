@@ -27,7 +27,7 @@ class OMACAgent(SAONegotiator):
     estimate reservation values and dynamically adjusts its Boulware-like
     concession strategy based on opponent behavior.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

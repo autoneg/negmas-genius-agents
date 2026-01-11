@@ -27,7 +27,7 @@ class CUHKAgent(SAONegotiator):
     competition using an adaptive time-based concession strategy with
     opponent behavior tracking and discount factor adaptation.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

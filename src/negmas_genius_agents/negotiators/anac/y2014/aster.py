@@ -28,7 +28,7 @@ class Aster(SAONegotiator):
     negotiation decisions, it balances own utility, opponent satisfaction,
     and time pressure in an integrated framework.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

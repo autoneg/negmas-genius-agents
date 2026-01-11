@@ -27,7 +27,7 @@ class ArisawaYaki(SAONegotiator):
     between tougher and more conciliatory phases. This creates uncertainty
     for opponents while maintaining overall concession progress toward deadline.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

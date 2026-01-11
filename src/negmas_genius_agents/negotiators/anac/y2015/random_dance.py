@@ -26,7 +26,7 @@ class RandomDance(SAONegotiator):
     RandomDance uses a creative "dancing" strategy that adds unpredictability
     to the negotiation while maintaining reasonable utility thresholds.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

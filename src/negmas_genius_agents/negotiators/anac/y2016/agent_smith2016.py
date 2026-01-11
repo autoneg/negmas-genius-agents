@@ -27,7 +27,7 @@ class AgentSmith2016(SAONegotiator):
     ANAC 2010 with enhanced opponent modeling, adaptive concession strategies,
     and Nash-based bid selection.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

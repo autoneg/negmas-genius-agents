@@ -26,7 +26,7 @@ class ParsCat(SAONegotiator):
     ParsCat uses time-dependent concession strategy with opponent modeling and
     Nash product-based bid selection for win-win negotiation outcomes.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

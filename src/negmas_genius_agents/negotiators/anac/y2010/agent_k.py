@@ -24,7 +24,7 @@ class AgentK(SAONegotiator):
     AgentK won the first ANAC competition with its innovative adaptive
     negotiation strategy based on statistical analysis of opponent behavior.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

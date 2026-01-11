@@ -26,7 +26,7 @@ class PhoenixParty(SAONegotiator):
     PhoenixParty uses a rebirth strategy with aggressive initial stance
     and adaptive phase transitions when negotiations stall.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

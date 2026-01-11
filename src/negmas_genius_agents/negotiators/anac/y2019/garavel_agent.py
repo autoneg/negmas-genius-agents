@@ -28,7 +28,7 @@ class GaravelAgent(SAONegotiator):
     concedes, the agent remains firm; if the opponent hardens, the
     agent concedes to maintain negotiation progress.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

@@ -27,7 +27,7 @@ class MetaAgent2013(SAONegotiator):
     based on domain features. The original used CART decision trees and UCB-MAB
     for portfolio selection among strategies.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

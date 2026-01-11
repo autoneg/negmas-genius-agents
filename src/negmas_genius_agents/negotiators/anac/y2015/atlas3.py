@@ -28,7 +28,7 @@ class Atlas3(SAONegotiator):
     end-game handling and tracks popular bids for final-phase proposals.
     This is a bilateral reimplementation of the original Java agent.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

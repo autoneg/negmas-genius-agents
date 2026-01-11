@@ -26,7 +26,7 @@ class AgentX(SAONegotiator):
     AgentX uses an exploratory strategy in early phases before transitioning
     to Nash-seeking bid selection based on learned opponent preferences.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

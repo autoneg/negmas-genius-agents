@@ -28,7 +28,7 @@ class HardDealer(SAONegotiator):
     only conceding significantly in the final moments before deadline.
     This strategy aims to extract maximum value from cooperative opponents.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

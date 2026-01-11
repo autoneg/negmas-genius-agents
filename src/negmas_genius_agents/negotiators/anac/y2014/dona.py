@@ -27,7 +27,7 @@ class DoNA(SAONegotiator):
     on domain analysis and discount factor. It uses statistical sampling for
     large domains and priority-based decision making for efficient negotiation.
 
-    .. warning::
+    Note:
         This is an AI-generated reimplementation based on the original Java code
         from the Genius framework. It may not behave identically to the original.
 

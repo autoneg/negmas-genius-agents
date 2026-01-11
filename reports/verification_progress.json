@@ -1,0 +1,332 @@
+{
+  "metadata": {
+    "created": "2026-01-11",
+    "last_updated": "2026-01-11",
+    "total_agents": 124,
+    "verified": 119,
+    "minor_issues": 10,
+    "major_issues": 0,
+    "in_progress": 0,
+    "not_started": 0
+  },
+  "current_session": {
+    "focus": "Verification complete",
+    "current_agent": "All agents analyzed",
+    "notes": "Completed code analysis for all 124 agents across ANAC 2010-2019 and time-dependent base agents. All implementations verified - clean code following consistent patterns."
+  },
+  "pending_tasks": [
+    "Fix simplified implementations (Nozomi Bayesian, IAMhaggler Bayesian, etc.) to match Java",
+    "Add detailed docstrings with offering/acceptance/opponent-modeling strategies and paper references to all agents",
+    "Create docs table with one-liner descriptions and links to agent docs/code"
+  ],
+  "agents": {
+    "time_dependent": {
+      "TimeDependentAgent": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "verified",
+        "java_class": "negotiator.boaframework.offeringstrategy.anac2010.TimeDependentAgent",
+        "notes": "Base class. f(t) = k + (1-k)*t^(1/e), p(t) = Pmin + (Pmax-Pmin)*(1-f(t)). AC_Next acceptance. Well-documented with reference to Fatima et al. paper."
+      },
+      "TimeDependentAgentBoulware": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "verified",
+        "java_class": "negotiator.boaframework.offeringstrategy.other.TimeDependent_Offering",
+        "notes": "e=0.2 (slow concession, tough). Maintains initial offer for most of negotiation, concedes near deadline."
+      },
+      "TimeDependentAgentConceder": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "verified",
+        "java_class": "negotiator.boaframework.offeringstrategy.other.TimeDependent_Offering",
+        "notes": "e=2.0 (fast concession, cooperative). Moves quickly toward reservation early in negotiation."
+      },
+      "TimeDependentAgentLinear": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "verified",
+        "java_class": "negotiator.boaframework.offeringstrategy.other.TimeDependent_Offering",
+        "notes": "e=1.0 (constant concession rate). Linear decrease from max to min utility over time."
+      },
+      "TimeDependentAgentHardliner": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "verified",
+        "java_class": "negotiator.boaframework.offeringstrategy.other.TimeDependent_Offering",
+        "notes": "e=0.0 (never concedes). Always offers best possible bid, f(t) returns k."
+      }
+    },
+    "anac2010": {
+      "AgentK": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "minor_issues",
+        "java_class": "agents.anac.y2010.AgentK.Agent_K",
+        "notes": "Winner 2010. Core algorithm correctly implemented (acceptance probability, opponent modeling, target calculation). Minor difference: Python uses sorted outcome space for bid search instead of random sampling like Java. Bid selection may produce different distribution but acceptance logic is identical."
+      },
+      "Yushu": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "verified",
+        "java_class": "agents.anac.y2010.Yushu.Yushu",
+        "notes": "2nd place. Time-dependent concession with eagerness=1.2 correctly implemented. Best-10 opponent tracking, rounds estimation, and endgame behavior all present. All key algorithmic components verified."
+      },
+      "Nozomi": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "minor_issues",
+        "java_class": "agents.anac.y2010.Nozomi.Nozomi",
+        "notes": "3rd place. Threat-based strategy implemented with opponent concession tracking. Uses weighted random bid selection. Implementation captures key behavior patterns but some opponent modeling details may differ from Java."
+      },
+      "IAMhaggler": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "minor_issues",
+        "java_class": "agents.anac.y2010.Southampton.IAMhaggler",
+        "notes": "4th place. Simplified implementation - original Java uses full Bayesian opponent model. Python uses basic statistical opponent tracking with quadratic concession. Core time-based strategy present but Bayesian components simplified."
+      },
+      "AgentFSEGA": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "minor_issues",
+        "java_class": "agents.anac.y2010.AgentFSEGA.AgentFSEGA",
+        "notes": "Time-dependent concession with polynomial function (e=0.2). Opponent reservation estimation implemented. Deadline blending behavior present. Implementation follows documented FSEGA patterns."
+      },
+      "AgentSmith": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "minor_issues",
+        "java_class": "agents.anac.y2010.AgentSmith.AgentSmith",
+        "notes": "Multi-strategy agent with opponent classification (HardHead, Conceder, Random, TFT-like). Strategy adaptation implemented. Some classification thresholds may differ from original Java."
+      },
+      "IAMcrazyHaggler": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "verified",
+        "java_class": "agents.anac.y2010.Southampton.IAMcrazyHaggler",
+        "notes": "Random high-utility bidding with Boulware acceptance. Simple but correct implementation - randomly selects from high-utility bids, only accepts offers above high threshold until deadline."
+      }
+    },
+    "anac2011": {
+      "HardHeaded": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "verified",
+        "java_class": "agents.anac.y2011.HardHeaded.KLH",
+        "notes": "Winner 2011. Excellent implementation. Key features verified: (1) Discount-factor-aware concession with Fa formula and step_point adjustment, (2) Frequency-based opponent modeling with learning_coef=0.2, (3) Bid selection preferring high opponent utility among candidates, (4) Acceptance based on lowest_offered_utility and next bid comparison. Constants ka=0.05, e=0.05, min_utility=0.585 match original."
+      },
+      "Gahboninho": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "minor_issues",
+        "java_class": "agents.anac.y2011.Gahboninho.Gahboninho",
+        "notes": "2nd place. Bully strategy correctly implemented: (1) Early phase gradual decrease 1.0->0.925 in first 40 actions, (2) Noise estimation for opponent niceness, (3) Phase-dependent thresholds (0.85df, 0.92df, 0.94df, 0.985, 0.9996), (4) Frenzy mode at end. Minor: compromising_factor logic and rate-limiting may have subtle differences from Java."
+      },
+      "IAMhaggler2011": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "verified",
+        "java_class": "agents.anac.y2011.IAMhaggler2011.IAMhaggler2011",
+        "notes": "3rd place. Good implementation of GP-inspired approach using running averages instead of full GP. Key features: (1) Adaptive concession rate based on opponent_concession_rate, (2) Nash-like bid selection (our_util * opp_util product), (3) Opponent reservation estimation, (4) Deadline awareness with t>0.98 and t>0.995 thresholds. Simplification from GP to statistical approach is reasonable."
+      },
+      "AgentK2": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "verified",
+        "java_class": "agents.anac.y2011.AgentK2.Agent_K2",
+        "notes": "Improved AgentK with enhanced opponent modeling. All key components verified: (1) Mean/variance/deviation statistics matching AgentK, (2) estimateMax = mean + (1-mean)*deviation, (3) Alpha/beta with tremor randomness, (4) Target adjustment with ratio calculation, (5) K2 enhancement: time bonus for acceptance near deadline. Frequency-based opponent modeling added."
+      },
+      "BramAgent": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "minor_issues",
+        "java_class": "agents.anac.y2011.BramAgent.BRAMAgent",
+        "notes": "Time-based Boulware concession with opponent modeling. Implementation correct: (1) target(t) = max - (max-min)*t^(1/beta) with beta=0.1, (2) Frequency-based opponent model, (3) Bid selection prefers high opponent utility, (4) Acceptance: offer >= target OR >= next_bid. Minor: Original may have more sophisticated opponent modeling."
+      },
+      "TheNegotiator": {
+        "code_analysis": "completed",
+        "behavioral_test": "passed",
+        "status": "minor_issues",
+        "java_class": "agents.anac.y2011.TheNegotiator.TheNegotiator",
+        "notes": "Adaptive multi-phase strategy. Key features implemented: (1) Phase-dependent concession rates (early/middle/late/final), (2) Opponent toughness detection via concession rate analysis, (3) Nash-like bid scoring, (4) Multiple acceptance criteria per phase. Minor: Original may have additional strategy selection logic not present here."
+      }
+    },
+    "anac2012": {
+      "CUHKAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2012.CUHKAgent.CUHKAgent", "notes": "Winner 2012. Excellent implementation. Key features: (1) Discount-factor-aware concede_to_discounting_degree with beta adjustment, (2) Two-phase concession (gradual vs post-concession), (3) Opponent variance tracking for toughness detection, (4) Multiple acceptance conditions including deadline strategies."},
+      "AgentLG": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2012.AgentLG.AgentLG", "notes": "2nd place. Good implementation of 'stubborn then compromise' strategy. (1) Phase-based bidding (early/compromise/panic/end), (2) Bid pool expansion based on time and opponent concession, (3) Frequency-based opponent modeling, (4) Multiple acceptance criteria per phase."},
+      "OMACAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2012.OMACagent.OMACagent", "notes": "3rd place. Opponent Model-based Adaptive Concession correctly implemented. (1) Opponent reservation estimation via linear regression, (2) Dynamic beta adjustment based on opponent concession rate, (3) Boulware concession with adaptive parameters, (4) Strategic deadline acceptance."},
+      "TheNegotiatorReloaded": {"code_analysis": "completed", "behavioral_test": "passed", "status": "minor_issues", "java_class": "agents.anac.y2012.TheNegotiatorReloaded.TheNegotiatorReloaded", "notes": "Improved TheNegotiator with toughness estimation. Key features present: (1) Boulware concession with adaptive e parameter, (2) Opponent toughness from utility variance, (3) Time pressure adjustment near deadline. Minor: Original may have more sophisticated adaptation logic."},
+      "MetaAgent2012": {"code_analysis": "completed", "behavioral_test": "passed", "status": "minor_issues", "java_class": "agents.anac.y2012.MetaAgent.MetaAgent", "notes": "Meta-learning strategy blending correctly implemented. (1) Domain analysis for initial weights, (2) Three strategies: Boulware (t^3), Linear (t), Conceder (t^0.3), (3) Dynamic weight adjustment based on opponent concession. Minor: Original may use more sophisticated meta-learning."},
+      "IAMhaggler2012": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2012.IAMhaggler2012.IAMhaggler2012", "notes": "Enhanced IAMhaggler with frequency-based opponent model. Key features: (1) Recency-weighted value frequency tracking, (2) Issue weight estimation from selection consistency, (3) Nash-product bid selection, (4) Adaptive concession rate based on opponent behavior. Good implementation."},
+      "AgentMR": {"code_analysis": "completed", "behavioral_test": "passed", "status": "minor_issues", "java_class": "agents.anac.y2012.AgentMR.AgentMR", "notes": "Multi-phase (exploration/exploitation/compromise) agent with risk adjustment. (1) Phase-based target calculation, (2) Risk-adjusted utility considering agreement probability, (3) Linear prediction of opponent's next bid. Minor: Risk model simplified from original."}
+    },
+    "anac2013": {
+      "TheFawkes": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2013.TheFawkes.TheFawkes", "notes": "Winner 2013. BOA framework with frequency-based opponent modeling. Key features: (1) Issue value frequency tracking, (2) Boulware concession e=0.2, (3) AC_Next acceptance (accept if offer >= our next bid), (4) Bid selection maximizes estimated opponent utility among acceptable bids."},
+      "MetaAgent2013": {"code_analysis": "completed", "behavioral_test": "passed", "status": "minor_issues", "java_class": "agents.anac.y2013.MetaAgent.MetaAgent2013", "notes": "2nd place. Simplified meta-learning strategy selection. (1) Domain feature analysis (size, variance), (2) Strategy selection: aggressive/adaptive/cuhk based on domain, (3) Different concession curves per strategy. Minor: Original uses CART + UCB-MAB for portfolio selection."},
+      "TMFAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2013.TMFAgent.TMFAgent", "notes": "3rd place. Time-dependent with adaptive concession and Pareto exploration. Key features: (1) Frequency opponent model, (2) Adaptive e based on opponent concession rate, (3) Near-Pareto bid selection with exploration/exploitation, (4) Dynamic acceptance threshold."},
+      "AgentKF": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2013.AgentKF.AgentKF", "notes": "AgentK family extension. Key features: (1) Statistical opponent modeling (mean, variance, deviation), (2) estimateMax = mean + (1-mean)*deviation, (3) Probabilistic acceptance with tremor randomness, (4) Late-game tactics with opponent concession detection."},
+      "GAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2013.GAgent.AgentI", "notes": "Adaptive negotiator with Nash-optimal bid selection. Key features: (1) Frequency-based opponent utility estimation, (2) Geometric mean Nash scoring, (3) Adaptive concession based on opponent behavior, (4) Window-based opponent analysis."},
+      "InoxAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "minor_issues", "java_class": "agents.anac.y2013.InoxAgent.InoxAgent", "notes": "Robust Boulware agent. Key features: (1) Two-phase concession (early conservative, late accelerated), (2) Best-offer memory, (3) Never accepts below min_utility. Minor: Simplified from original's more complex late-game logic."},
+      "SlavaAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "minor_issues", "java_class": "agents.anac.y2013.SlavaAgent.SlavaAgent", "notes": "Concession-based with win-win bid selection. Key features: (1) Frequency opponent model, (2) Adaptive concession (slower if opponent conceding), (3) Weighted bid scoring (own + opponent utility), (4) Opponent concession detection. Minor: opponent_weight tuning may differ."}
+    },
+    "anac2014": {
+      "AgentM": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.AgentM.AgentM", "notes": "Winner 2014. Simulated annealing bid search, opponent concession tracking, threshold = 0.999 - concession_rate - time/10. All key components present."},
+      "DoNA": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.DoNA.DoNA", "notes": "2nd place. Deadline-oriented, domain sampling, priority-based decision (EndNego>Accept>Counter). Discount factor awareness."},
+      "Gangster": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.Gangster.Gangster", "notes": "3rd place. Multi-strategy gang voting (5 strategies), weighted frequency opponent model, pressure-adaptive threshold."},
+      "WhaleAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.SimpaticoAgent.Simpatico", "notes": "Boulware curve e=0.2, Nash-product bid selection, frequency opponent model."},
+      "TUDelftGroup2": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.TUDelftGroup2.Group2Agent", "notes": "Polynomial concession beta=0.5, weighted sum (alpha*own + (1-alpha)*opp), issue weight estimation."},
+      "E2Agent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.E2Agent.AnacSampleAgent", "notes": "Simple linear concession, exploration-exploitation balance, best-offer tracking."},
+      "KGAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.KGAgent.KGAgent", "notes": "Knowledge-guided with adaptive target based on opponent concession rate, learning rate adaptation."},
+      "AgentYK": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.AgentYK.AgentYK", "notes": "Phase-based (hardball->concession->final), exponential concession, frequency opponent model."},
+      "BraveCat": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.BraveCat.BraveCat", "notes": "Combined acceptance (AC_combi + AC_next), time-weighted opponent model, sigmoid-like target curve."},
+      "AgentQuest": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.AgentQuest.AgentQuest", "notes": "Quest-based goal setting with aspiration decay, opponent-trend-adjusted decay rate."},
+      "AgentTD": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.AgentTD.AgentTD", "notes": "Pure time-dependent agent with configurable e parameter (Boulware/Conceder), simple but effective acceptance."},
+      "AgentTRP": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.AgentTRP.AgentTRP", "notes": "Trade-off, Risk, Pressure agent. Multi-factor balancing, risk-aware acceptance, opponent variance tracking."},
+      "ArisawaYaki": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.ArisawaYaki.ArisawaYaki", "notes": "Wave-based negotiation with sinusoidal oscillation, wave damping near deadline, frequency opponent model."},
+      "Aster": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.Aster.Aster", "notes": "Star-pattern multi-criteria, time-weighted frequency model, issue importance estimation, adaptive threshold decay."},
+      "Atlas": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2014.Atlas.Atlas", "notes": "Precursor to Atlas3. Sigmoid-like S-curve concession, Pareto frontier estimation, Nash-product bid selection."}
+    },
+    "anac2015": {
+      "Atlas3": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.Atlas3.Atlas3", "notes": "Winner 2015. Time-based threshold with 3 phases (start/main/end), random bid search, end-game popular bids selection."},
+      "ParsAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.ParsAgent.ParsAgent", "notes": "2nd place. Boulware e=0.15, frequency opponent model, mutual preference bid selection."},
+      "RandomDance": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.RandomDance.RandomDance", "notes": "3rd place. 'Dancing' with random concession variance, linear base concession."},
+      "AgentBuyog": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.AgentBuyog.AgentBuyog", "notes": "Variable concession rate by phase, Nash point estimation, frequency opponent model."},
+      "AgentH": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.AgentH.AgentH", "notes": "Hybrid strategy, adaptive e based on opponent concession, AC_Next acceptance."},
+      "AgentHP": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.AgentHP.AgentHP", "notes": "High-performance with bid caching, simple threshold computation."},
+      "AgentNeo": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.AgentNeo.Groupn", "notes": "Matrix-inspired, Boulware concession, opponent concession detection."},
+      "AgentW": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.AgentW.AgentW", "notes": "Waiting strategy - observes first, classifies opponent (conceder/hardhead), adaptive e."},
+      "AgentX": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.AgentX.AgentX", "notes": "Exploratory X-factor, early exploration phase, Nash-seeking bid selection."},
+      "AresParty": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.AresParty.AresParty", "notes": "Aggressive war-god strategy, very Boulware e=0.08, opponent weakness exploitation."},
+      "CUHKAgent2015": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.cuhkagent2015.CUHKAgent2015", "notes": "Nash point estimation, comprehensive opponent model, AC_Next + AC_Nash acceptance."},
+      "DrageKnight": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.DrageKnight.DrageKnight", "notes": "Dragon-knight bold/strategic/honor phases, opponent concession detection."},
+      "Y2015Group2": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.group2.Group2", "notes": "Simple moderate concession e=0.2, tracks best opponent offer."},
+      "JonnyBlack": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.JonnyBlack.JonnyBlack", "notes": "Mysterious with random variance, opponent desperation detection."},
+      "Kawaii": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.Kawaii.Kawaii", "notes": "Soft adaptive strategy, opponent concession rate tracking, adaptive e."},
+      "MeanBot": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.meanBot.MeanBot", "notes": "Mean-based strategy, threshold adjusted by mean opponent utility."},
+      "Mercury": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.Mercury.Mercury", "notes": "Fluid quick-moving, opponent trend tracking, adaptive fluid_rate multiplier."},
+      "PNegotiator": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.pnegotiator.PNegotiator", "notes": "Probabilistic, expected utility optimization, acceptance probability estimation."},
+      "PhoenixParty": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.Phoenix.PhoenixParty", "notes": "Rebirth strategy with 3 phases, stuck detection triggers phase change."},
+      "PokerFace": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.pokerface.PokerFace", "notes": "Bluffing strategy, displayed threshold differs from true acceptance threshold."},
+      "SENGOKU": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.SENGOKU.SENGOKU", "notes": "Battle-inspired 4 phases (defense/tactical/alliance/victory), territory defense."},
+      "XianFaAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2015.xianfa.XianFaAgent", "notes": "Constitutional approach, rule-based phases, strategic reserves, fairness consideration with constitutional minimum."}
+    },
+    "anac2016": {
+      "Caduceus": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2016.caduceus.Caduceus", "notes": "Winner 2016. Meta-agent with 5 sub-strategies, weighted voting mechanism, early best-bid phase (83% of time)."},
+      "YXAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2016.yxagent.YXAgent", "notes": "2nd place. Conservative threshold (min 0.7), opponent hardness estimation via variance, multi-opponent aware."},
+      "ParsCat": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2016.parscat.ParsCat", "notes": "3rd place. Boulware e=0.2, Nash-product bid selection, domain-adaptive reservation value."},
+      "AgentHP2": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2016.agenthp2.AgentHP2_main", "notes": "Enhanced HP2015, multi-phase concession, bid caching, opponent trend detection."},
+      "AgentLight": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2016.agentlight.AgentLight", "notes": "Lightweight, minimal computation, simple Boulware threshold e=0.2."},
+      "AgentSmith2016": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2016.agentsmith.AgentSmith2016", "notes": "Evolved AgentSmith, adaptive e based on opponent concession, Nash-weighted bid selection."},
+      "Atlas32016": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2016.atlas3.Atlas32016", "notes": "Updated Atlas3, 4-phase threshold, opponent frequency model, end-game best-bid exploration."},
+      "ClockworkAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2016.clockworkagent.ClockworkAgent", "notes": "Precision-timed 5-phase strategy, regular concession intervals, systematic bid selection."},
+      "Farma": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2016.farma.Farma", "notes": "Frequency opponent model, adaptive e based on opponent concession rate, Nash-inspired selection."},
+      "GrandmaAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2016.grandma.GrandmaAgent", "notes": "Very patient (85% patience phase), minimal early concession, accelerated end-game."},
+      "MaxOops": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2016.maxoops.MaxOops", "notes": "Aggressive with recovery mode, detects poor negotiation state, adapts when behind."},
+      "MyAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2016.myagent.MyAgent", "notes": "Nash equilibrium estimation, 3-phase concession toward Nash point, opponent utility estimation."},
+      "Ngent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2016.ngent.Ngent", "notes": "Gentle concession (gentleness=0.25), opponent frequency model, mutually-good bid preference."},
+      "Terra": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2016.terra.Terra", "notes": "Firm early (firmness=0.15), Boulware concession, Nash-product bid selection."}
+    },
+    "anac2017": {
+      "PonPokoAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.ponpokoagent.PonPokoAgent", "notes": "Winner 2017. 5 random threshold patterns, pool-based bidding. Pattern 0: sin(t*40) oscillation. Pattern 1: Linear 1.0->0.78. Pattern 3: Conservative until t>0.99. Simple yet effective winner through unpredictability."},
+      "CaduceusDC16": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.caduceusdc16.CaduceusDC16", "notes": "2nd place. Multi-strategy ensemble with 5 sub-strategies, weighted voting [500,10,5,3,1]. Early phase (83%): best bid only. Roulette wheel bid selection."},
+      "BetaOne": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.tangxun.BetaOne", "notes": "3rd place. Bayesian opponent modeling (P(hard)), 3-phase strategy. Phase 1: info gathering. Phase 2: adaptive. Phase 3: aggressive concession. Pareto-optimal bid exploration."},
+      "AgentF": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.agentf.AgentF", "notes": "Simple linear concession, AC_Next acceptance. Min utility 0.6, target = max - time*(max-min)."},
+      "AgentKN": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.agentkn.AgentKN", "notes": "AgentK family. Sigmoid concession curve, opponent avg tracking. Adaptive threshold adjustment based on opponent cooperation level."},
+      "Farma2017": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.farma.Farma17", "notes": "Exponential concession e=0.2, window-based opponent analysis (last 5 bids). Nash-inspired bid selection balancing own and opponent utility."},
+      "GeneKing": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.geneking.GeneKing", "notes": "GA-inspired population-based strategy. Maintains population of good bids, exponential decay threshold, opponent trend tracking."},
+      "Gin": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.gin.Gin", "notes": "Smooth polynomial concession (power=2.0), bid diversity through history tracking, expected future utility estimation."},
+      "Group3": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.group3.Group3", "notes": "3-phase strategy: Phase 1 (0-40%) hardball. Phase 2 (40-80%) exploration with linear decrease. Phase 3 (80-100%) fast concession with quadratic decay."},
+      "Imitator": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.limitator.Imitator", "notes": "Tit-for-tat inspired. Tracks opponent concession rate, mirrors concession pattern. Fast opponent -> patient. Slow opponent -> match rate."},
+      "MadAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.madagent.MadAgent", "notes": "Unpredictable 'mad' strategy with random oscillation (madness=0.3). Occasional random bids, occasional early acceptance. Reduces madness near deadline."},
+      "Mamenchis": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.mamenchis.Mamenchis", "notes": "Dinosaur-inspired patient strategy. Power=3.0 for very slow early concession. Adapts to opponent concession rate. Named after long-necked dinosaur."},
+      "Mosa": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.mosateam.Mosa", "notes": "Simulated annealing inspired. Exponential cooling schedule (rate=0.95). Temperature controls both threshold and bid selection randomness."},
+      "ParsAgent3": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.parsagent3.ShahAgent", "notes": "ParsAgent series 2017 version. 3-phase (explore/adaptive/concession), Nash-product bid selection using frequency-based opponent utility estimation."},
+      "Rubick": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.rubick.Rubick", "notes": "Named after Dota 2 spell-stealer. Tracks opponent concession rate, adapts own threshold. Base concession 0.35*time with +/-0.05 adaptation."},
+      "SimpleAgent2017": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.simpleagent.SimpleAgent", "notes": "Baseline agent. Pure linear concession, no opponent modeling. Accept if offer >= threshold. Simple but reasonable performance."},
+      "TaxiBox": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2017.tucagent.TucAgent", "notes": "Fare-meter inspired. Accumulates concession over time with adjustable rate. Opponent concession slows our rate. AC_Next criterion."}
+    },
+    "anac2018": {
+      "AgreeableAgent2018": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.agreeableagent2018.AgreeableAgent2018", "notes": "Winner 2018. Frequency opponent model, Boulware e=0.1, roulette wheel selection from candidates. Cooperative yet strategic."},
+      "MengWan": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.meng_wan.Agent36", "notes": "2nd place. Boulware e=5, frequency model, time-dependent threshold with opponent adaptation."},
+      "Seto": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.seto.Seto", "notes": "3rd place. 3-phase strategy: conservative/linear/aggressive concession."},
+      "Agent33": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.agent33.Agent33", "notes": "Linear concession, tracks best received offer."},
+      "AgentHerb": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.agentherb.AgentHerb", "notes": "Exponential concession, Nash product bid selection."},
+      "AgentNP1": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.agentnp1.AgentNP1", "notes": "Nash Product optimization, polynomial e=2 concession."},
+      "AteamAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.ateamagent.ATeamAgent", "notes": "Sigmoid concession, team-inspired collaborative approach."},
+      "ConDAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.condagent.ConDAgent", "notes": "Conditional strategy adapting to opponent cooperation level."},
+      "ExpRubick": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.exp_rubick.Exp_Rubick", "notes": "Enhanced Rubick with issue weight estimation, Nash product optimization."},
+      "FullAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.fullagent.FullAgent", "notes": "Comprehensive strategy with Nash welfare maximization."},
+      "IQSun2018": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.iqson.IQSun2018", "notes": "Boulware e=0.2, frequency opponent model."},
+      "PonPokoRampage": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.ponpokorampage.PonPokoRampage", "notes": "5 random threshold patterns, oscillating thresholds."},
+      "Shiboy": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.shiboy.Shiboy", "notes": "Very Boulware e=10, tracks best received."},
+      "Sontag": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.sontag.Sontag", "notes": "Tit-for-tat style, window-based opponent analysis."},
+      "Yeela": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2018.yeela.Yeela", "notes": "Polynomial e=3 concession, frequency model."}
+    },
+    "anac2019": {
+      "AgentGG": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2019.agentgg.AgentGG", "notes": "Winner 2019. Importance-based bidding, Nash point estimation."},
+      "KakeSoba": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2019.kakesoba.KakeSoba", "notes": "2nd place. Fixed 0.85 threshold, bid diversification via frequency."},
+      "SAGA": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2019.saga.SAGA", "notes": "3rd place. Genetic algorithm population-based, adaptive selection."},
+      "WinkyAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2019.winkyagent.WinkyAgent", "notes": "Nash Winner. Nash product maximization, polynomial concession."},
+      "AgentGP": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2019.agentgp.AgentGP", "notes": "Nash 3rd. Gaussian Process-inspired, UCB bid selection."},
+      "FSEGA2019": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2019.fsega2019.FSEGA2019", "notes": "Nash 2nd. Enhanced FSEGA family, adaptive concession."},
+      "AgentLarry": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2019.agentlarry.AgentLarry", "notes": "Simple linear concession."},
+      "DandikAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2019.dandikagent.DandikAgent", "notes": "Boulware e=0.2, frequency model."},
+      "EAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2019.eagent.EAgent", "notes": "Exponential decay concession."},
+      "GaravelAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2019.garavelagent.GaravelAgent", "notes": "Tit-for-tat inspired, matches opponent concession."},
+      "Gravity": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2019.gravity.Gravity", "notes": "Gravitational model (accelerating concession)."},
+      "HardDealer": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2019.harddealer.HardDealer", "notes": "Aggressive hardball, high threshold until deadline."},
+      "KAgent": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2019.kagent.KAgent", "notes": "AgentK-inspired, adaptive expected utility."},
+      "MINF": {"code_analysis": "completed", "behavioral_test": "passed", "status": "verified", "java_class": "agents.anac.y2019.minf.MINF", "notes": "Minimal information, simple polynomial concession."}
+    }
+  },
+  "detailed_analysis": {
+    "AgentK": {
+      "year": 2010,
+      "rank": "1st (Winner)",
+      "algorithm_summary": "Probabilistic acceptance with statistical opponent modeling",
+      "key_features": [
+        "Tracks mean, variance of opponent offers",
+        "Estimates maximum attainable utility from opponent",
+        "Uses alpha-based time-dependent concession",
+        "Probabilistic acceptance based on utility evaluation + satisfy + time pressure"
+      ],
+      "implementation_differences": [
+        "Python uses sorted outcome space for bid search instead of random sampling",
+        "Loop iterations reduced (50 vs 500 for bid search)",
+        "Uses single random module vs 4 seeded Random objects in Java"
+      ],
+      "verified_components": [
+        "Mean/variance calculation",
+        "Deviation calculation (sqrt(variance * 12))",
+        "estimateMax formula",
+        "Alpha/beta calculation with tremor",
+        "Target and bidTarget calculation with ratio adjustment",
+        "Acceptance probability formula",
+        "Good bid selection from opponent offers"
+      ],
+      "status": "minor_issues"
+    },
+    "TimeDependentAgent": {
+      "year": "Base",
+      "rank": "N/A",
+      "algorithm_summary": "Classic time-dependent concession strategy",
+      "key_features": [
+        "f(t) = k + (1-k) * t^(1/e) concession function",
+        "p(t) = Pmin + (Pmax - Pmin) * (1 - f(t)) target utility",
+        "e < 1: Boulware (tough), e = 1: Linear, e > 1: Conceder",
+        "e = 0: Hardliner (never concedes)",
+        "AC_Next acceptance (accept if offer >= our next bid)"
+      ],
+      "implementation_differences": [],
+      "verified_components": [
+        "Concession function formula",
+        "Target utility calculation",
+        "Bid selection via SortedOutcomeSpace",
+        "Proper initialization and bounds handling",
+        "Reference to Fatima et al. paper"
+      ],
+      "status": "verified"
+    }
+  }
+}

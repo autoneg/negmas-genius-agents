@@ -1,0 +1,20 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# External dependencies (Genius Java library)
+genius10.4/
+external/
+
+# Local uv override (use local negmas instead of PyPI)
+uv.toml
+
+# Hypothesis test cache
+.hypothesis/

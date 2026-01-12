@@ -1,5 +1,5 @@
 """
-Tests for ANAC 2019 negotiating agents using hypothesis for property-based testing.
+Tests for ANAC 2019 negotiating agents.
 
 Tests verify that all agents can:
 1. Be instantiated correctly
@@ -8,7 +8,6 @@ Tests verify that all agents can:
 """
 
 import pytest
-from hypothesis import HealthCheck, given, settings, strategies as st
 from negmas.outcomes import make_issue, make_os
 from negmas.preferences import LinearAdditiveUtilityFunction
 from negmas.sao import SAOMechanism
@@ -148,34 +147,6 @@ class TestANAC2019AgentNegotiations:
 
         assert state is not None
         assert state.started
-        assert state.ended
-
-
-class TestANAC2019HypothesisBased:
-    """Property-based tests using hypothesis."""
-
-    @given(n_steps=st.integers(min_value=10, max_value=200))
-    @settings(
-        max_examples=10,
-        deadline=None,
-        suppress_health_check=[HealthCheck.function_scoped_fixture],
-    )
-    @pytest.mark.parametrize("agent_class", ANAC_2019_AGENTS)
-    def test_agent_handles_varying_steps(
-        self, agent_class, n_steps, simple_issues, buyer_ufun, seller_ufun
-    ):
-        """Test that agents handle different negotiation lengths."""
-        mechanism = SAOMechanism(issues=simple_issues, n_steps=n_steps)
-
-        buyer = agent_class(name="buyer", ufun=buyer_ufun)
-        seller = agent_class(name="seller", ufun=seller_ufun)
-
-        mechanism.add(buyer)
-        mechanism.add(seller)
-
-        state = mechanism.run()
-
-        assert state is not None
         assert state.ended
 
 

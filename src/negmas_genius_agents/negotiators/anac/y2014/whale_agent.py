@@ -68,6 +68,9 @@ class WhaleAgent(SAONegotiator):
     Args:
         e: Boulware exponent (default 0.2). Lower values create more
            patient (Boulware) behavior; higher values more eager (Conceder).
+        min_utility_floor: Minimum acceptable utility threshold (default 0.6).
+        deadline_acceptance_time: Time threshold for near-deadline acceptance (default 0.98).
+        top_candidates_divisor: Divisor for selecting top candidates (default 4).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -80,6 +83,9 @@ class WhaleAgent(SAONegotiator):
     def __init__(
         self,
         e: float = 0.2,
+        min_utility_floor: float = 0.6,
+        deadline_acceptance_time: float = 0.98,
+        top_candidates_divisor: int = 4,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -98,6 +104,9 @@ class WhaleAgent(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._min_utility_floor = min_utility_floor
+        self._deadline_acceptance_time = deadline_acceptance_time
+        self._top_candidates_divisor = top_candidates_divisor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -109,7 +118,7 @@ class WhaleAgent(SAONegotiator):
 
         # Bidding state
         self._reservation_value: float = 0.0
-        self._min_util: float = 0.6
+        self._min_util: float = min_utility_floor
 
     def _initialize(self) -> None:
         """Initialize the outcome space."""
@@ -209,7 +218,9 @@ class WhaleAgent(SAONegotiator):
                 return best_bid
 
         # No opponent model, return random high utility bid
-        return random.choice(candidates[: max(1, len(candidates) // 4)]).bid
+        return random.choice(
+            candidates[: max(1, len(candidates) // self._top_candidates_divisor)]
+        ).bid
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:
         """Generate a proposal."""
@@ -248,7 +259,7 @@ class WhaleAgent(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Near deadline, be more flexible
-        if time > 0.98 and offer_utility >= self._min_util:
+        if time > self._deadline_acceptance_time and offer_utility >= self._min_util:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

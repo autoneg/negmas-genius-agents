@@ -78,6 +78,10 @@ class AgentHP2(SAONegotiator):
     Args:
         e: Concession exponent for Boulware curve (default 0.12)
         min_utility: Minimum acceptable utility threshold (default 0.65)
+        phase1_end: End time for phase 1 (default 0.1)
+        phase2_end: End time for phase 2 (default 0.8)
+        early_time: Time threshold for early phase best-bid offering (default 0.02)
+        deadline_time: Time threshold for deadline acceptance (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -91,6 +95,10 @@ class AgentHP2(SAONegotiator):
         self,
         e: float = 0.12,
         min_utility: float = 0.65,
+        phase1_end: float = 0.1,
+        phase2_end: float = 0.8,
+        early_time: float = 0.02,
+        deadline_time: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -110,6 +118,10 @@ class AgentHP2(SAONegotiator):
         )
         self._e = e
         self._min_utility = min_utility
+        self._phase1_end = phase1_end
+        self._phase2_end = phase2_end
+        self._early_time = early_time
+        self._deadline_time = deadline_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -189,19 +201,21 @@ class AgentHP2(SAONegotiator):
 
     def _compute_threshold(self, time: float) -> float:
         """Multi-phase threshold computation."""
-        if time < 0.1:
+        if time < self._phase1_end:
             # Phase 1: High aspiration
             return self._max_utility * 0.98
-        elif time < 0.8:
+        elif time < self._phase2_end:
             # Phase 2: Boulware concession
-            phase_time = (time - 0.1) / 0.7
+            phase_time = (time - self._phase1_end) / (
+                self._phase2_end - self._phase1_end
+            )
             f_t = math.pow(phase_time, 1 / self._e) if self._e > 0 else phase_time
             start = self._max_utility * 0.98
             end = self._max_utility * 0.78
             return start - (start - end) * f_t
         else:
             # Phase 3: End-game with adaptation based on opponent
-            phase_time = (time - 0.8) / 0.2
+            phase_time = (time - self._phase2_end) / (1.0 - self._phase2_end)
             start = self._max_utility * 0.78
 
             # If opponent is conceding, we can be more patient
@@ -254,7 +268,7 @@ class AgentHP2(SAONegotiator):
         time = state.relative_time
 
         # Very early: best bid
-        if time < 0.02:
+        if time < self._early_time:
             return self._best_bid
 
         return self._select_bid(time)
@@ -283,7 +297,7 @@ class AgentHP2(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # End-game acceptance logic
-        if time > 0.95:
+        if time > self._deadline_time:
             # Accept if above reservation and at least as good as best received
             if offer_utility >= self._reservation_value:
                 if offer_utility >= self._best_opponent_utility * 0.99:

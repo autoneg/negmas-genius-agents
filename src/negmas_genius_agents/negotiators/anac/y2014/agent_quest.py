@@ -47,7 +47,7 @@ class AgentQuest(SAONegotiator):
         Multi-stage acceptance criteria:
         1. Accept if offer utility meets or exceeds the current quest goal
         2. Accept if offer utility is at least as good as the next planned bid
-        3. Accept near deadline (t > 0.98) if utility exceeds minimum threshold
+        3. Accept near deadline (t > deadline_time) if utility exceeds minimum threshold
         This layered approach balances aspiration with practical deal-making.
 
     **Opponent Modeling:**
@@ -61,6 +61,17 @@ class AgentQuest(SAONegotiator):
     Args:
         initial_aspiration: Starting aspiration level (default 0.95).
         aspiration_decay: Exponent controlling decay speed (default 0.5).
+        min_utility_floor: Floor value for minimum utility (default 0.5).
+        positive_trend_threshold: Threshold for detecting positive opponent trend (default 0.05).
+        negative_trend_threshold: Threshold for detecting negative opponent trend (default -0.05).
+        positive_trend_decay_factor: Decay multiplier when opponent conceding (default 0.8).
+        negative_trend_decay_factor: Decay multiplier when opponent hardening (default 1.2).
+        decay_multiplier: Multiplier applied to base decay for quest goal (default 0.6).
+        lowered_threshold_factor: Factor to lower threshold when no candidates (default 0.95).
+        own_utility_weight: Weight for own utility in bid scoring (default 0.7).
+        opponent_utility_weight: Weight for opponent utility in bid scoring (default 0.3).
+        top_candidates_divisor: Divisor to select top candidates (default 3).
+        deadline_time: Time threshold for near-deadline acceptance (default 0.98).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -74,6 +85,17 @@ class AgentQuest(SAONegotiator):
         self,
         initial_aspiration: float = 0.95,
         aspiration_decay: float = 0.5,
+        min_utility_floor: float = 0.5,
+        positive_trend_threshold: float = 0.05,
+        negative_trend_threshold: float = -0.05,
+        positive_trend_decay_factor: float = 0.8,
+        negative_trend_decay_factor: float = 1.2,
+        decay_multiplier: float = 0.6,
+        lowered_threshold_factor: float = 0.95,
+        own_utility_weight: float = 0.7,
+        opponent_utility_weight: float = 0.3,
+        top_candidates_divisor: int = 3,
+        deadline_time: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -93,6 +115,17 @@ class AgentQuest(SAONegotiator):
         )
         self._initial_aspiration = initial_aspiration
         self._aspiration_decay = aspiration_decay
+        self._min_utility_floor = min_utility_floor
+        self._positive_trend_threshold = positive_trend_threshold
+        self._negative_trend_threshold = negative_trend_threshold
+        self._positive_trend_decay_factor = positive_trend_decay_factor
+        self._negative_trend_decay_factor = negative_trend_decay_factor
+        self._decay_multiplier = decay_multiplier
+        self._lowered_threshold_factor = lowered_threshold_factor
+        self._own_utility_weight = own_utility_weight
+        self._opponent_utility_weight = opponent_utility_weight
+        self._top_candidates_divisor = top_candidates_divisor
+        self._deadline_time = deadline_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -107,7 +140,7 @@ class AgentQuest(SAONegotiator):
         self._opponent_value_freq: dict[int, dict] = {}
 
         # State
-        self._min_utility: float = 0.5
+        self._min_utility: float = min_utility_floor
         self._max_utility: float = 1.0
 
     def _initialize(self) -> None:
@@ -121,7 +154,9 @@ class AgentQuest(SAONegotiator):
         self._outcome_space = SortedOutcomeSpace(ufun=self.ufun)
         if self._outcome_space.outcomes:
             self._max_utility = self._outcome_space.max_utility
-            self._min_utility = max(0.5, self._outcome_space.min_utility)
+            self._min_utility = max(
+                self._min_utility_floor, self._outcome_space.min_utility
+            )
         self._current_quest_goal = self._max_utility
         self._initialized = True
 
@@ -189,12 +224,18 @@ class AgentQuest(SAONegotiator):
             ]
             if len(recent_utilities) >= 2:
                 trend = recent_utilities[-1] - recent_utilities[0]
-                if trend > 0.05:
-                    base_decay *= 0.8  # Opponent conceding, slow our decay
-                elif trend < -0.05:
-                    base_decay *= 1.2  # Opponent hardening, speed up decay
+                if trend > self._positive_trend_threshold:
+                    base_decay *= (
+                        self._positive_trend_decay_factor
+                    )  # Opponent conceding, slow our decay
+                elif trend < self._negative_trend_threshold:
+                    base_decay *= (
+                        self._negative_trend_decay_factor
+                    )  # Opponent hardening, speed up decay
 
-        self._current_quest_goal = self._max_utility - base_decay * 0.6
+        self._current_quest_goal = (
+            self._max_utility - base_decay * self._decay_multiplier
+        )
         self._current_quest_goal = max(self._min_utility, self._current_quest_goal)
         self._quest_history.append(self._current_quest_goal)
 
@@ -208,7 +249,7 @@ class AgentQuest(SAONegotiator):
 
         if not candidates:
             # Lower threshold and try again
-            lowered = self._current_quest_goal * 0.95
+            lowered = self._current_quest_goal * self._lowered_threshold_factor
             candidates = self._outcome_space.get_bids_above(lowered)
             if not candidates:
                 return self._outcome_space.outcomes[0].bid
@@ -221,7 +262,10 @@ class AgentQuest(SAONegotiator):
             for bd in candidates:
                 opp_util = self._estimate_opponent_utility(bd.bid)
                 # Balance own utility with opponent satisfaction
-                score = 0.7 * bd.utility + 0.3 * opp_util
+                score = (
+                    self._own_utility_weight * bd.utility
+                    + self._opponent_utility_weight * opp_util
+                )
                 if score > best_score:
                     best_score = score
                     best_bid = bd.bid
@@ -230,7 +274,9 @@ class AgentQuest(SAONegotiator):
                 return best_bid
 
         # No model, return random from top candidates
-        return random.choice(candidates[: max(1, len(candidates) // 3)]).bid
+        return random.choice(
+            candidates[: max(1, len(candidates) // self._top_candidates_divisor)]
+        ).bid
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:
         """Generate a proposal."""
@@ -269,7 +315,7 @@ class AgentQuest(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Near deadline, accept if reasonable
-        if time > 0.98 and offer_utility >= self._min_utility:
+        if time > self._deadline_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

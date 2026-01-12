@@ -63,6 +63,8 @@ class Atlas3(SAONegotiator):
 
     Args:
         e: Concession exponent (default 0.1, Boulware-like)
+        start_phase_time_threshold: Time threshold for start phase (default 0.2)
+        main_phase_time_threshold: Time threshold for main/end phase transition (default 0.8)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -75,6 +77,8 @@ class Atlas3(SAONegotiator):
     def __init__(
         self,
         e: float = 0.1,
+        start_phase_time_threshold: float = 0.2,
+        main_phase_time_threshold: float = 0.8,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -93,6 +97,8 @@ class Atlas3(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._start_phase_time_threshold = start_phase_time_threshold
+        self._main_phase_time_threshold = main_phase_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -144,19 +150,34 @@ class Atlas3(SAONegotiator):
     def _compute_threshold(self, time: float) -> float:
         """Compute utility threshold using time-dependent formula."""
         # Atlas3 uses a Boulware-like formula with reservation value consideration
-        if time < 0.2:
+        if time < self._start_phase_time_threshold:
             # Start phase: very high threshold
             return self._max_utility * 0.95
-        elif time < 0.8:
+        elif time < self._main_phase_time_threshold:
             # Main negotiation phase
-            f_t = math.pow((time - 0.2) / 0.6, 1 / self._e) if self._e != 0 else 0
+            f_t = (
+                math.pow(
+                    (time - self._start_phase_time_threshold)
+                    / (
+                        self._main_phase_time_threshold
+                        - self._start_phase_time_threshold
+                    ),
+                    1 / self._e,
+                )
+                if self._e != 0
+                else 0
+            )
             target = (
                 self._max_utility - (self._max_utility - self._min_utility) * 0.3 * f_t
             )
             return max(target, self._reservation_value)
         else:
             # End phase: more aggressive concession
-            f_t = math.pow((time - 0.8) / 0.2, 2)  # Quadratic concession
+            f_t = math.pow(
+                (time - self._main_phase_time_threshold)
+                / (1.0 - self._main_phase_time_threshold),
+                2,
+            )  # Quadratic concession
             target = (
                 self._max_utility * 0.7
                 - (self._max_utility * 0.7 - self._min_utility) * 0.5 * f_t

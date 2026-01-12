@@ -59,6 +59,7 @@ class Mercury(SAONegotiator):
 
     Args:
         e: Base concession exponent (default 0.25)
+        deadline_time_threshold: Time after which swift end-game triggers (default 0.93)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -71,6 +72,7 @@ class Mercury(SAONegotiator):
     def __init__(
         self,
         e: float = 0.25,
+        deadline_time_threshold: float = 0.93,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -89,6 +91,7 @@ class Mercury(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -214,7 +217,7 @@ class Mercury(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Swift end-game
-        if time > 0.93:
+        if time > self._deadline_time_threshold:
             min_acceptable = max(0.45, self._min_utility + 0.1)
             if offer_utility >= max(self._best_opponent_utility, min_acceptable):
                 return ResponseType.ACCEPT_OFFER

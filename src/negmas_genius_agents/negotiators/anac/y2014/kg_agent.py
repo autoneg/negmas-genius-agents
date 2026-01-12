@@ -71,6 +71,14 @@ class KGAgent(SAONegotiator):
     Args:
         initial_target: Starting utility target (default 0.95).
         learning_rate: Rate of strategy adaptation (default 0.1).
+        exploration_end_time: Time threshold ending exploration phase (default 0.5).
+        flexibility_time: Time threshold for increased flexibility (default 0.95).
+        positive_concession_threshold: Threshold for detecting positive concession (default 0.01).
+        negative_concession_threshold: Threshold for detecting negative concession (default -0.01).
+        hardening_adaptation_factor: Factor for adapting when opponent hardens (default 0.5).
+        base_concession_multiplier: Multiplier for base concession (default 0.5).
+        lowered_threshold_factor: Factor for lowering target when no candidates (default 0.95).
+        exploration_candidates_divisor: Divisor for exploration candidates (default 2).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -84,6 +92,14 @@ class KGAgent(SAONegotiator):
         self,
         initial_target: float = 0.95,
         learning_rate: float = 0.1,
+        exploration_end_time: float = 0.5,
+        flexibility_time: float = 0.95,
+        positive_concession_threshold: float = 0.01,
+        negative_concession_threshold: float = -0.01,
+        hardening_adaptation_factor: float = 0.5,
+        base_concession_multiplier: float = 0.5,
+        lowered_threshold_factor: float = 0.95,
+        exploration_candidates_divisor: int = 2,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -103,6 +119,14 @@ class KGAgent(SAONegotiator):
         )
         self._initial_target = initial_target
         self._learning_rate = learning_rate
+        self._exploration_end_time = exploration_end_time
+        self._flexibility_time = flexibility_time
+        self._positive_concession_threshold = positive_concession_threshold
+        self._negative_concession_threshold = negative_concession_threshold
+        self._hardening_adaptation_factor = hardening_adaptation_factor
+        self._base_concession_multiplier = base_concession_multiplier
+        self._lowered_threshold_factor = lowered_threshold_factor
+        self._exploration_candidates_divisor = exploration_candidates_divisor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -167,19 +191,21 @@ class KGAgent(SAONegotiator):
         time_pressure = time**2  # Accelerating near deadline
 
         # Adapt based on opponent behavior
-        if self._opponent_concession_rate > 0.01:
+        if self._opponent_concession_rate > self._positive_concession_threshold:
             # Opponent is conceding, we can be tougher
             adaptation = -self._learning_rate * self._opponent_concession_rate
-        elif self._opponent_concession_rate < -0.01:
+        elif self._opponent_concession_rate < self._negative_concession_threshold:
             # Opponent is hardening, we need to concede more
-            adaptation = self._learning_rate * 0.5
+            adaptation = self._learning_rate * self._hardening_adaptation_factor
         else:
             # Opponent is stable, normal time concession
             adaptation = 0.0
 
         # Compute new target
         base_concession = (
-            (self._initial_target - self._min_utility) * time_pressure * 0.5
+            (self._initial_target - self._min_utility)
+            * time_pressure
+            * self._base_concession_multiplier
         )
         self._current_target = self._initial_target - base_concession + adaptation
         self._current_target = max(self._min_utility, min(1.0, self._current_target))
@@ -193,14 +219,16 @@ class KGAgent(SAONegotiator):
 
         if not candidates:
             # Lower target slightly and retry
-            lowered = self._current_target * 0.95
+            lowered = self._current_target * self._lowered_threshold_factor
             candidates = self._outcome_space.get_bids_above(lowered)
             if not candidates:
                 return self._outcome_space.outcomes[0].bid
 
         # Mix of best and random from candidates
-        if time < 0.5 and len(candidates) > 3:
-            return random.choice(candidates[: len(candidates) // 2]).bid
+        if time < self._exploration_end_time and len(candidates) > 3:
+            return random.choice(
+                candidates[: len(candidates) // self._exploration_candidates_divisor]
+            ).bid
 
         return candidates[0].bid
 
@@ -243,7 +271,7 @@ class KGAgent(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Near deadline, be flexible
-        if time > 0.95 and offer_utility >= self._min_utility:
+        if time > self._flexibility_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

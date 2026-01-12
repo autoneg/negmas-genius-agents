@@ -59,6 +59,7 @@ class Imitator(SAONegotiator):
     Args:
         min_utility: Minimum acceptable utility (default 0.55).
         initial_threshold: Starting threshold (default 0.95).
+        late_game_threshold: Time threshold for late game acceleration (default 0.9).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -72,6 +73,7 @@ class Imitator(SAONegotiator):
         self,
         min_utility: float = 0.55,
         initial_threshold: float = 0.95,
+        late_game_threshold: float = 0.9,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -91,6 +93,7 @@ class Imitator(SAONegotiator):
         )
         self._min_utility = min_utility
         self._initial_threshold = initial_threshold
+        self._late_game_threshold = late_game_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -185,8 +188,10 @@ class Imitator(SAONegotiator):
             self._current_threshold = time_based_threshold
 
         # Late game acceleration
-        if time > 0.9:
-            late_factor = (time - 0.9) / 0.1
+        if time > self._late_game_threshold:
+            late_factor = (time - self._late_game_threshold) / (
+                1.0 - self._late_game_threshold
+            )
             self._current_threshold = min(
                 self._current_threshold,
                 self._best_opponent_utility + 0.05 * (1 - late_factor),

@@ -60,6 +60,8 @@ class ParsAgent3(SAONegotiator):
 
     Args:
         min_utility: Minimum acceptable utility (default 0.65).
+        phase1_end: End of phase 1 (high target) (default 0.3).
+        phase2_end: End of phase 2 (gradual concession) (default 0.85).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -72,6 +74,8 @@ class ParsAgent3(SAONegotiator):
     def __init__(
         self,
         min_utility: float = 0.65,
+        phase1_end: float = 0.3,
+        phase2_end: float = 0.85,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -90,6 +94,8 @@ class ParsAgent3(SAONegotiator):
             **kwargs,
         )
         self._min_utility = min_utility
+        self._phase1_end = phase1_end
+        self._phase2_end = phase2_end
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -171,18 +177,18 @@ class ParsAgent3(SAONegotiator):
 
     def _calculate_target_utility(self, time: float) -> float:
         """Calculate target utility based on negotiation phase."""
-        if time < 0.3:
+        if time < self._phase1_end:
             # Phase 1: High target
             return self._max_utility * (1 - 0.1 * time)
-        elif time < 0.85:
+        elif time < self._phase2_end:
             # Phase 2: Gradual concession
-            progress = (time - 0.3) / 0.55
+            progress = (time - self._phase1_end) / (self._phase2_end - self._phase1_end)
             start_util = self._max_utility * 0.97
             end_util = self._max_utility * 0.75
             return start_util - progress * (start_util - end_util)
         else:
             # Phase 3: Faster concession
-            progress = (time - 0.85) / 0.15
+            progress = (time - self._phase2_end) / (1.0 - self._phase2_end)
             start_util = self._max_utility * 0.75
             end_util = self._min_utility
             return start_util - progress * (start_util - end_util)

@@ -61,6 +61,8 @@ class BramAgent(SAONegotiator):
     Args:
         beta: Concession rate parameter (default 0.1, slow concession)
         min_utility: Minimum acceptable utility (default 0.6)
+        bid_tolerance: Tolerance range for bid selection around target (default 0.02)
+        deadline_acceptance_time: Time threshold for deadline acceptance (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -74,6 +76,8 @@ class BramAgent(SAONegotiator):
         self,
         beta: float = 0.1,
         min_utility: float = 0.6,
+        bid_tolerance: float = 0.02,
+        deadline_acceptance_time: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -93,6 +97,8 @@ class BramAgent(SAONegotiator):
         )
         self._beta = beta
         self._min_utility = min_utility
+        self._bid_tolerance = bid_tolerance
+        self._deadline_acceptance_time = deadline_acceptance_time
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -290,7 +296,7 @@ class BramAgent(SAONegotiator):
         if self._outcome_space is None:
             return None
 
-        tolerance = 0.02
+        tolerance = self._bid_tolerance
 
         # Get bids near target utility
         candidates = self._outcome_space.get_bids_in_range(
@@ -407,7 +413,7 @@ class BramAgent(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Near deadline - accept if above minimum
-        if t > 0.95 and offer_utility >= self._min_utility:
+        if t > self._deadline_acceptance_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

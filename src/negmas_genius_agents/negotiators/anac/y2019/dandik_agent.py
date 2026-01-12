@@ -71,6 +71,9 @@ class DandikAgent(SAONegotiator):
     Args:
         e: Concession exponent (default 0.2, Boulware-like)
         min_utility: Minimum acceptable utility (default 0.55)
+        near_deadline_time: Time threshold for near deadline (default 0.98)
+        final_deadline_time: Time threshold for final deadline (default 0.99)
+        final_best_ratio: Ratio of best received utility for final deadline acceptance (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -84,6 +87,9 @@ class DandikAgent(SAONegotiator):
         self,
         e: float = 0.2,
         min_utility: float = 0.55,
+        near_deadline_time: float = 0.98,
+        final_deadline_time: float = 0.99,
+        final_best_ratio: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -103,6 +109,9 @@ class DandikAgent(SAONegotiator):
         )
         self._e = e
         self._min_utility = min_utility
+        self._near_deadline_time = near_deadline_time
+        self._final_deadline_time = final_deadline_time
+        self._final_best_ratio = final_best_ratio
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -246,10 +255,13 @@ class DandikAgent(SAONegotiator):
         if offer_utility >= target:
             return ResponseType.ACCEPT_OFFER
 
-        if time >= 0.98 and offer_utility >= self._min_utility:
+        if time >= self._near_deadline_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
-        if time >= 0.99 and offer_utility >= self._best_received_utility * 0.95:
+        if (
+            time >= self._final_deadline_time
+            and offer_utility >= self._best_received_utility * self._final_best_ratio
+        ):
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

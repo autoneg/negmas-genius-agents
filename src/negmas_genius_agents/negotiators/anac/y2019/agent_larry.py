@@ -67,6 +67,7 @@ class AgentLarry(SAONegotiator):
     Args:
         initial_target: Starting target utility (default 0.95)
         min_target: Minimum acceptable utility (default 0.6)
+        deadline_threshold: Time threshold for deadline acceptance (default 0.99)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -80,6 +81,7 @@ class AgentLarry(SAONegotiator):
         self,
         initial_target: float = 0.95,
         min_target: float = 0.6,
+        deadline_threshold: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -99,6 +101,7 @@ class AgentLarry(SAONegotiator):
         )
         self._initial_target = initial_target
         self._min_target = min_target
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -176,7 +179,7 @@ class AgentLarry(SAONegotiator):
         if offer_utility >= target:
             return ResponseType.ACCEPT_OFFER
 
-        if time >= 0.99 and offer_utility >= self._min_target:
+        if time >= self._deadline_threshold and offer_utility >= self._min_target:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

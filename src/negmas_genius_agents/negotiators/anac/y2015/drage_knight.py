@@ -60,6 +60,9 @@ class DrageKnight(SAONegotiator):
 
     Args:
         e: Concession exponent controlling concession speed (default 0.12)
+        bold_time_threshold: Time threshold for bold phase (default 0.4)
+        strategic_time_threshold: Time threshold for strategic phase (default 0.8)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -72,6 +75,9 @@ class DrageKnight(SAONegotiator):
     def __init__(
         self,
         e: float = 0.12,
+        bold_time_threshold: float = 0.4,
+        strategic_time_threshold: float = 0.8,
+        deadline_time_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -90,6 +96,9 @@ class DrageKnight(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._bold_time_threshold = bold_time_threshold
+        self._strategic_time_threshold = strategic_time_threshold
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -150,18 +159,22 @@ class DrageKnight(SAONegotiator):
         if self._opponent_conceding:
             e *= 0.6
 
-        if time < 0.4:
+        if time < self._bold_time_threshold:
             # Bold phase: stay very high
-            f_t = math.pow(time / 0.4, 1 / e)
+            f_t = math.pow(time / self._bold_time_threshold, 1 / e)
             return self._max_utility - (self._max_utility - 0.85) * f_t * 0.2
-        elif time < 0.8:
+        elif time < self._strategic_time_threshold:
             # Strategic phase: gradual concession
-            progress = (time - 0.4) / 0.4
+            progress = (time - self._bold_time_threshold) / (
+                self._strategic_time_threshold - self._bold_time_threshold
+            )
             f_t = math.pow(progress, 1 / e)
             return 0.85 - (0.85 - self._min_acceptable) * f_t * 0.6
         else:
             # Honor phase: consider fair dealing
-            progress = (time - 0.8) / 0.2
+            progress = (time - self._strategic_time_threshold) / (
+                1.0 - self._strategic_time_threshold
+            )
             target = max(self._best_opponent_utility + 0.05, self._min_acceptable)
             current = 0.85 - (0.85 - self._min_acceptable) * 0.6
             return current - (current - target) * progress * 0.8
@@ -181,7 +194,7 @@ class DrageKnight(SAONegotiator):
             return self._outcome_space.outcomes[0].bid
 
         # Bold phase: prefer top bids
-        if time < 0.4:
+        if time < self._bold_time_threshold:
             top_n = max(1, len(candidates) // 5)
             return random.choice(candidates[:top_n]).bid
 
@@ -217,7 +230,7 @@ class DrageKnight(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Honorable end-game: accept fair deals
-        if time > 0.95:
+        if time > self._deadline_time_threshold:
             if offer_utility >= max(
                 self._best_opponent_utility, self._min_acceptable - 0.05
             ):

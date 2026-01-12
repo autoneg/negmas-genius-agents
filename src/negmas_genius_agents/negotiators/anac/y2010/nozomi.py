@@ -33,16 +33,20 @@ class ThreatBasedOpponentModel:
     Nozomi responds with a "threat" - refusing to concede as well.
     """
 
-    def __init__(self, issues: list[str], decay: float = 0.9):
+    def __init__(
+        self, issues: list[str], decay: float = 0.9, concession_threshold: float = 0.02
+    ):
         """
         Initialize the opponent model.
 
         Args:
             issues: List of issue names.
             decay: Decay factor for recency weighting.
+            concession_threshold: Threshold for considering opponent as conceding.
         """
         self._issues = issues
         self._decay = decay
+        self._concession_threshold = concession_threshold
 
         # Track all opponent offers with timestamps
         self._offers: list[tuple[float, float, Outcome]] = []  # (time, utility, bid)
@@ -116,7 +120,7 @@ class ThreatBasedOpponentModel:
         self._concession_rate = last_avg - first_avg
 
         # Threshold for "conceding" - opponent must show meaningful improvement
-        self._is_opponent_conceding = self._concession_rate > 0.02
+        self._is_opponent_conceding = self._concession_rate > self._concession_threshold
 
     @property
     def best_utility(self) -> float:
@@ -245,6 +249,11 @@ class Nozomi(SAONegotiator):
         initial_target: Initial target utility (default 0.95).
         min_utility: Minimum acceptable utility floor (default 0.65).
         threat_factor: Concession slowdown when opponent doesn't concede (default 0.3).
+        concession_exponent: Exponent for concession curve (default 3).
+        deadline_start: Time to start deadline pressure (default 0.95).
+        deadline_buffer: Buffer above opponent's best offer near deadline (default 0.05).
+        final_deadline_time: Time threshold for final deadline acceptance (default 0.99).
+        concession_threshold: Threshold for considering opponent as conceding (default 0.02).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -259,6 +268,11 @@ class Nozomi(SAONegotiator):
         initial_target: float = 0.95,
         min_utility: float = 0.65,
         threat_factor: float = 0.3,
+        concession_exponent: int = 3,
+        deadline_start: float = 0.95,
+        deadline_buffer: float = 0.05,
+        final_deadline_time: float = 0.99,
+        concession_threshold: float = 0.02,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -279,6 +293,11 @@ class Nozomi(SAONegotiator):
         self._initial_target = initial_target
         self._min_utility_param = min_utility
         self._threat_factor = threat_factor
+        self._concession_exponent = concession_exponent
+        self._deadline_start = deadline_start
+        self._deadline_buffer = deadline_buffer
+        self._final_deadline_time = final_deadline_time
+        self._concession_threshold = concession_threshold
 
         # Will be initialized later
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -315,7 +334,9 @@ class Nozomi(SAONegotiator):
         # Initialize opponent model
         if hasattr(self.nmi, "issues") and self.nmi.issues:
             issue_names = [issue.name for issue in self.nmi.issues]
-            self._opponent_model = ThreatBasedOpponentModel(issue_names)
+            self._opponent_model = ThreatBasedOpponentModel(
+                issue_names, concession_threshold=self._concession_threshold
+            )
 
         self._initialized = True
 
@@ -330,7 +351,9 @@ class Nozomi(SAONegotiator):
             # Reinitialize opponent model for new negotiation
             if hasattr(self.nmi, "issues") and self.nmi.issues:
                 issue_names = [issue.name for issue in self.nmi.issues]
-                self._opponent_model = ThreatBasedOpponentModel(issue_names)
+                self._opponent_model = ThreatBasedOpponentModel(
+                    issue_names, concession_threshold=self._concession_threshold
+                )
 
     def _calculate_target(self, time: float) -> float:
         """
@@ -347,7 +370,7 @@ class Nozomi(SAONegotiator):
             Target utility value.
         """
         # Cubic concession curve
-        time_factor = math.pow(time, 3)
+        time_factor = math.pow(time, self._concession_exponent)
 
         # Determine threat factor based on opponent behavior
         if self._opponent_model is not None and self._opponent_model.is_conceding:
@@ -365,11 +388,11 @@ class Nozomi(SAONegotiator):
         target = self._max_utility - concession
 
         # Near deadline adjustment: consider opponent's best offer
-        if time > 0.95 and self._opponent_model is not None:
+        if time > self._deadline_start and self._opponent_model is not None:
             best_opp = self._opponent_model.best_utility
             if best_opp > 0:
                 # Be willing to accept slightly above opponent's best offer
-                deadline_target = best_opp + 0.05
+                deadline_target = best_opp + self._deadline_buffer
                 target = min(target, deadline_target)
 
         return max(target, self._min_utility)
@@ -474,7 +497,7 @@ class Nozomi(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Accept anything above minimum very close to deadline
-        if time >= 0.99 and offer_utility >= self._min_utility:
+        if time >= self._final_deadline_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

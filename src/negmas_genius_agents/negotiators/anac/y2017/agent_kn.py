@@ -64,6 +64,7 @@ class AgentKN(SAONegotiator):
     Args:
         min_utility: Minimum acceptable utility (default 0.55).
         concession_rate: Controls steepness of sigmoid concession (default 5.0).
+        late_game_threshold: Time threshold for late game pressure (default 0.95).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -77,6 +78,7 @@ class AgentKN(SAONegotiator):
         self,
         min_utility: float = 0.55,
         concession_rate: float = 5.0,
+        late_game_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -96,6 +98,7 @@ class AgentKN(SAONegotiator):
         )
         self._min_utility = min_utility
         self._concession_rate = concession_rate
+        self._late_game_threshold = late_game_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -170,7 +173,7 @@ class AgentKN(SAONegotiator):
             threshold = max(threshold - 0.03, self._min_utility)
 
         # Late game pressure
-        if time > 0.95:
+        if time > self._late_game_threshold:
             # Consider accepting opponent's best if it's reasonable
             if self._opponent_best_utility > self._min_utility:
                 threshold = min(threshold, self._opponent_best_utility)

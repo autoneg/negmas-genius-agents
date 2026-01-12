@@ -57,6 +57,9 @@ class AgentBuyog(SAONegotiator):
 
     Args:
         e: Concession exponent controlling concession speed (default 0.15)
+        early_time_threshold: Time threshold for early phase (default 0.2)
+        main_time_threshold: Time threshold for main/late phase transition (default 0.7)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -69,6 +72,9 @@ class AgentBuyog(SAONegotiator):
     def __init__(
         self,
         e: float = 0.15,
+        early_time_threshold: float = 0.2,
+        main_time_threshold: float = 0.7,
+        deadline_time_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -87,6 +93,9 @@ class AgentBuyog(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._early_time_threshold = early_time_threshold
+        self._main_time_threshold = main_time_threshold
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -167,12 +176,14 @@ class AgentBuyog(SAONegotiator):
     def _compute_threshold(self, time: float) -> float:
         """Compute utility threshold with variable concession."""
         # Phase-based concession
-        if time < 0.2:
+        if time < self._early_time_threshold:
             # Early: stay firm
             return self._max_utility * 0.95
-        elif time < 0.7:
+        elif time < self._main_time_threshold:
             # Middle: gradual concession toward Nash
-            progress = (time - 0.2) / 0.5
+            progress = (time - self._early_time_threshold) / (
+                self._main_time_threshold - self._early_time_threshold
+            )
             f_t = math.pow(progress, 1 / self._e)
             target_min = max(self._estimated_nash_utility, 0.6)
             return (
@@ -181,7 +192,9 @@ class AgentBuyog(SAONegotiator):
             )
         else:
             # Late: concede toward Nash point
-            progress = (time - 0.7) / 0.3
+            progress = (time - self._main_time_threshold) / (
+                1.0 - self._main_time_threshold
+            )
             target_min = max(self._estimated_nash_utility - 0.1, 0.5)
             base = (
                 self._max_utility * 0.95
@@ -258,7 +271,10 @@ class AgentBuyog(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # End-game: accept if better than Nash estimate
-        if time > 0.95 and offer_utility >= self._estimated_nash_utility - 0.1:
+        if (
+            time > self._deadline_time_threshold
+            and offer_utility >= self._estimated_nash_utility - 0.1
+        ):
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

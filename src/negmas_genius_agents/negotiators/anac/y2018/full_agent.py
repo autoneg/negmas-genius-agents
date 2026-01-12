@@ -61,6 +61,8 @@ class FullAgent(SAONegotiator):
     Args:
         beta: Concession curve parameter (default 0.05, conservative).
         min_threshold: Minimum acceptance threshold (default 0.65).
+        time_pressure_threshold: Time threshold for time pressure acceptance (default 0.9).
+        deadline_threshold: Time threshold for deadline acceptance (default 0.98).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -74,6 +76,8 @@ class FullAgent(SAONegotiator):
         self,
         beta: float = 0.05,
         min_threshold: float = 0.65,
+        time_pressure_threshold: float = 0.9,
+        deadline_threshold: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -93,6 +97,8 @@ class FullAgent(SAONegotiator):
         )
         self._beta = beta
         self._min_threshold = min_threshold
+        self._time_pressure_threshold = time_pressure_threshold
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -263,10 +269,13 @@ class FullAgent(SAONegotiator):
             return True
 
         # Graduated acceptance near deadline
-        if time >= 0.9 and offer_utility >= self._min_threshold:
+        if (
+            time >= self._time_pressure_threshold
+            and offer_utility >= self._min_threshold
+        ):
             return True
 
-        if time >= 0.98 and offer_utility >= self._min_utility:
+        if time >= self._deadline_threshold and offer_utility >= self._min_utility:
             return True
 
         return False

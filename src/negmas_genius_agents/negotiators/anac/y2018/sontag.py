@@ -43,6 +43,10 @@ class Sontag(SAONegotiator):
     Args:
         window_size: Number of offers to analyze (default 10)
         min_utility: Minimum utility threshold (default 0.6)
+        initial_phase_end: Time to end initial phase (default 0.2).
+        time_pressure_start: Time when time pressure begins (default 0.9).
+        time_pressure_threshold: Time threshold for time pressure acceptance (default 0.95).
+        deadline_threshold: Time threshold for deadline acceptance (default 0.99).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -56,6 +60,10 @@ class Sontag(SAONegotiator):
         self,
         window_size: int = 10,
         min_utility: float = 0.6,
+        initial_phase_end: float = 0.2,
+        time_pressure_start: float = 0.9,
+        time_pressure_threshold: float = 0.95,
+        deadline_threshold: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -75,6 +83,10 @@ class Sontag(SAONegotiator):
         )
         self._window_size = window_size
         self._min_utility_param = min_utility
+        self._initial_phase_end = initial_phase_end
+        self._time_pressure_start = time_pressure_start
+        self._time_pressure_threshold = time_pressure_threshold
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -176,15 +188,19 @@ class Sontag(SAONegotiator):
     def _get_target_utility(self, time: float) -> float:
         """Get target utility with adaptive concession."""
         # Base target with adaptive rate
-        if time < 0.2:
+        if time < self._initial_phase_end:
             target = 1.0
         else:
-            normalized_time = (time - 0.2) / 0.8
+            normalized_time = (time - self._initial_phase_end) / (
+                1.0 - self._initial_phase_end
+            )
             target = 1.0 - self._concession_rate * normalized_time
 
         # Time pressure near deadline
-        if time > 0.9:
-            pressure = (time - 0.9) / 0.1
+        if time > self._time_pressure_start:
+            pressure = (time - self._time_pressure_start) / (
+                1.0 - self._time_pressure_start
+            )
             target = target - 0.2 * pressure
 
         # Scale to utility range
@@ -231,10 +247,13 @@ class Sontag(SAONegotiator):
         if offer_utility >= target:
             return True
 
-        if time >= 0.95 and offer_utility >= self._min_utility_param:
+        if (
+            time >= self._time_pressure_threshold
+            and offer_utility >= self._min_utility_param
+        ):
             return True
 
-        if time >= 0.99 and offer_utility >= self._min_utility:
+        if time >= self._deadline_threshold and offer_utility >= self._min_utility:
             return True
 
         return False

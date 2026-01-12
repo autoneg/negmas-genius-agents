@@ -51,7 +51,7 @@ class AgentTD(SAONegotiator):
         Time-pressure-aware acceptance with three conditions:
         1. Accept if offer utility meets or exceeds target utility
         2. Accept if offer utility is at least as good as next planned bid
-        3. Accept near deadline (t > 0.99) if utility exceeds minimum threshold
+        3. Accept near deadline (t > deadline_acceptance_time) if utility exceeds minimum threshold
         This ensures deals are reached even under aggressive Boulware settings.
 
     **Opponent Modeling:**
@@ -64,6 +64,10 @@ class AgentTD(SAONegotiator):
         e: Concession exponent (default 0.2). Values < 1 give Boulware
            behavior, > 1 give Conceder behavior, = 1 gives linear.
         min_utility: Minimum acceptable utility threshold (default 0.6).
+        exploration_end_time: Time threshold ending exploration phase (default 0.5).
+        deadline_acceptance_time: Time threshold for near-deadline acceptance (default 0.99).
+        exploration_divisor: Divisor for selecting from top candidates during exploration (default 2).
+        exploitation_divisor: Divisor for selecting from top candidates during exploitation (default 4).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -77,6 +81,10 @@ class AgentTD(SAONegotiator):
         self,
         e: float = 0.2,
         min_utility: float = 0.6,
+        exploration_end_time: float = 0.5,
+        deadline_acceptance_time: float = 0.99,
+        exploration_divisor: int = 2,
+        exploitation_divisor: int = 4,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -96,6 +104,10 @@ class AgentTD(SAONegotiator):
         )
         self._e = e
         self._min_utility = min_utility
+        self._exploration_end_time = exploration_end_time
+        self._deadline_acceptance_time = deadline_acceptance_time
+        self._exploration_divisor = exploration_divisor
+        self._exploitation_divisor = exploitation_divisor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -154,12 +166,16 @@ class AgentTD(SAONegotiator):
             return self._outcome_space.outcomes[0].bid
 
         # Simple selection: random from top candidates
-        if time < 0.5:
+        if time < self._exploration_end_time:
             # Early: more exploration
-            return random.choice(candidates[: max(1, len(candidates) // 2)]).bid
+            return random.choice(
+                candidates[: max(1, len(candidates) // self._exploration_divisor)]
+            ).bid
         else:
             # Late: focus on best
-            return random.choice(candidates[: max(1, len(candidates) // 4)]).bid
+            return random.choice(
+                candidates[: max(1, len(candidates) // self._exploitation_divisor)]
+            ).bid
 
     def _update_opponent_model(self, bid: Outcome) -> None:
         """Simple opponent tracking."""
@@ -209,7 +225,7 @@ class AgentTD(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Near deadline, accept if reasonable
-        if time > 0.99 and offer_utility >= self._min_utility:
+        if time > self._deadline_acceptance_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

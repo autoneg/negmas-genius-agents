@@ -62,6 +62,13 @@ class E2Agent(SAONegotiator):
 
     Args:
         min_utility: Minimum acceptable utility threshold (default 0.6).
+        exploration_end_time: Time threshold ending exploration phase (default 0.3).
+        exploitation_start_time: Time threshold starting exploitation phase (default 0.7).
+        deadline_acceptance_time: Time threshold for near-deadline acceptance (default 0.98).
+        concession_multiplier: Multiplier for linear concession (default 0.7).
+        mid_phase_random_probability: Probability of random selection in mid phase (default 0.3).
+        late_phase_time: Time threshold for considering best opponent bid (default 0.9).
+        best_opponent_bid_probability: Probability of using best opponent bid late (default 0.2).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -74,6 +81,13 @@ class E2Agent(SAONegotiator):
     def __init__(
         self,
         min_utility: float = 0.6,
+        exploration_end_time: float = 0.3,
+        exploitation_start_time: float = 0.7,
+        deadline_acceptance_time: float = 0.98,
+        concession_multiplier: float = 0.7,
+        mid_phase_random_probability: float = 0.3,
+        late_phase_time: float = 0.9,
+        best_opponent_bid_probability: float = 0.2,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -92,6 +106,13 @@ class E2Agent(SAONegotiator):
             **kwargs,
         )
         self._min_utility = min_utility
+        self._exploration_end_time = exploration_end_time
+        self._exploitation_start_time = exploitation_start_time
+        self._deadline_acceptance_time = deadline_acceptance_time
+        self._concession_multiplier = concession_multiplier
+        self._mid_phase_random_probability = mid_phase_random_probability
+        self._late_phase_time = late_phase_time
+        self._best_opponent_bid_probability = best_opponent_bid_probability
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -142,7 +163,10 @@ class E2Agent(SAONegotiator):
         max_util = self._outcome_space.max_utility
 
         # Linear concession
-        target = max_util - (max_util - self._min_utility) * time * 0.7
+        target = (
+            max_util
+            - (max_util - self._min_utility) * time * self._concession_multiplier
+        )
         return max(self._min_utility, target)
 
     def _select_bid(self, time: float) -> Outcome | None:
@@ -157,19 +181,19 @@ class E2Agent(SAONegotiator):
             return self._outcome_space.outcomes[0].bid
 
         # Early exploration: random from candidates
-        if time < 0.3:
+        if time < self._exploration_end_time:
             return random.choice(candidates).bid
 
         # Mid-game: mix of random and best
-        if time < 0.7:
-            if random.random() < 0.3:
+        if time < self._exploitation_start_time:
+            if random.random() < self._mid_phase_random_probability:
                 return random.choice(candidates).bid
             return candidates[0].bid
 
         # Late game: mostly best offers, occasionally best opponent
-        if time > 0.9 and self._best_opponent_bid is not None:
+        if time > self._late_phase_time and self._best_opponent_bid is not None:
             if self._best_opponent_utility >= target:
-                if random.random() < 0.2:
+                if random.random() < self._best_opponent_bid_probability:
                     return self._best_opponent_bid
 
         return candidates[0].bid
@@ -214,7 +238,7 @@ class E2Agent(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Near deadline, accept if reasonable
-        if time > 0.98 and offer_utility >= self._min_utility:
+        if time > self._deadline_acceptance_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

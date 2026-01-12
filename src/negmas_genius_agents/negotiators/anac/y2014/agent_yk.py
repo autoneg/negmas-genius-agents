@@ -39,10 +39,10 @@ class AgentYK(SAONegotiator):
         Three-phase approach based on negotiation time:
         1. Hardball phase (t < hardball_time): Maintains maximum utility target,
            making only top-tier offers without concession.
-        2. Concession phase (hardball_time <= t < 0.95): Gradual concession
+        2. Concession phase (hardball_time <= t < concession_end_time): Gradual concession
            using exponential curve: concession = (normalized_time^speed) * range.
-           Target decreases at 60% of full potential concession.
-        3. Final phase (t >= 0.95): Rapid concession with linear decay,
+           Target decreases at concession_factor of full potential concession.
+        3. Final phase (t >= concession_end_time): Rapid concession with linear decay,
            preparing for deal closure while maintaining minimum threshold.
 
         After hardball phase, opponent model influences bid selection by
@@ -52,20 +52,26 @@ class AgentYK(SAONegotiator):
         Phase-aware acceptance with fallback conditions:
         1. Accept if offer utility meets phase-appropriate target
         2. Accept if offer matches or exceeds next planned bid utility
-        3. Final phase acceptance (t > 0.99) for any offer above minimum
+        3. Final phase acceptance (t > final_acceptance_time) for any offer above minimum
         The strategy becomes progressively more flexible as deadline approaches.
 
     **Opponent Modeling:**
         Frequency-based preference learning activated after hardball phase:
         - Tracks value frequencies per issue from opponent bid history
         - Normalizes frequencies to estimate relative value preferences
-        - Combines own utility with opponent utility estimate (30% weight)
+        - Combines own utility with opponent utility estimate (opponent_weight)
           for bid scoring when selecting offers
         - Best opponent bid tracked for potential late-game reference
 
     Args:
         hardball_time: Duration of initial hardball phase (default 0.3).
         concession_speed: Exponent for concession curve steepness (default 2.0).
+        concession_end_time: Time threshold for ending concession phase (default 0.95).
+        final_acceptance_time: Time threshold for final phase acceptance (default 0.99).
+        min_utility_floor: Floor value for minimum utility (default 0.5).
+        concession_factor: Factor applied to concession amount (default 0.6).
+        final_phase_factor: Factor for final phase linear decay (default 0.5).
+        opponent_weight: Weight for opponent utility in bid scoring (default 0.3).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -79,6 +85,12 @@ class AgentYK(SAONegotiator):
         self,
         hardball_time: float = 0.3,
         concession_speed: float = 2.0,
+        concession_end_time: float = 0.95,
+        final_acceptance_time: float = 0.99,
+        min_utility_floor: float = 0.5,
+        concession_factor: float = 0.6,
+        final_phase_factor: float = 0.5,
+        opponent_weight: float = 0.3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -98,6 +110,12 @@ class AgentYK(SAONegotiator):
         )
         self._hardball_time = hardball_time
         self._concession_speed = concession_speed
+        self._concession_end_time = concession_end_time
+        self._final_acceptance_time = final_acceptance_time
+        self._min_utility_floor = min_utility_floor
+        self._concession_factor = concession_factor
+        self._final_phase_factor = final_phase_factor
+        self._opponent_weight = opponent_weight
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -108,7 +126,7 @@ class AgentYK(SAONegotiator):
         self._opponent_value_freq: dict[int, dict] = {}
 
         # State
-        self._min_utility: float = 0.5
+        self._min_utility: float = min_utility_floor
         self._max_utility: float = 1.0
 
     def _initialize(self) -> None:
@@ -122,7 +140,9 @@ class AgentYK(SAONegotiator):
         self._outcome_space = SortedOutcomeSpace(ufun=self.ufun)
         if self._outcome_space.outcomes:
             self._max_utility = self._outcome_space.max_utility
-            self._min_utility = max(0.5, self._outcome_space.min_utility)
+            self._min_utility = max(
+                self._min_utility_floor, self._outcome_space.min_utility
+            )
         self._initialized = True
 
     def on_negotiation_start(self, state: SAOState) -> None:
@@ -179,20 +199,24 @@ class AgentYK(SAONegotiator):
             return self._max_utility
 
         # Concession phase
-        if time < 0.95:
+        if time < self._concession_end_time:
             # Normalize time to concession phase
-            phase_time = (time - self._hardball_time) / (0.95 - self._hardball_time)
+            phase_time = (time - self._hardball_time) / (
+                self._concession_end_time - self._hardball_time
+            )
             # Exponential concession curve
             concession = (phase_time**self._concession_speed) * (
                 self._max_utility - self._min_utility
             )
-            target = self._max_utility - concession * 0.6
+            target = self._max_utility - concession * self._concession_factor
             return max(self._min_utility, target)
 
         # Final phase - rapid concession
-        final_time = (time - 0.95) / 0.05
+        final_time = (time - self._concession_end_time) / (
+            1.0 - self._concession_end_time
+        )
         target = self._min_utility + (self._max_utility - self._min_utility) * (
-            1 - final_time * 0.5
+            1 - final_time * self._final_phase_factor
         )
         return max(self._min_utility, target)
 
@@ -215,7 +239,7 @@ class AgentYK(SAONegotiator):
             for bd in candidates:
                 opp_util = self._estimate_opponent_utility(bd.bid)
                 # Favor bids that opponent might like
-                score = bd.utility + 0.3 * opp_util
+                score = bd.utility + self._opponent_weight * opp_util
                 if score > best_score:
                     best_score = score
                     best_bid = bd.bid
@@ -264,7 +288,7 @@ class AgentYK(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Final phase - accept anything reasonable
-        if time > 0.99 and offer_utility >= self._min_utility:
+        if time > self._final_acceptance_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

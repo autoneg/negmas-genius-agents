@@ -64,6 +64,15 @@ class GAgent(SAONegotiator):
         initial_threshold: Starting utility threshold (default 0.95)
         min_threshold: Minimum acceptable utility (default 0.6)
         concession_rate: Base rate of concession per time unit (default 0.1)
+        time_pressure_threshold: Time after which to apply time pressure (default 0.95)
+        emergency_acceptance_threshold: Time after which to accept anything above min_threshold (default 0.99)
+        opponent_conceding_threshold: Threshold for detecting opponent concession (default 0.02)
+        opponent_tough_threshold: Threshold for detecting tough opponent (default -0.02)
+        concession_slow_factor: Factor to slow concession when opponent concedes (default 0.7)
+        concession_fast_factor: Factor to speed concession when opponent is tough (default 1.3)
+        time_pressure_multiplier: Multiplier for time pressure adjustment (default 0.3)
+        early_game_offers: Number of opponent offers before using Nash scoring (default 10)
+        top_k_divisor: Divisor for selecting top candidates (default 4)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -78,6 +87,15 @@ class GAgent(SAONegotiator):
         initial_threshold: float = 0.95,
         min_threshold: float = 0.6,
         concession_rate: float = 0.1,
+        time_pressure_threshold: float = 0.95,
+        emergency_acceptance_threshold: float = 0.99,
+        opponent_conceding_threshold: float = 0.02,
+        opponent_tough_threshold: float = -0.02,
+        concession_slow_factor: float = 0.7,
+        concession_fast_factor: float = 1.3,
+        time_pressure_multiplier: float = 0.3,
+        early_game_offers: int = 10,
+        top_k_divisor: int = 4,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -98,6 +116,15 @@ class GAgent(SAONegotiator):
         self._initial_threshold = initial_threshold
         self._min_threshold = min_threshold
         self._concession_rate = concession_rate
+        self._time_pressure_threshold = time_pressure_threshold
+        self._emergency_acceptance_threshold = emergency_acceptance_threshold
+        self._opponent_conceding_threshold = opponent_conceding_threshold
+        self._opponent_tough_threshold = opponent_tough_threshold
+        self._concession_slow_factor = concession_slow_factor
+        self._concession_fast_factor = concession_fast_factor
+        self._time_pressure_multiplier = time_pressure_multiplier
+        self._early_game_offers = early_game_offers
+        self._top_k_divisor = top_k_divisor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -198,12 +225,12 @@ class GAgent(SAONegotiator):
         base_concession = self._concession_rate * math.pow(time, 2)
 
         # Adjust based on opponent behavior
-        if self._opponent_concession_estimate > 0.02:
+        if self._opponent_concession_estimate > self._opponent_conceding_threshold:
             # Opponent is conceding - stay tougher
-            adjusted_rate = base_concession * 0.7
-        elif self._opponent_concession_estimate < -0.02:
+            adjusted_rate = base_concession * self._concession_slow_factor
+        elif self._opponent_concession_estimate < self._opponent_tough_threshold:
             # Opponent is getting tougher - concede more
-            adjusted_rate = base_concession * 1.3
+            adjusted_rate = base_concession * self._concession_fast_factor
         else:
             adjusted_rate = base_concession
 
@@ -213,10 +240,15 @@ class GAgent(SAONegotiator):
         )
 
         # Apply time pressure near deadline
-        if time > 0.95:
-            time_pressure = (time - 0.95) / 0.05
+        if time > self._time_pressure_threshold:
+            time_pressure = (time - self._time_pressure_threshold) / (
+                1 - self._time_pressure_threshold
+            )
             threshold = (
-                threshold - time_pressure * (threshold - self._min_threshold) * 0.3
+                threshold
+                - time_pressure
+                * (threshold - self._min_threshold)
+                * self._time_pressure_multiplier
             )
 
         self._current_threshold = max(threshold, self._min_threshold)
@@ -243,7 +275,7 @@ class GAgent(SAONegotiator):
             return None
 
         # Early game: just return high utility bids
-        if self._total_opponent_offers < 10:
+        if self._total_opponent_offers < self._early_game_offers:
             return random.choice(candidates).bid
 
         # Score candidates by Nash product
@@ -261,7 +293,7 @@ class GAgent(SAONegotiator):
         scored_candidates.sort(key=lambda x: x[1], reverse=True)
 
         # Select from top candidates with some randomness
-        top_k = max(1, len(scored_candidates) // 4)
+        top_k = max(1, len(scored_candidates) // self._top_k_divisor)
         return random.choice(scored_candidates[:top_k])[0]
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:
@@ -303,7 +335,10 @@ class GAgent(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Emergency acceptance near deadline
-        if time > 0.99 and offer_utility >= self._min_threshold:
+        if (
+            time > self._emergency_acceptance_threshold
+            and offer_utility >= self._min_threshold
+        ):
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

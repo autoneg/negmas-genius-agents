@@ -53,6 +53,7 @@ class PonPokoRampage(SAONegotiator):
 
     Args:
         pattern: Which threshold pattern to use (0-4, or None for random).
+        aggressive_drop_time: Time threshold for aggressive drop in pattern 3 (default 0.95).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -65,6 +66,7 @@ class PonPokoRampage(SAONegotiator):
     def __init__(
         self,
         pattern: int | None = None,
+        aggressive_drop_time: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -83,6 +85,7 @@ class PonPokoRampage(SAONegotiator):
             **kwargs,
         )
         self._pattern = pattern
+        self._aggressive_drop_time = aggressive_drop_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -137,7 +140,7 @@ class PonPokoRampage(SAONegotiator):
             # Conservative then aggressive drop
             self._threshold_high = 1 - 0.08 * time
             self._threshold_low = 1 - 0.15 * time
-            if time > 0.95:
+            if time > self._aggressive_drop_time:
                 self._threshold_low = 1 - 0.4 * time
         elif self._pattern == 4:
             # Time-scaled oscillation

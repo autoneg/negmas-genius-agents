@@ -61,6 +61,9 @@ class ConDAgent(SAONegotiator):
     Args:
         base_rate: Base concession rate (default 0.08).
         min_utility: Minimum utility threshold (default 0.6).
+        conditional_acceptance_time: Time threshold for conditional acceptance (default 0.85).
+        time_pressure_threshold: Time threshold for time pressure acceptance (default 0.95).
+        deadline_threshold: Time threshold for deadline acceptance (default 0.99).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -74,6 +77,9 @@ class ConDAgent(SAONegotiator):
         self,
         base_rate: float = 0.08,
         min_utility: float = 0.6,
+        conditional_acceptance_time: float = 0.85,
+        time_pressure_threshold: float = 0.95,
+        deadline_threshold: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -93,6 +99,9 @@ class ConDAgent(SAONegotiator):
         )
         self._base_rate = base_rate
         self._min_utility_param = min_utility
+        self._conditional_acceptance_time = conditional_acceptance_time
+        self._time_pressure_threshold = time_pressure_threshold
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -192,7 +201,7 @@ class ConDAgent(SAONegotiator):
             return True
 
         # Conditional acceptance near deadline
-        if time >= 0.85:
+        if time >= self._conditional_acceptance_time:
             if self._is_cooperative:
                 # Be more lenient with cooperative opponent
                 if offer_utility >= target * 0.9:
@@ -203,10 +212,13 @@ class ConDAgent(SAONegotiator):
                     return True
 
         # Time pressure
-        if time >= 0.95 and offer_utility >= self._min_utility_param:
+        if (
+            time >= self._time_pressure_threshold
+            and offer_utility >= self._min_utility_param
+        ):
             return True
 
-        if time >= 0.99 and offer_utility >= self._min_utility:
+        if time >= self._deadline_threshold and offer_utility >= self._min_utility:
             return True
 
         return False

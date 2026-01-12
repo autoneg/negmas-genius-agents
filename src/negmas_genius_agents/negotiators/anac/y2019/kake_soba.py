@@ -56,6 +56,8 @@ class KakeSoba(SAONegotiator):
 
     Args:
         min_utility: Fixed minimum utility threshold (default 0.85)
+        deadline_threshold: Time threshold for deadline acceptance (default 0.99)
+        deadline_ratio: Ratio of min_utility for deadline acceptance (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -68,6 +70,8 @@ class KakeSoba(SAONegotiator):
     def __init__(
         self,
         min_utility: float = 0.85,
+        deadline_threshold: float = 0.99,
+        deadline_ratio: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -86,6 +90,8 @@ class KakeSoba(SAONegotiator):
             **kwargs,
         )
         self._min_utility = min_utility
+        self._deadline_threshold = deadline_threshold
+        self._deadline_ratio = deadline_ratio
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -218,7 +224,10 @@ class KakeSoba(SAONegotiator):
 
         # Near deadline, slightly lower threshold
         time = state.relative_time
-        if time >= 0.99 and offer_utility >= self._min_utility * 0.95:
+        if (
+            time >= self._deadline_threshold
+            and offer_utility >= self._min_utility * self._deadline_ratio
+        ):
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

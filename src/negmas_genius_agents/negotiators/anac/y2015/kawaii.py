@@ -60,6 +60,8 @@ class Kawaii(SAONegotiator):
 
     Args:
         e: Initial concession exponent (default 0.2)
+        early_time_threshold: Time before which agent stays high with no concession (default 0.3)
+        deadline_time_threshold: Time after which agent becomes more accepting (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -72,6 +74,8 @@ class Kawaii(SAONegotiator):
     def __init__(
         self,
         e: float = 0.2,
+        early_time_threshold: float = 0.3,
+        deadline_time_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -90,6 +94,8 @@ class Kawaii(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._early_time_threshold = early_time_threshold
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -163,12 +169,14 @@ class Kawaii(SAONegotiator):
         e = self._adaptive_e(time)
 
         # Kawaii formula: gentle but persistent
-        if time < 0.3:
+        if time < self._early_time_threshold:
             # Early phase: stay high
             f_t = 0.0
         else:
             # Main phase: smooth concession
-            adjusted_time = (time - 0.3) / 0.7
+            adjusted_time = (time - self._early_time_threshold) / (
+                1.0 - self._early_time_threshold
+            )
             f_t = math.pow(adjusted_time, 1 / e) if e != 0 else adjusted_time
 
         target = self._max_utility - (self._max_utility - self._min_utility) * 0.4 * f_t
@@ -222,7 +230,7 @@ class Kawaii(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline, be more accepting
-        if time > 0.95:
+        if time > self._deadline_time_threshold:
             if offer_utility >= self._min_utility + 0.3 * (
                 self._max_utility - self._min_utility
             ):

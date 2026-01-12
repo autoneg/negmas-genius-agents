@@ -76,6 +76,9 @@ class ParsCat(SAONegotiator):
     Args:
         e: Concession exponent for Boulware curve (default 0.2)
         min_utility: Minimum acceptable utility threshold (default 0.65)
+        early_phase_end: End time for early conservative phase (default 0.1)
+        early_time: Time threshold for early phase best-bid offering (default 0.05)
+        deadline_time: Time threshold for deadline acceptance (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -89,6 +92,9 @@ class ParsCat(SAONegotiator):
         self,
         e: float = 0.2,
         min_utility: float = 0.65,
+        early_phase_end: float = 0.1,
+        early_time: float = 0.05,
+        deadline_time: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -108,6 +114,9 @@ class ParsCat(SAONegotiator):
         )
         self._e = e
         self._min_utility = min_utility
+        self._early_phase_end = early_phase_end
+        self._early_time = early_time
+        self._deadline_time = deadline_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -244,7 +253,7 @@ class ParsCat(SAONegotiator):
 
     def _get_target_utility(self, time: float) -> float:
         """Calculate target utility using Boulware concession."""
-        if time < 0.1:
+        if time < self._early_phase_end:
             return self._max_utility * 0.98
 
         # Boulware concession formula
@@ -295,7 +304,7 @@ class ParsCat(SAONegotiator):
         time = state.relative_time
 
         # Early game: offer best bid
-        if time < 0.05:
+        if time < self._early_time:
             return self._best_bid
 
         return self._select_bid(time)
@@ -331,7 +340,7 @@ class ParsCat(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline: accept if above reservation
-        if time >= 0.95 and offer_utility >= self._reservation_value:
+        if time >= self._deadline_time and offer_utility >= self._reservation_value:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

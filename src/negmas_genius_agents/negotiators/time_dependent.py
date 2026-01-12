@@ -268,13 +268,26 @@ class TimeDependentAgentBoulware(TimeDependentAgent):
     A Boulware agent is reluctant to concede. It maintains its initial offer
     for most of the negotiation and only concedes near the deadline.
 
-    Uses e=0.2, which means concessions are slow and happen mainly near the end.
+    Uses e=0.2 by default, which means concessions are slow and happen mainly near the end.
 
     This is a reimplementation of Genius's TimeDependentAgentBoulware.
+
+    Args:
+        e: Concession exponent (default 0.2 for Boulware behavior).
+        k: Initial concession constant (default 0.0).
+        preferences: NegMAS preferences/utility function.
+        ufun: Utility function (overrides preferences if given).
+        name: Negotiator name.
+        parent: Parent controller.
+        owner: Agent that owns this negotiator.
+        id: Unique identifier.
+        **kwargs: Additional arguments passed to parent.
     """
 
     def __init__(
         self,
+        e: float = 0.2,
+        k: float = 0.0,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -284,8 +297,8 @@ class TimeDependentAgentBoulware(TimeDependentAgent):
         **kwargs,
     ):
         super().__init__(
-            e=0.2,
-            k=0.0,
+            e=e,
+            k=k,
             preferences=preferences,
             ufun=ufun,
             name=name,
@@ -303,13 +316,26 @@ class TimeDependentAgentConceder(TimeDependentAgent):
     A Conceder agent is eager to concede. It moves quickly toward its
     reservation value early in the negotiation.
 
-    Uses e=2.0, which means fast concessions early in the negotiation.
+    Uses e=2.0 by default, which means fast concessions early in the negotiation.
 
     This is a reimplementation of Genius's TimeDependentAgentConceder.
+
+    Args:
+        e: Concession exponent (default 2.0 for Conceder behavior).
+        k: Initial concession constant (default 0.0).
+        preferences: NegMAS preferences/utility function.
+        ufun: Utility function (overrides preferences if given).
+        name: Negotiator name.
+        parent: Parent controller.
+        owner: Agent that owns this negotiator.
+        id: Unique identifier.
+        **kwargs: Additional arguments passed to parent.
     """
 
     def __init__(
         self,
+        e: float = 2.0,
+        k: float = 0.0,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -319,8 +345,8 @@ class TimeDependentAgentConceder(TimeDependentAgent):
         **kwargs,
     ):
         super().__init__(
-            e=2.0,
-            k=0.0,
+            e=e,
+            k=k,
             preferences=preferences,
             ufun=ufun,
             name=name,
@@ -337,11 +363,24 @@ class TimeDependentAgentLinear(TimeDependentAgent):
 
     A Linear agent concedes at a constant rate throughout the negotiation.
 
-    Uses e=1.0, which means linear concession over time.
+    Uses e=1.0 by default, which means linear concession over time.
+
+    Args:
+        e: Concession exponent (default 1.0 for Linear behavior).
+        k: Initial concession constant (default 0.0).
+        preferences: NegMAS preferences/utility function.
+        ufun: Utility function (overrides preferences if given).
+        name: Negotiator name.
+        parent: Parent controller.
+        owner: Agent that owns this negotiator.
+        id: Unique identifier.
+        **kwargs: Additional arguments passed to parent.
     """
 
     def __init__(
         self,
+        e: float = 1.0,
+        k: float = 0.0,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -351,8 +390,8 @@ class TimeDependentAgentLinear(TimeDependentAgent):
         **kwargs,
     ):
         super().__init__(
-            e=1.0,
-            k=0.0,
+            e=e,
+            k=k,
             preferences=preferences,
             ufun=ufun,
             name=name,
@@ -369,11 +408,24 @@ class TimeDependentAgentHardliner(TimeDependentAgent):
 
     A Hardliner agent always offers its best possible bid and never concedes.
 
-    Uses e=0, which means no concession at all.
+    Uses e=0 by default, which means no concession at all.
+
+    Args:
+        e: Concession exponent (default 0.0 for Hardliner behavior).
+        k: Initial concession constant (default 0.0).
+        preferences: NegMAS preferences/utility function.
+        ufun: Utility function (overrides preferences if given).
+        name: Negotiator name.
+        parent: Parent controller.
+        owner: Agent that owns this negotiator.
+        id: Unique identifier.
+        **kwargs: Additional arguments passed to parent.
     """
 
     def __init__(
         self,
+        e: float = 0.0,
+        k: float = 0.0,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -383,8 +435,8 @@ class TimeDependentAgentHardliner(TimeDependentAgent):
         **kwargs,
     ):
         super().__init__(
-            e=0.0,
-            k=0.0,
+            e=e,
+            k=k,
             preferences=preferences,
             ufun=ufun,
             name=name,

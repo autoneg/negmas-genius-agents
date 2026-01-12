@@ -79,6 +79,30 @@ class IAMhaggler2012(SAONegotiator):
         min_utility_target: Minimum acceptable utility (default 0.55).
         concession_rate: Base concession rate exponent (default 0.04).
             Lower values result in tougher (slower) concession.
+        recency_weight_factor: Factor for recency weighting in opponent model
+            (default 0.05).
+        opponent_conceding_threshold: Threshold for detecting opponent concession
+            (default 0.01).
+        opponent_tough_threshold: Threshold for detecting tough opponent
+            (default 0.001).
+        min_opponent_bids_for_tough: Minimum bids to detect tough opponent
+            (default 10).
+        concession_rate_tough_factor: Factor to multiply concession rate when
+            opponent is conceding (default 0.7).
+        concession_rate_flexible_factor: Factor to multiply concession rate when
+            opponent is tough (default 1.5).
+        min_concession_rate: Minimum concession rate (default 0.02).
+        max_concession_rate: Maximum concession rate (default 0.15).
+        best_opponent_multiplier: Multiplier for best opponent utility in
+            target calculation (default 0.95).
+        bid_tolerance: Tolerance for bid selection range (default 0.025).
+        nash_own_utility_bonus: Bonus for own utility in Nash score (default 0.01).
+        near_deadline_time: Time threshold for accepting minimum target
+            (default 0.97).
+        final_deadline_time: Time threshold for accepting best opponent bid
+            (default 0.995).
+        final_accept_multiplier: Multiplier for best opponent utility at final
+            deadline (default 0.95).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -93,6 +117,20 @@ class IAMhaggler2012(SAONegotiator):
         max_utility_target: float = 1.0,
         min_utility_target: float = 0.55,
         concession_rate: float = 0.04,
+        recency_weight_factor: float = 0.05,
+        opponent_conceding_threshold: float = 0.01,
+        opponent_tough_threshold: float = 0.001,
+        min_opponent_bids_for_tough: int = 10,
+        concession_rate_tough_factor: float = 0.7,
+        concession_rate_flexible_factor: float = 1.5,
+        min_concession_rate: float = 0.02,
+        max_concession_rate: float = 0.15,
+        best_opponent_multiplier: float = 0.95,
+        bid_tolerance: float = 0.025,
+        nash_own_utility_bonus: float = 0.01,
+        near_deadline_time: float = 0.97,
+        final_deadline_time: float = 0.995,
+        final_accept_multiplier: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -114,6 +152,20 @@ class IAMhaggler2012(SAONegotiator):
         self._min_utility_target = min_utility_target
         self._base_concession_rate = concession_rate
         self._concession_rate = concession_rate
+        self._recency_weight_factor = recency_weight_factor
+        self._opponent_conceding_threshold = opponent_conceding_threshold
+        self._opponent_tough_threshold = opponent_tough_threshold
+        self._min_opponent_bids_for_tough = min_opponent_bids_for_tough
+        self._concession_rate_tough_factor = concession_rate_tough_factor
+        self._concession_rate_flexible_factor = concession_rate_flexible_factor
+        self._min_concession_rate = min_concession_rate
+        self._max_concession_rate = max_concession_rate
+        self._best_opponent_multiplier = best_opponent_multiplier
+        self._bid_tolerance = bid_tolerance
+        self._nash_own_utility_bonus = nash_own_utility_bonus
+        self._near_deadline_time = near_deadline_time
+        self._final_deadline_time = final_deadline_time
+        self._final_accept_multiplier = final_accept_multiplier
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -216,7 +268,7 @@ class IAMhaggler2012(SAONegotiator):
 
         # Update value frequencies with recency weighting
         issues = self.nmi.issues
-        recency_weight = 1.0 + 0.05 * len(self._opponent_bids)
+        recency_weight = 1.0 + self._recency_weight_factor * len(self._opponent_bids)
 
         for i, issue in enumerate(issues):
             val = bid[i] if isinstance(bid, tuple) else bid.get(issue.name)
@@ -332,12 +384,21 @@ class IAMhaggler2012(SAONegotiator):
         # Adapt concession rate based on opponent behavior
         e = self._concession_rate
 
-        if self._opponent_concession_rate > 0.01:
+        if self._opponent_concession_rate > self._opponent_conceding_threshold:
             # Opponent is conceding - we can be tougher
-            e = max(0.02, self._base_concession_rate * 0.7)
-        elif len(self._opponent_bids) > 10 and self._opponent_concession_rate < 0.001:
+            e = max(
+                self._min_concession_rate,
+                self._base_concession_rate * self._concession_rate_tough_factor,
+            )
+        elif (
+            len(self._opponent_bids) > self._min_opponent_bids_for_tough
+            and self._opponent_concession_rate < self._opponent_tough_threshold
+        ):
             # Opponent is tough - concede a bit faster
-            e = min(0.15, self._base_concession_rate * 1.5)
+            e = min(
+                self._max_concession_rate,
+                self._base_concession_rate * self._concession_rate_flexible_factor,
+            )
 
         # Boulware-like concession: u(t) = max - (max - min) * t^(1/e)
         if e > 0:
@@ -355,7 +416,9 @@ class IAMhaggler2012(SAONegotiator):
 
         # If opponent is giving us good bids, stay high
         if self._best_opponent_utility > target:
-            target = max(target, self._best_opponent_utility * 0.95)
+            target = max(
+                target, self._best_opponent_utility * self._best_opponent_multiplier
+            )
 
         return target
 
@@ -368,12 +431,10 @@ class IAMhaggler2012(SAONegotiator):
         if self._outcome_space is None:
             return None
 
-        tolerance = 0.025
-
         # Get bids near target utility
         candidates = self._outcome_space.get_bids_in_range(
-            target_utility - tolerance,
-            min(1.0, target_utility + tolerance),
+            target_utility - self._bid_tolerance,
+            min(1.0, target_utility + self._bid_tolerance),
         )
 
         if not candidates:
@@ -393,7 +454,7 @@ class IAMhaggler2012(SAONegotiator):
 
             # Nash product with slight preference for our utility
             nash_score = our_util * opp_util
-            score = nash_score + 0.01 * our_util
+            score = nash_score + self._nash_own_utility_bonus * our_util
 
             if score > best_score:
                 best_score = score
@@ -422,11 +483,18 @@ class IAMhaggler2012(SAONegotiator):
                 return True
 
         # Near deadline - accept if above minimum
-        if time > 0.97 and offer_utility >= self._min_utility_target:
+        if (
+            time > self._near_deadline_time
+            and offer_utility >= self._min_utility_target
+        ):
             return True
 
         # Very near deadline - accept best we've seen
-        if time > 0.995 and offer_utility >= self._best_opponent_utility * 0.95:
+        if (
+            time > self._final_deadline_time
+            and offer_utility
+            >= self._best_opponent_utility * self._final_accept_multiplier
+        ):
             return True
 
         return False

@@ -70,6 +70,7 @@ class MINF(SAONegotiator):
     Args:
         concession_rate: Polynomial exponent for concession (default 1.0, linear)
         min_utility: Minimum acceptable utility (default 0.6)
+        deadline_threshold: Time threshold for deadline acceptance (default 0.99)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -83,6 +84,7 @@ class MINF(SAONegotiator):
         self,
         concession_rate: float = 1.0,
         min_utility: float = 0.6,
+        deadline_threshold: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -102,6 +104,7 @@ class MINF(SAONegotiator):
         )
         self._concession_rate = concession_rate
         self._min_utility = min_utility
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -187,7 +190,7 @@ class MINF(SAONegotiator):
         if offer_utility >= target:
             return ResponseType.ACCEPT_OFFER
 
-        if time >= 0.99 and offer_utility >= self._min_utility:
+        if time >= self._deadline_threshold and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

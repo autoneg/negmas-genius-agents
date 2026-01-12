@@ -62,6 +62,8 @@ class BetaOne(SAONegotiator):
     Args:
         min_utility: Minimum acceptable utility floor (default 0.65).
         initial_threshold: Starting threshold for acceptance (default 0.95).
+        phase1_end: End of phase 1 (information gathering) (default 0.4).
+        phase2_end: End of phase 2 (adaptive phase) (default 0.8).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -75,6 +77,8 @@ class BetaOne(SAONegotiator):
         self,
         min_utility: float = 0.65,
         initial_threshold: float = 0.95,
+        phase1_end: float = 0.4,
+        phase2_end: float = 0.8,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -94,6 +98,8 @@ class BetaOne(SAONegotiator):
         )
         self._min_utility = min_utility
         self._initial_threshold = initial_threshold
+        self._phase1_end = phase1_end
+        self._phase2_end = phase2_end
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -201,9 +207,9 @@ class BetaOne(SAONegotiator):
 
     def _get_phase(self, time: float) -> int:
         """Determine negotiation phase based on time."""
-        if time < 0.4:
+        if time < self._phase1_end:
             return 1  # Information gathering
-        elif time < 0.8:
+        elif time < self._phase2_end:
             return 2  # Adaptive phase
         else:
             return 3  # Concession phase
@@ -231,7 +237,9 @@ class BetaOne(SAONegotiator):
             base_threshold = self._initial_threshold - concession_rate * time
         else:
             # Phase 3: More aggressive concession to reach agreement
-            time_pressure = (time - 0.8) / 0.2  # 0 to 1 in phase 3
+            time_pressure = (time - self._phase2_end) / (
+                1.0 - self._phase2_end
+            )  # 0 to 1 in phase 3
             base_threshold = self._initial_threshold - 0.3 - 0.15 * time_pressure
 
             # If opponent is making good offers, be willing to accept

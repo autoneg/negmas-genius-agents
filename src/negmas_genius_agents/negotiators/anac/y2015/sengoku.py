@@ -60,6 +60,9 @@ class SENGOKU(SAONegotiator):
 
     Args:
         e: Concession exponent (default 0.1, very Boulware)
+        defense_time_threshold: Time threshold for defense phase (default 0.4)
+        tactical_time_threshold: Time threshold for tactical phase (default 0.7)
+        alliance_time_threshold: Time threshold for alliance phase (default 0.9)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -72,6 +75,9 @@ class SENGOKU(SAONegotiator):
     def __init__(
         self,
         e: float = 0.1,
+        defense_time_threshold: float = 0.4,
+        tactical_time_threshold: float = 0.7,
+        alliance_time_threshold: float = 0.9,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -90,6 +96,9 @@ class SENGOKU(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._defense_time_threshold = defense_time_threshold
+        self._tactical_time_threshold = tactical_time_threshold
+        self._alliance_time_threshold = alliance_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -153,11 +162,11 @@ class SENGOKU(SAONegotiator):
 
     def _update_battle_phase(self, time: float) -> None:
         """Progress through battle phases."""
-        if time < 0.4:
+        if time < self._defense_time_threshold:
             self._battle_phase = 1  # Defense
-        elif time < 0.7:
+        elif time < self._tactical_time_threshold:
             self._battle_phase = 2  # Tactical
-        elif time < 0.9:
+        elif time < self._alliance_time_threshold:
             self._battle_phase = 3  # Alliance
         else:
             self._battle_phase = 4  # Victory
@@ -177,17 +186,23 @@ class SENGOKU(SAONegotiator):
             return self._territory
         elif self._battle_phase == 2:
             # Tactical phase: gradual concession
-            progress = (time - 0.4) / 0.3
+            progress = (time - self._defense_time_threshold) / (
+                self._tactical_time_threshold - self._defense_time_threshold
+            )
             f_t = math.pow(progress, 1 / e)
             return self._territory - (self._territory - 0.65) * f_t
         elif self._battle_phase == 3:
             # Alliance phase: seek mutual benefit
-            progress = (time - 0.7) / 0.2
+            progress = (time - self._tactical_time_threshold) / (
+                self._alliance_time_threshold - self._tactical_time_threshold
+            )
             target = max(0.55, self._best_opponent_utility + 0.1)
             return 0.65 - (0.65 - target) * progress
         else:
             # Victory phase: seal the deal
-            progress = (time - 0.9) / 0.1
+            progress = (time - self._alliance_time_threshold) / (
+                1.0 - self._alliance_time_threshold
+            )
             current = max(0.55, self._best_opponent_utility + 0.1)
             target = max(0.45, self._min_utility + 0.1)
             return current - (current - target) * progress * 0.7

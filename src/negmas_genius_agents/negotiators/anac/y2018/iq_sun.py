@@ -62,6 +62,8 @@ class IQSun2018(SAONegotiator):
     Args:
         e: Concession exponent (default 0.2 for Boulware-like behavior).
         reservation: Reservation utility threshold (default 0.65).
+        time_pressure_threshold: Time threshold for time pressure acceptance (default 0.95).
+        deadline_threshold: Time threshold for deadline acceptance (default 0.99).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -75,6 +77,8 @@ class IQSun2018(SAONegotiator):
         self,
         e: float = 0.2,
         reservation: float = 0.65,
+        time_pressure_threshold: float = 0.95,
+        deadline_threshold: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -94,6 +98,8 @@ class IQSun2018(SAONegotiator):
         )
         self._e = e
         self._reservation = reservation
+        self._time_pressure_threshold = time_pressure_threshold
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -221,11 +227,11 @@ class IQSun2018(SAONegotiator):
             return True
 
         # Near deadline acceptance
-        if time >= 0.95 and offer_utility >= self._reservation:
+        if time >= self._time_pressure_threshold and offer_utility >= self._reservation:
             return True
 
         # Very near deadline - accept anything reasonable
-        if time >= 0.99 and offer_utility >= self._min_utility:
+        if time >= self._deadline_threshold and offer_utility >= self._min_utility:
             return True
 
         return False

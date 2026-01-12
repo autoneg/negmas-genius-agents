@@ -58,6 +58,14 @@ class MetaAgent2013(SAONegotiator):
 
     Args:
         prediction_factor: Weight for predictions vs actual performance (default 5)
+        small_domain_threshold: Domain size threshold for aggressive strategy (default 1000)
+        high_variance_threshold: Utility stdev threshold for adaptive strategy (default 0.2)
+        aggressive_concession_rate: Concession rate for aggressive strategy (default 0.3)
+        adaptive_baseline_multiplier: Baseline multiplier for adaptive strategy (default 0.7)
+        adaptive_concession_exponent: Exponent for adaptive strategy concession (default 2)
+        cuhk_target_floor: Target floor multiplier for cuhk strategy (default 0.7)
+        cuhk_concession_exponent: Exponent for cuhk strategy concession (default 3)
+        deadline_threshold: Time threshold for emergency acceptance (default 0.99)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -70,6 +78,14 @@ class MetaAgent2013(SAONegotiator):
     def __init__(
         self,
         prediction_factor: int = 5,
+        small_domain_threshold: int = 1000,
+        high_variance_threshold: float = 0.2,
+        aggressive_concession_rate: float = 0.3,
+        adaptive_baseline_multiplier: float = 0.7,
+        adaptive_concession_exponent: float = 2,
+        cuhk_target_floor: float = 0.7,
+        cuhk_concession_exponent: float = 3,
+        deadline_threshold: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -88,6 +104,14 @@ class MetaAgent2013(SAONegotiator):
             **kwargs,
         )
         self._prediction_factor = prediction_factor
+        self._small_domain_threshold = small_domain_threshold
+        self._high_variance_threshold = high_variance_threshold
+        self._aggressive_concession_rate = aggressive_concession_rate
+        self._adaptive_baseline_multiplier = adaptive_baseline_multiplier
+        self._adaptive_concession_exponent = adaptive_concession_exponent
+        self._cuhk_target_floor = cuhk_target_floor
+        self._cuhk_concession_exponent = cuhk_concession_exponent
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -136,10 +160,10 @@ class MetaAgent2013(SAONegotiator):
     def _select_strategy(self) -> None:
         """Select best strategy based on domain features."""
         # Simplified strategy selection based on domain size and utility distribution
-        if self._domain_size < 1000:
+        if self._domain_size < self._small_domain_threshold:
             # Small domain: use more aggressive concession
             self._selected_strategy = "aggressive"
-        elif self._utility_stdev > 0.2:
+        elif self._utility_stdev > self._high_variance_threshold:
             # High variance: use adaptive strategy
             self._selected_strategy = "adaptive"
         else:
@@ -161,18 +185,22 @@ class MetaAgent2013(SAONegotiator):
 
         if self._selected_strategy == "aggressive":
             # More linear concession
-            return max_util * (1 - 0.3 * time)
+            return max_util * (1 - self._aggressive_concession_rate * time)
         elif self._selected_strategy == "adaptive":
             # Adaptive based on opponent first bid
             baseline = (
                 self._opponent_first_bid_utility
                 if self._opponent_first_bid_utility > 0
-                else max_util * 0.7
+                else max_util * self._adaptive_baseline_multiplier
             )
-            return max_util - (max_util - baseline) * math.pow(time, 2)
+            return max_util - (max_util - baseline) * math.pow(
+                time, self._adaptive_concession_exponent
+            )
         else:  # cuhk
             # Conservative Boulware-like
-            return max_util - (max_util - max_util * 0.7) * math.pow(time, 3)
+            return max_util - (
+                max_util - max_util * self._cuhk_target_floor
+            ) * math.pow(time, self._cuhk_concession_exponent)
 
     def _select_bid(self, time: float) -> Outcome | None:
         """Select bid based on threshold."""
@@ -223,7 +251,7 @@ class MetaAgent2013(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Accept near deadline if reasonable
-        if time > 0.99 and offer_utility >= self._reservation_value:
+        if time > self._deadline_threshold and offer_utility >= self._reservation_value:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

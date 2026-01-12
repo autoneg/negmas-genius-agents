@@ -64,6 +64,21 @@ class TMFAgent(SAONegotiator):
         e: Base concession exponent (default 0.15, more Boulware than TheFawkes)
         min_utility_threshold: Minimum acceptable utility (default 0.65)
         exploration_rate: How much to explore near-Pareto bids (default 0.3)
+        deadline_threshold: Time after which to apply deadline factor (default 0.95)
+        emergency_threshold: Time after which to accept anything above min_utility (default 0.99)
+        late_game_threshold: Time after which to compare with our next proposal (default 0.9)
+        opponent_conceding_threshold: Threshold for detecting good opponent concession (default 0.05)
+        opponent_tough_threshold: Threshold for detecting tough opponent (default 0.01)
+        min_adaptive_e: Minimum adaptive concession exponent (default 0.08)
+        adaptive_e_reduction: Reduction to e when opponent concedes (default 0.05)
+        max_adaptive_e: Maximum adaptive concession exponent (default 0.5)
+        adaptive_e_time_factor: Factor for adaptive e increase with time (default 0.1)
+        early_game_offers: Number of opponent offers before using opponent model (default 5)
+        top_k_divisor: Divisor for selecting top candidates (default 3)
+        deadline_factor_max: Maximum reduction factor near deadline (default 0.15)
+        good_opponent_utility_threshold: Multiplier for threshold to detect good opponent offers (default 0.95)
+        good_opponent_acceptance_multiplier: Multiplier for opponent best utility in acceptance (default 0.98)
+        late_game_acceptance_multiplier: Multiplier for opponent best utility in late game acceptance (default 0.98)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -78,6 +93,21 @@ class TMFAgent(SAONegotiator):
         e: float = 0.15,
         min_utility_threshold: float = 0.65,
         exploration_rate: float = 0.3,
+        deadline_threshold: float = 0.95,
+        emergency_threshold: float = 0.99,
+        late_game_threshold: float = 0.9,
+        opponent_conceding_threshold: float = 0.05,
+        opponent_tough_threshold: float = 0.01,
+        min_adaptive_e: float = 0.08,
+        adaptive_e_reduction: float = 0.05,
+        max_adaptive_e: float = 0.5,
+        adaptive_e_time_factor: float = 0.1,
+        early_game_offers: int = 5,
+        top_k_divisor: int = 3,
+        deadline_factor_max: float = 0.15,
+        good_opponent_utility_threshold: float = 0.95,
+        good_opponent_acceptance_multiplier: float = 0.98,
+        late_game_acceptance_multiplier: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -98,6 +128,21 @@ class TMFAgent(SAONegotiator):
         self._e = e
         self._min_utility_threshold = min_utility_threshold
         self._exploration_rate = exploration_rate
+        self._deadline_threshold = deadline_threshold
+        self._emergency_threshold = emergency_threshold
+        self._late_game_threshold = late_game_threshold
+        self._opponent_conceding_threshold = opponent_conceding_threshold
+        self._opponent_tough_threshold = opponent_tough_threshold
+        self._min_adaptive_e = min_adaptive_e
+        self._adaptive_e_reduction = adaptive_e_reduction
+        self._max_adaptive_e = max_adaptive_e
+        self._adaptive_e_time_factor = adaptive_e_time_factor
+        self._early_game_offers = early_game_offers
+        self._top_k_divisor = top_k_divisor
+        self._deadline_factor_max = deadline_factor_max
+        self._good_opponent_utility_threshold = good_opponent_utility_threshold
+        self._good_opponent_acceptance_multiplier = good_opponent_acceptance_multiplier
+        self._late_game_acceptance_multiplier = late_game_acceptance_multiplier
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -212,12 +257,19 @@ class TMFAgent(SAONegotiator):
         """Adapt concession rate based on opponent behavior."""
         # If opponent is conceding (giving us better offers), we can be tougher
         # If opponent is tough, we may need to concede more
-        if self._opponent_concession_rate > 0.05:
+        if self._opponent_concession_rate > self._opponent_conceding_threshold:
             # Opponent is conceding well - stay tough (lower e = more Boulware)
-            self._adaptive_e = max(0.08, self._e - 0.05)
-        elif self._opponent_concession_rate < 0.01 and time > 0.3:
+            self._adaptive_e = max(
+                self._min_adaptive_e, self._e - self._adaptive_e_reduction
+            )
+        elif (
+            self._opponent_concession_rate < self._opponent_tough_threshold
+            and time > 0.3
+        ):
             # Opponent is tough - be slightly more conceding
-            self._adaptive_e = min(0.5, self._e + 0.1 * time)
+            self._adaptive_e = min(
+                self._max_adaptive_e, self._e + self._adaptive_e_time_factor * time
+            )
         else:
             # Normal behavior
             self._adaptive_e = self._e
@@ -255,7 +307,7 @@ class TMFAgent(SAONegotiator):
             return None
 
         # If we have enough opponent data, use opponent model for Pareto exploration
-        if self._total_opponent_offers > 5:
+        if self._total_opponent_offers > self._early_game_offers:
             # Score candidates by opponent utility estimate
             scored_candidates = [
                 (bd, self._estimate_opponent_utility(bd.bid)) for bd in candidates
@@ -265,7 +317,7 @@ class TMFAgent(SAONegotiator):
             # Exploration vs exploitation
             if random.random() < self._exploration_rate:
                 # Explore: pick randomly from top candidates
-                top_k = max(1, len(scored_candidates) // 3)
+                top_k = max(1, len(scored_candidates) // self._top_k_divisor)
                 return random.choice(scored_candidates[:top_k])[0].bid
             else:
                 # Exploit: pick best for opponent (near-Pareto)
@@ -279,13 +331,24 @@ class TMFAgent(SAONegotiator):
         base_threshold = self._compute_threshold(time)
 
         # Near deadline, be more flexible
-        if time > 0.95:
-            deadline_factor = 1 - (time - 0.95) / 0.05 * 0.15  # Up to 15% reduction
+        if time > self._deadline_threshold:
+            deadline_factor = (
+                1
+                - (time - self._deadline_threshold)
+                / (1 - self._deadline_threshold)
+                * self._deadline_factor_max
+            )  # Up to deadline_factor_max reduction
             return base_threshold * deadline_factor
 
         # If opponent has given us good offers, accept good ones
-        if self._best_opponent_utility > base_threshold * 0.95:
-            return min(base_threshold, self._best_opponent_utility * 0.98)
+        if (
+            self._best_opponent_utility
+            > base_threshold * self._good_opponent_utility_threshold
+        ):
+            return min(
+                base_threshold,
+                self._best_opponent_utility * self._good_opponent_acceptance_multiplier,
+            )
 
         return base_threshold
 
@@ -323,11 +386,18 @@ class TMFAgent(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline: accept anything above minimum
-        if time > 0.99 and offer_utility >= self._min_utility_threshold:
+        if (
+            time > self._emergency_threshold
+            and offer_utility >= self._min_utility_threshold
+        ):
             return ResponseType.ACCEPT_OFFER
 
         # Accept if this is the best offer and we're running low on time
-        if time > 0.9 and offer_utility >= self._best_opponent_utility * 0.98:
+        if (
+            time > self._late_game_threshold
+            and offer_utility
+            >= self._best_opponent_utility * self._late_game_acceptance_multiplier
+        ):
             our_bid = self._select_bid(time)
             if our_bid is not None:
                 our_utility = float(self.ufun(our_bid))

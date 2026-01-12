@@ -34,7 +34,7 @@ Example usage:
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, TYPE_CHECKING
 
 # Basic time-dependent agents
 from negmas_genius_agents.negotiators.time_dependent import (
@@ -625,3 +625,7 @@ def get_agents(
                 result.append(agent)
 
     return result
+
+
+# Register all negotiators with negmas registry (if available)
+from . import registry_init as _registry_init  # noqa: F401

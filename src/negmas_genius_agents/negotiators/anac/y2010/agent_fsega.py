@@ -66,6 +66,13 @@ class AgentFSEGA(SAONegotiator):
     Args:
         reservation: Minimum acceptable utility (default 0.6).
         concession_exp: Concession exponent for time function (default 0.2).
+        bid_tolerance: Tolerance for bid selection around target (default 0.05).
+        deadline_blend_start: Time to start blending toward best opponent offer (default 0.9).
+        opponent_low_threshold: Threshold for considering opponent competitive (default 0.4).
+        pmin_reduction_factor: Factor to reduce reservation when opponent is competitive (default 0.9).
+        late_phase_time: Time threshold for late acceptance phase (default 0.95).
+        late_acceptance_bonus: Bonus factor for late acceptance (default 1.05).
+        deadline_time: Time threshold for deadline acceptance (default 0.99).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -79,6 +86,13 @@ class AgentFSEGA(SAONegotiator):
         self,
         reservation: float = 0.6,
         concession_exp: float = 0.2,
+        bid_tolerance: float = 0.05,
+        deadline_blend_start: float = 0.9,
+        opponent_low_threshold: float = 0.4,
+        pmin_reduction_factor: float = 0.9,
+        late_phase_time: float = 0.95,
+        late_acceptance_bonus: float = 1.05,
+        deadline_time: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -98,6 +112,13 @@ class AgentFSEGA(SAONegotiator):
         )
         self._reservation = reservation
         self._concession_exp = concession_exp
+        self._bid_tolerance = bid_tolerance
+        self._deadline_blend_start = deadline_blend_start
+        self._opponent_low_threshold = opponent_low_threshold
+        self._pmin_reduction_factor = pmin_reduction_factor
+        self._late_phase_time = late_phase_time
+        self._late_acceptance_bonus = late_acceptance_bonus
+        self._deadline_time = deadline_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -173,8 +194,8 @@ class AgentFSEGA(SAONegotiator):
 
             # Adjust our minimum based on opponent behavior
             # If opponent seems very competitive, we may need to lower our minimum
-            if avg_utility < 0.4:
-                self._pmin = max(self._reservation * 0.9, 0.5)
+            if avg_utility < self._opponent_low_threshold:
+                self._pmin = max(self._reservation * self._pmin_reduction_factor, 0.5)
             else:
                 self._pmin = self._reservation
 
@@ -200,9 +221,10 @@ class AgentFSEGA(SAONegotiator):
         target = self._pmin + (self._pmax - self._pmin) * (1.0 - time_factor)
 
         # Near deadline, consider best opponent offer
-        if time > 0.9 and self._opponent_max_utility > target:
+        if time > self._deadline_blend_start and self._opponent_max_utility > target:
             # Blend toward best opponent offer
-            blend = (time - 0.9) / 0.1  # 0 to 1 in last 10%
+            blend_duration = 1.0 - self._deadline_blend_start
+            blend = (time - self._deadline_blend_start) / blend_duration
             target = target * (1 - blend) + self._opponent_max_utility * blend
 
         return max(self._pmin, min(self._pmax, target))
@@ -227,9 +249,8 @@ class AgentFSEGA(SAONegotiator):
 
         # Get bids near the target
         # Allow some range around target for variety
-        tolerance = 0.05
         candidates = self._outcome_space.get_bids_in_range(
-            target - tolerance, target + tolerance
+            target - self._bid_tolerance, target + self._bid_tolerance
         )
 
         if candidates:
@@ -274,17 +295,17 @@ class AgentFSEGA(SAONegotiator):
             return True
 
         # Near deadline: accept if better than what we could get
-        if time > 0.95:
+        if time > self._late_phase_time:
             # Accept if better than opponent's typical offer
             if len(self._opponent_offers) > 0:
                 avg_opponent = sum(u for _, u in self._opponent_offers) / len(
                     self._opponent_offers
                 )
-                if offer_utility >= avg_opponent * 1.05:
+                if offer_utility >= avg_opponent * self._late_acceptance_bonus:
                     return True
 
         # Very close to deadline: accept anything above minimum
-        if time > 0.99 and offer_utility >= self._pmin:
+        if time > self._deadline_time and offer_utility >= self._pmin:
             return True
 
         return False

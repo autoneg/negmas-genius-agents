@@ -68,6 +68,9 @@ class Shiboy(SAONegotiator):
     Args:
         e: Concession exponent (default 10.0, very Boulware - slow concession).
         min_utility: Minimum acceptable utility threshold (default 0.55).
+        accelerated_concession_time: Time to start accelerated concession (default 0.85).
+        time_pressure_threshold: Time threshold for time pressure acceptance (default 0.9).
+        deadline_threshold: Time threshold for deadline acceptance (default 0.99).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -81,6 +84,9 @@ class Shiboy(SAONegotiator):
         self,
         e: float = 10.0,
         min_utility: float = 0.55,
+        accelerated_concession_time: float = 0.85,
+        time_pressure_threshold: float = 0.9,
+        deadline_threshold: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -100,6 +106,9 @@ class Shiboy(SAONegotiator):
         )
         self._e = e
         self._min_utility_param = min_utility
+        self._accelerated_concession_time = accelerated_concession_time
+        self._time_pressure_threshold = time_pressure_threshold
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -138,13 +147,15 @@ class Shiboy(SAONegotiator):
     def _get_target_utility(self, time: float) -> float:
         """Get target utility based on Boulware concession."""
         # Very conservative Boulware curve
-        if time < 0.85:
+        if time < self._accelerated_concession_time:
             # Stay high for most of negotiation
             target = 1.0 - math.pow(time, self._e)
         else:
             # Accelerate concession near deadline
-            normalized_time = (time - 0.85) / 0.15
-            high_val = 1.0 - math.pow(0.85, self._e)
+            normalized_time = (time - self._accelerated_concession_time) / (
+                1.0 - self._accelerated_concession_time
+            )
+            high_val = 1.0 - math.pow(self._accelerated_concession_time, self._e)
             low_val = self._min_utility_param
             target = high_val - (high_val - low_val) * math.pow(normalized_time, 2)
 
@@ -179,13 +190,13 @@ class Shiboy(SAONegotiator):
             return True
 
         # Near deadline, consider best received
-        if time >= 0.9:
+        if time >= self._time_pressure_threshold:
             # Accept if better than our target and above minimum
             if offer_utility >= self._min_utility_param:
                 return True
 
         # Very near deadline
-        if time >= 0.99:
+        if time >= self._deadline_threshold:
             # Accept anything above reservation
             if offer_utility >= self._min_utility:
                 return True

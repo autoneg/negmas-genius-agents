@@ -78,6 +78,45 @@ class MetaAgent2012(SAONegotiator):
     Args:
         strategy_update_interval: How often to update strategy weights
             (default 0.1, i.e., every 10% of negotiation time).
+        time_pressure_threshold: Time threshold for increasing Conceder weight
+            (default 0.8).
+        near_deadline_time: Time threshold for relaxed acceptance near deadline
+            (default 0.98).
+        final_deadline_time: Time threshold for accepting any offer above
+            reservation value (default 0.995).
+        small_domain_threshold: Outcome count threshold for small domain
+            classification (default 500).
+        high_variance_threshold: Utility variance threshold for high variance
+            domain classification (default 0.2).
+        small_domain_boulware: Boulware weight for small domains (default 0.3).
+        small_domain_linear: Linear weight for small domains (default 0.4).
+        small_domain_conceder: Conceder weight for small domains (default 0.3).
+        high_variance_boulware: Boulware weight for high variance domains
+            (default 0.6).
+        high_variance_linear: Linear weight for high variance domains
+            (default 0.25).
+        high_variance_conceder: Conceder weight for high variance domains
+            (default 0.15).
+        default_boulware: Default Boulware weight (default 0.5).
+        default_linear: Default Linear weight (default 0.3).
+        default_conceder: Default Conceder weight (default 0.2).
+        opponent_conceding_threshold: Threshold for detecting opponent concession
+            (default 0.01).
+        opponent_hardening_threshold: Threshold for detecting opponent hardening
+            (default -0.01).
+        weight_adjustment: Amount to adjust strategy weights (default 0.1).
+        max_boulware_weight: Maximum Boulware weight (default 0.8).
+        min_boulware_weight: Minimum Boulware weight (default 0.2).
+        max_conceder_weight: Maximum Conceder weight (default 0.5).
+        min_conceder_weight: Minimum Conceder weight (default 0.1).
+        pressure_factor: Factor for time pressure adjustment (default 0.2).
+        min_target_offset: Minimum target utility offset (default 0.1).
+        boulware_exponent: Exponent for Boulware strategy (default 3).
+        conceder_exponent: Exponent for Conceder strategy (default 0.3).
+        bid_tolerance: Tolerance for bid selection range (default 0.02).
+        top_k_candidates: Number of top candidates to select from (default 5).
+        acceptance_margin: Margin below opponent best for near-deadline
+            acceptance (default 0.02).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -90,6 +129,34 @@ class MetaAgent2012(SAONegotiator):
     def __init__(
         self,
         strategy_update_interval: float = 0.1,
+        time_pressure_threshold: float = 0.8,
+        near_deadline_time: float = 0.98,
+        final_deadline_time: float = 0.995,
+        small_domain_threshold: int = 500,
+        high_variance_threshold: float = 0.2,
+        small_domain_boulware: float = 0.3,
+        small_domain_linear: float = 0.4,
+        small_domain_conceder: float = 0.3,
+        high_variance_boulware: float = 0.6,
+        high_variance_linear: float = 0.25,
+        high_variance_conceder: float = 0.15,
+        default_boulware: float = 0.5,
+        default_linear: float = 0.3,
+        default_conceder: float = 0.2,
+        opponent_conceding_threshold: float = 0.01,
+        opponent_hardening_threshold: float = -0.01,
+        weight_adjustment: float = 0.1,
+        max_boulware_weight: float = 0.8,
+        min_boulware_weight: float = 0.2,
+        max_conceder_weight: float = 0.5,
+        min_conceder_weight: float = 0.1,
+        pressure_factor: float = 0.2,
+        min_target_offset: float = 0.1,
+        boulware_exponent: float = 3.0,
+        conceder_exponent: float = 0.3,
+        bid_tolerance: float = 0.02,
+        top_k_candidates: int = 5,
+        acceptance_margin: float = 0.02,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -108,6 +175,34 @@ class MetaAgent2012(SAONegotiator):
             **kwargs,
         )
         self._strategy_update_interval = strategy_update_interval
+        self._time_pressure_threshold = time_pressure_threshold
+        self._near_deadline_time = near_deadline_time
+        self._final_deadline_time = final_deadline_time
+        self._small_domain_threshold = small_domain_threshold
+        self._high_variance_threshold = high_variance_threshold
+        self._small_domain_boulware = small_domain_boulware
+        self._small_domain_linear = small_domain_linear
+        self._small_domain_conceder = small_domain_conceder
+        self._high_variance_boulware = high_variance_boulware
+        self._high_variance_linear = high_variance_linear
+        self._high_variance_conceder = high_variance_conceder
+        self._default_boulware = default_boulware
+        self._default_linear = default_linear
+        self._default_conceder = default_conceder
+        self._opponent_conceding_threshold = opponent_conceding_threshold
+        self._opponent_hardening_threshold = opponent_hardening_threshold
+        self._weight_adjustment = weight_adjustment
+        self._max_boulware_weight = max_boulware_weight
+        self._min_boulware_weight = min_boulware_weight
+        self._max_conceder_weight = max_conceder_weight
+        self._min_conceder_weight = min_conceder_weight
+        self._pressure_factor = pressure_factor
+        self._min_target_offset = min_target_offset
+        self._boulware_exponent = boulware_exponent
+        self._conceder_exponent = conceder_exponent
+        self._bid_tolerance = bid_tolerance
+        self._top_k_candidates = top_k_candidates
+        self._acceptance_margin = acceptance_margin
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -195,25 +290,25 @@ class MetaAgent2012(SAONegotiator):
     def _initialize_strategy_weights(self) -> None:
         """Initialize strategy weights based on domain characteristics."""
         # Small domains favor conceding strategies (fewer options)
-        if self._domain_size < 500:
+        if self._domain_size < self._small_domain_threshold:
             self._strategy_weights = {
-                "boulware": 0.3,
-                "linear": 0.4,
-                "conceder": 0.3,
+                "boulware": self._small_domain_boulware,
+                "linear": self._small_domain_linear,
+                "conceder": self._small_domain_conceder,
             }
         # Large domains with high variance favor Boulware
-        elif self._utility_stdev > 0.2:
+        elif self._utility_stdev > self._high_variance_threshold:
             self._strategy_weights = {
-                "boulware": 0.6,
-                "linear": 0.25,
-                "conceder": 0.15,
+                "boulware": self._high_variance_boulware,
+                "linear": self._high_variance_linear,
+                "conceder": self._high_variance_conceder,
             }
         # Default: balanced with Boulware bias
         else:
             self._strategy_weights = {
-                "boulware": 0.5,
-                "linear": 0.3,
-                "conceder": 0.2,
+                "boulware": self._default_boulware,
+                "linear": self._default_linear,
+                "conceder": self._default_conceder,
             }
 
     def on_negotiation_start(self, state: SAOState) -> None:
@@ -265,27 +360,35 @@ class MetaAgent2012(SAONegotiator):
         self._last_strategy_update = time
 
         # Adapt based on opponent concession rate
-        if self._opponent_concession_rate > 0.01:
+        if self._opponent_concession_rate > self._opponent_conceding_threshold:
             # Opponent is conceding - favor tougher strategies
             self._strategy_weights["boulware"] = min(
-                0.8, self._strategy_weights["boulware"] + 0.1
+                self._max_boulware_weight,
+                self._strategy_weights["boulware"] + self._weight_adjustment,
             )
             self._strategy_weights["conceder"] = max(
-                0.1, self._strategy_weights["conceder"] - 0.1
+                self._min_conceder_weight,
+                self._strategy_weights["conceder"] - self._weight_adjustment,
             )
-        elif self._opponent_concession_rate < -0.01:
+        elif self._opponent_concession_rate < self._opponent_hardening_threshold:
             # Opponent is getting tougher - consider conceding more
             self._strategy_weights["conceder"] = min(
-                0.5, self._strategy_weights["conceder"] + 0.1
+                self._max_conceder_weight,
+                self._strategy_weights["conceder"] + self._weight_adjustment,
             )
             self._strategy_weights["boulware"] = max(
-                0.2, self._strategy_weights["boulware"] - 0.1
+                self._min_boulware_weight,
+                self._strategy_weights["boulware"] - self._weight_adjustment,
             )
 
         # Time pressure: favor conceder strategies near deadline
-        if time > 0.8:
-            pressure_factor = (time - 0.8) / 0.2
-            self._strategy_weights["conceder"] += pressure_factor * 0.2
+        if time > self._time_pressure_threshold:
+            pressure_factor = (time - self._time_pressure_threshold) / (
+                1.0 - self._time_pressure_threshold
+            )
+            self._strategy_weights["conceder"] += (
+                pressure_factor * self._pressure_factor
+            )
             # Normalize
             total = sum(self._strategy_weights.values())
             for k in self._strategy_weights:
@@ -293,22 +396,28 @@ class MetaAgent2012(SAONegotiator):
 
     def _boulware_target(self, time: float) -> float:
         """Compute target utility using Boulware strategy (slow concession)."""
-        # u(t) = max - (max - min) * t^3
-        min_target = max(self._reservation_value, self._min_utility + 0.1)
-        concession = math.pow(time, 3)
+        # u(t) = max - (max - min) * t^boulware_exponent
+        min_target = max(
+            self._reservation_value, self._min_utility + self._min_target_offset
+        )
+        concession = math.pow(time, self._boulware_exponent)
         return self._max_utility - (self._max_utility - min_target) * concession
 
     def _linear_target(self, time: float) -> float:
         """Compute target utility using Linear strategy."""
         # u(t) = max - (max - min) * t
-        min_target = max(self._reservation_value, self._min_utility + 0.1)
+        min_target = max(
+            self._reservation_value, self._min_utility + self._min_target_offset
+        )
         return self._max_utility - (self._max_utility - min_target) * time
 
     def _conceder_target(self, time: float) -> float:
         """Compute target utility using Conceder strategy (fast concession)."""
-        # u(t) = max - (max - min) * t^0.3
-        min_target = max(self._reservation_value, self._min_utility + 0.1)
-        concession = math.pow(time, 0.3)
+        # u(t) = max - (max - min) * t^conceder_exponent
+        min_target = max(
+            self._reservation_value, self._min_utility + self._min_target_offset
+        )
+        concession = math.pow(time, self._conceder_exponent)
         return self._max_utility - (self._max_utility - min_target) * concession
 
     def _compute_target_utility(self, time: float) -> float:
@@ -346,10 +455,9 @@ class MetaAgent2012(SAONegotiator):
             return self._opponent_best_bid
 
         # Get candidates near target utility
-        tolerance = 0.02
         candidates = self._outcome_space.get_bids_in_range(
-            self._target_utility - tolerance,
-            min(1.0, self._target_utility + tolerance),
+            self._target_utility - self._bid_tolerance,
+            min(1.0, self._target_utility + self._bid_tolerance),
         )
 
         if not candidates:
@@ -361,7 +469,9 @@ class MetaAgent2012(SAONegotiator):
                 return None
 
         # Select randomly from candidates
-        selected = random.choice(candidates[: min(5, len(candidates))])
+        selected = random.choice(
+            candidates[: min(self._top_k_candidates, len(candidates))]
+        )
         return selected.bid
 
     def _accept_condition(self, offer: Outcome, time: float) -> bool:
@@ -376,11 +486,11 @@ class MetaAgent2012(SAONegotiator):
             return True
 
         # Near deadline strategies
-        if time > 0.98:
-            if offer_utility >= self._opponent_best_utility - 0.02:
+        if time > self._near_deadline_time:
+            if offer_utility >= self._opponent_best_utility - self._acceptance_margin:
                 return True
 
-        if time > 0.995:
+        if time > self._final_deadline_time:
             if offer_utility >= self._reservation_value:
                 return True
 

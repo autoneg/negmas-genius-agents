@@ -59,6 +59,7 @@ class MadAgent(SAONegotiator):
     Args:
         min_utility: Minimum acceptable utility (default 0.5).
         madness: Controls unpredictability level, 0-1 (default 0.3).
+        late_game_threshold: Time threshold for normalizing behavior (default 0.85).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -72,6 +73,7 @@ class MadAgent(SAONegotiator):
         self,
         min_utility: float = 0.5,
         madness: float = 0.3,
+        late_game_threshold: float = 0.85,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -91,6 +93,7 @@ class MadAgent(SAONegotiator):
         )
         self._min_utility = min_utility
         self._madness = min(max(madness, 0.0), 1.0)  # Clamp to [0, 1]
+        self._late_game_threshold = late_game_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -143,8 +146,10 @@ class MadAgent(SAONegotiator):
                 threshold = threshold - 0.1
 
         # Late game normalization - reduce madness
-        if time > 0.85:
-            late_factor = (time - 0.85) / 0.15
+        if time > self._late_game_threshold:
+            late_factor = (time - self._late_game_threshold) / (
+                1.0 - self._late_game_threshold
+            )
             # Blend toward rational behavior
             rational_threshold = self._min_utility + (1 - late_factor) * 0.2
             threshold = threshold * (1 - late_factor * 0.5) + rational_threshold * (

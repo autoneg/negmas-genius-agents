@@ -61,6 +61,9 @@ class MeanBot(SAONegotiator):
 
     Args:
         e: Concession exponent (default 0.2)
+        early_time_threshold: Time before which agent stays high at 93% (default 0.2)
+        main_time_threshold: Time before which agent is in main phase (default 0.8)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -73,6 +76,9 @@ class MeanBot(SAONegotiator):
     def __init__(
         self,
         e: float = 0.2,
+        early_time_threshold: float = 0.2,
+        main_time_threshold: float = 0.8,
+        deadline_time_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -91,6 +97,9 @@ class MeanBot(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._early_time_threshold = early_time_threshold
+        self._main_time_threshold = main_time_threshold
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -149,12 +158,14 @@ class MeanBot(SAONegotiator):
         elif self._mean_opponent_utility < 0.3:
             e *= 1.3  # Opponent tough, concede more
 
-        if time < 0.2:
+        if time < self._early_time_threshold:
             # Early: stay high
             return self._max_utility * 0.93
-        elif time < 0.8:
+        elif time < self._main_time_threshold:
             # Main phase: concede toward mean-based target
-            progress = (time - 0.2) / 0.6
+            progress = (time - self._early_time_threshold) / (
+                self._main_time_threshold - self._early_time_threshold
+            )
             f_t = math.pow(progress, 1 / e)
 
             # Target is adjusted based on mean
@@ -168,7 +179,9 @@ class MeanBot(SAONegotiator):
             )
         else:
             # End phase: more aggressive
-            progress = (time - 0.8) / 0.2
+            progress = (time - self._main_time_threshold) / (
+                1.0 - self._main_time_threshold
+            )
             base = max(self._mean_opponent_utility + 0.1, self._min_acceptable)
             target = self._min_acceptable
             return base - (base - target) * progress * 0.5
@@ -224,7 +237,7 @@ class MeanBot(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # End-game
-        if time > 0.95:
+        if time > self._deadline_time_threshold:
             if offer_utility >= max(self._best_opponent_utility, self._min_acceptable):
                 return ResponseType.ACCEPT_OFFER
 

@@ -61,6 +61,16 @@ class SlavaAgent(SAONegotiator):
         min_target: Minimum target utility (default 0.6)
         concession_speed: How fast to concede over time (default 0.15)
         opponent_weight: Weight given to opponent utility in bid selection (default 0.3)
+        time_pressure_threshold: Time after which to apply time pressure (default 0.9)
+        deadline_acceptance_threshold: Time after which to accept near opponent's best (default 0.95)
+        emergency_acceptance_threshold: Time after which to accept anything above min_target (default 0.99)
+        opponent_conceding_threshold: Threshold for detecting opponent concession (default 0.02)
+        concession_slow_factor: Factor to slow concession when opponent concedes (default 0.7)
+        concession_fast_factor: Factor to speed concession when opponent is tough (default 1.2)
+        time_pressure_multiplier: Multiplier for time pressure adjustment (default 0.3)
+        early_game_offers: Number of opponent offers before using opponent model (default 5)
+        top_k_divisor: Divisor for selecting top candidates (default 3)
+        opponent_best_acceptance_multiplier: Multiplier for opponent's best utility in acceptance (default 0.99)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -76,6 +86,16 @@ class SlavaAgent(SAONegotiator):
         min_target: float = 0.6,
         concession_speed: float = 0.15,
         opponent_weight: float = 0.3,
+        time_pressure_threshold: float = 0.9,
+        deadline_acceptance_threshold: float = 0.95,
+        emergency_acceptance_threshold: float = 0.99,
+        opponent_conceding_threshold: float = 0.02,
+        concession_slow_factor: float = 0.7,
+        concession_fast_factor: float = 1.2,
+        time_pressure_multiplier: float = 0.3,
+        early_game_offers: int = 5,
+        top_k_divisor: int = 3,
+        opponent_best_acceptance_multiplier: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -97,6 +117,16 @@ class SlavaAgent(SAONegotiator):
         self._min_target = min_target
         self._concession_speed = concession_speed
         self._opponent_weight = opponent_weight
+        self._time_pressure_threshold = time_pressure_threshold
+        self._deadline_acceptance_threshold = deadline_acceptance_threshold
+        self._emergency_acceptance_threshold = emergency_acceptance_threshold
+        self._opponent_conceding_threshold = opponent_conceding_threshold
+        self._concession_slow_factor = concession_slow_factor
+        self._concession_fast_factor = concession_fast_factor
+        self._time_pressure_multiplier = time_pressure_multiplier
+        self._early_game_offers = early_game_offers
+        self._top_k_divisor = top_k_divisor
+        self._opponent_best_acceptance_multiplier = opponent_best_acceptance_multiplier
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -175,7 +205,8 @@ class SlavaAgent(SAONegotiator):
             )
             if early and recent:
                 self._opponent_conceding = (
-                    sum(recent) / len(recent) > sum(early) / len(early) + 0.02
+                    sum(recent) / len(recent)
+                    > sum(early) / len(early) + self._opponent_conceding_threshold
                 )
 
     def _estimate_opponent_utility(self, bid: Outcome) -> float:
@@ -209,19 +240,26 @@ class SlavaAgent(SAONegotiator):
         # Adjust concession based on opponent behavior
         if self._opponent_conceding:
             # Opponent is conceding - slow down our concession
-            f_t *= 0.7
+            f_t *= self._concession_slow_factor
         elif self._total_opponent_offers > 10 and not self._opponent_conceding:
             # Opponent is tough - speed up slightly
-            f_t *= 1.2
+            f_t *= self._concession_fast_factor
             f_t = min(f_t, 1.0)
 
         # Calculate target
         target = self._max_utility - (self._max_utility - self._min_target) * f_t
 
         # Time pressure adjustment
-        if time > 0.9:
-            time_pressure = (time - 0.9) / 0.1
-            target = target - time_pressure * (target - self._min_target) * 0.3
+        if time > self._time_pressure_threshold:
+            time_pressure = (time - self._time_pressure_threshold) / (
+                1 - self._time_pressure_threshold
+            )
+            target = (
+                target
+                - time_pressure
+                * (target - self._min_target)
+                * self._time_pressure_multiplier
+            )
 
         self._current_target = max(target, self._min_target)
         return self._current_target
@@ -248,7 +286,7 @@ class SlavaAgent(SAONegotiator):
             return None
 
         # Early game: just return high utility bids
-        if self._total_opponent_offers < 5:
+        if self._total_opponent_offers < self._early_game_offers:
             return random.choice(candidates).bid
 
         # Score candidates considering opponent utility
@@ -265,7 +303,7 @@ class SlavaAgent(SAONegotiator):
         scored_candidates.sort(key=lambda x: x[1], reverse=True)
 
         # Select from top candidates
-        top_k = max(1, len(scored_candidates) // 3)
+        top_k = max(1, len(scored_candidates) // self._top_k_divisor)
         return random.choice(scored_candidates[:top_k])[0]
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:
@@ -308,12 +346,19 @@ class SlavaAgent(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Accept opponent's best offer near deadline
-        if time > 0.95:
-            if offer_utility >= self._opponent_best_utility * 0.99:
+        if time > self._deadline_acceptance_threshold:
+            if (
+                offer_utility
+                >= self._opponent_best_utility
+                * self._opponent_best_acceptance_multiplier
+            ):
                 return ResponseType.ACCEPT_OFFER
 
         # Emergency acceptance
-        if time > 0.99 and offer_utility >= self._min_target:
+        if (
+            time > self._emergency_acceptance_threshold
+            and offer_utility >= self._min_target
+        ):
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

@@ -73,6 +73,7 @@ class AgentGG(SAONegotiator):
 
     Args:
         reservation_ratio: Base reservation value ratio (default 0.0)
+        deadline_threshold: Time threshold for final deadline acceptance (default 0.999)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -85,6 +86,7 @@ class AgentGG(SAONegotiator):
     def __init__(
         self,
         reservation_ratio: float = 0.0,
+        deadline_threshold: float = 0.999,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -103,6 +105,7 @@ class AgentGG(SAONegotiator):
             **kwargs,
         )
         self._reservation_ratio = reservation_ratio
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -439,7 +442,7 @@ class AgentGG(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline, be more flexible
-        if time >= 0.999:
+        if time >= self._deadline_threshold:
             reservation = self._reservation_ratio
             if offer_utility >= reservation:
                 return ResponseType.ACCEPT_OFFER

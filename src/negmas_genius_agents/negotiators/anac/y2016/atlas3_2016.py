@@ -81,6 +81,9 @@ class Atlas32016(SAONegotiator):
 
     Args:
         e: Concession exponent for Boulware curve (default 0.15)
+        phase1_end: End time for phase 1 (default 0.2)
+        phase2_end: End time for phase 2 (default 0.7)
+        phase3_end: End time for phase 3 (default 0.9)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -93,6 +96,9 @@ class Atlas32016(SAONegotiator):
     def __init__(
         self,
         e: float = 0.15,
+        phase1_end: float = 0.2,
+        phase2_end: float = 0.7,
+        phase3_end: float = 0.9,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -111,6 +117,9 @@ class Atlas32016(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._phase1_end = phase1_end
+        self._phase2_end = phase2_end
+        self._phase3_end = phase3_end
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -240,25 +249,29 @@ class Atlas32016(SAONegotiator):
 
     def _compute_threshold(self, time: float) -> float:
         """Compute utility threshold using multi-phase approach."""
-        if time < 0.2:
+        if time < self._phase1_end:
             # Phase 1: High threshold
             return self._max_utility * 0.95
-        elif time < 0.7:
+        elif time < self._phase2_end:
             # Phase 2: Boulware concession
-            phase_time = (time - 0.2) / 0.5
+            phase_time = (time - self._phase1_end) / (
+                self._phase2_end - self._phase1_end
+            )
             f_t = math.pow(phase_time, 1 / self._e) if self._e > 0 else phase_time
             start = self._max_utility * 0.95
             end = self._max_utility * 0.75
             return start - (start - end) * f_t
-        elif time < 0.9:
+        elif time < self._phase3_end:
             # Phase 3: Moderate concession
-            phase_time = (time - 0.7) / 0.2
+            phase_time = (time - self._phase2_end) / (
+                self._phase3_end - self._phase2_end
+            )
             start = self._max_utility * 0.75
             end = self._reservation_value + 0.1
             return start - (start - end) * phase_time
         else:
             # Phase 4: End-game
-            phase_time = (time - 0.9) / 0.1
+            phase_time = (time - self._phase3_end) / (1.0 - self._phase3_end)
             start = self._reservation_value + 0.1
             end = self._reservation_value
             return max(start - (start - end) * phase_time, self._reservation_value)

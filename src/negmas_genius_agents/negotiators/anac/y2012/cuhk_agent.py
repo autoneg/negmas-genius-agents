@@ -77,6 +77,17 @@ class CUHKAgent(SAONegotiator):
             in slower initial concession (tougher negotiation).
         min_concede_factor: Minimum time fraction before conceding starts
             (default 0.08).
+        high_discount_threshold: Discount factor threshold for high beta (default 0.75)
+        medium_discount_threshold: Discount factor threshold for medium beta (default 0.5)
+        high_discount_beta: Beta value when discount > high_threshold (default 1.8)
+        medium_discount_beta: Beta value when discount > medium_threshold (default 1.5)
+        low_discount_beta: Beta value when discount <= medium_threshold (default 1.2)
+        opponent_gamma: Exponent for opponent toughness adjustment (default 10)
+        opponent_weight: Weight for opponent toughness adjustment (default 0.1)
+        fallback_utility_factor: Fallback utility factor when discount is 0 (default 0.7)
+        deadline_accept_time: Time threshold for deadline acceptance (default 0.99)
+        final_deadline_time: Time threshold for final strategic acceptance (default 0.9985)
+        final_accept_margin: Margin below opponent best for final acceptance (default 0.01)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -90,6 +101,17 @@ class CUHKAgent(SAONegotiator):
         self,
         alpha: float = 2.0,
         min_concede_factor: float = 0.08,
+        high_discount_threshold: float = 0.75,
+        medium_discount_threshold: float = 0.5,
+        high_discount_beta: float = 1.8,
+        medium_discount_beta: float = 1.5,
+        low_discount_beta: float = 1.2,
+        opponent_gamma: float = 10.0,
+        opponent_weight: float = 0.1,
+        fallback_utility_factor: float = 0.7,
+        deadline_accept_time: float = 0.99,
+        final_deadline_time: float = 0.9985,
+        final_accept_margin: float = 0.01,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -109,6 +131,17 @@ class CUHKAgent(SAONegotiator):
         )
         self._alpha = alpha
         self._min_concede_factor = min_concede_factor
+        self._high_discount_threshold = high_discount_threshold
+        self._medium_discount_threshold = medium_discount_threshold
+        self._high_discount_beta = high_discount_beta
+        self._medium_discount_beta = medium_discount_beta
+        self._low_discount_beta = low_discount_beta
+        self._opponent_gamma = opponent_gamma
+        self._opponent_weight = opponent_weight
+        self._fallback_utility_factor = fallback_utility_factor
+        self._deadline_accept_time = deadline_accept_time
+        self._final_deadline_time = final_deadline_time
+        self._final_accept_margin = final_accept_margin
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -155,12 +188,12 @@ class CUHKAgent(SAONegotiator):
     def _choose_concede_to_discounting_degree(self) -> None:
         """Determine concede-to-time degree based on discounting factor."""
         # Beta controls how much the agent concedes
-        if self._discounting_factor > 0.75:
-            beta = 1.8
-        elif self._discounting_factor > 0.5:
-            beta = 1.5
+        if self._discounting_factor > self._high_discount_threshold:
+            beta = self._high_discount_beta
+        elif self._discounting_factor > self._medium_discount_threshold:
+            beta = self._medium_discount_beta
         else:
-            beta = 1.2
+            beta = self._low_discount_beta
 
         alpha = math.pow(self._discounting_factor, beta)
         self._concede_to_discounting_factor = (
@@ -218,8 +251,8 @@ class CUHKAgent(SAONegotiator):
 
     def _update_concede_degree(self) -> None:
         """Update concession degree based on opponent behavior."""
-        gamma = 10
-        weight = 0.1
+        gamma = self._opponent_gamma
+        weight = self._opponent_weight
         opponent_toughness = self._get_opponent_concession_degree()
 
         self._concede_to_discounting_factor = (
@@ -244,7 +277,7 @@ class CUHKAgent(SAONegotiator):
                     self._discounting_factor, self._concede_to_discounting_factor
                 )
                 if self._discounting_factor > 0
-                else max_util * 0.7
+                else max_util * self._fallback_utility_factor
             )
 
             threshold = max_util - (max_util - min_threshold) * math.pow(
@@ -259,7 +292,7 @@ class CUHKAgent(SAONegotiator):
                 (max_util * self._discounting_factor)
                 / math.pow(self._discounting_factor, time)
                 if self._discounting_factor > 0
-                else max_util * 0.7
+                else max_util * self._fallback_utility_factor
             )
 
         return max(threshold, self._reservation_value)
@@ -304,7 +337,10 @@ class CUHKAgent(SAONegotiator):
             return True
 
         # Near deadline, accept if better than reservation value
-        if time > 0.99 and offer_utility > self._reservation_value:
+        if (
+            time > self._deadline_accept_time
+            and offer_utility > self._reservation_value
+        ):
             return True
 
         # Accept if this is as good as the best we can offer
@@ -315,8 +351,8 @@ class CUHKAgent(SAONegotiator):
                 return True
 
         # Check for strategic acceptance near deadline
-        if time > 0.9985 and self._opponent_best_bid is not None:
-            if offer_utility >= self._opponent_best_utility - 0.01:
+        if time > self._final_deadline_time and self._opponent_best_bid is not None:
+            if offer_utility >= self._opponent_best_utility - self._final_accept_margin:
                 return True
 
         return False

@@ -70,6 +70,25 @@ class AgentLG(SAONegotiator):
     Args:
         initial_filter_fraction: Initial bid filtering fraction (default 0.75).
             Controls what portion of utility range is considered for bidding.
+        early_phase_time: Time threshold for early phase bidding (default 0.6).
+        panic_phase_time: Time threshold for panic phase bidding (default 0.9).
+        late_accept_time: Time threshold for late-game acceptance strategy
+            (default 0.9).
+        max_bids: Maximum number of bids to consider (default 160000).
+        early_expansion_interval: Time interval for bid pool expansion in early
+            phase (default 0.1).
+        middle_expansion_interval: Time interval for bid pool expansion in middle
+            phase (default 0.05).
+        panic_expansion_interval: Time interval for bid pool expansion in panic
+            phase (default 0.008).
+        end_phase_time: Time threshold for offering opponent's best bid
+            (default 0.9995).
+        accept_ratio: Acceptance ratio relative to own last bid (default 0.99).
+        near_deadline_time: Time threshold for near-deadline acceptance
+            (default 0.999).
+        near_deadline_accept_ratio: Acceptance ratio near deadline (default 0.9).
+        fallback_utility_ratio: Fallback utility ratio when no opponent offer
+            received (default 0.7).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -82,6 +101,18 @@ class AgentLG(SAONegotiator):
     def __init__(
         self,
         initial_filter_fraction: float = 0.75,
+        early_phase_time: float = 0.6,
+        panic_phase_time: float = 0.9,
+        late_accept_time: float = 0.9,
+        max_bids: int = 160000,
+        early_expansion_interval: float = 0.1,
+        middle_expansion_interval: float = 0.05,
+        panic_expansion_interval: float = 0.008,
+        end_phase_time: float = 0.9995,
+        accept_ratio: float = 0.99,
+        near_deadline_time: float = 0.999,
+        near_deadline_accept_ratio: float = 0.9,
+        fallback_utility_ratio: float = 0.7,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -100,6 +131,18 @@ class AgentLG(SAONegotiator):
             **kwargs,
         )
         self._filter_fraction = initial_filter_fraction
+        self._early_phase_time = early_phase_time
+        self._panic_phase_time = panic_phase_time
+        self._late_accept_time = late_accept_time
+        self._max_bids = max_bids
+        self._early_expansion_interval = early_expansion_interval
+        self._middle_expansion_interval = middle_expansion_interval
+        self._panic_expansion_interval = panic_expansion_interval
+        self._end_phase_time = end_phase_time
+        self._accept_ratio = accept_ratio
+        self._near_deadline_time = near_deadline_time
+        self._near_deadline_accept_ratio = near_deadline_accept_ratio
+        self._fallback_utility_ratio = fallback_utility_ratio
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -155,8 +198,7 @@ class AgentLG(SAONegotiator):
         ]
 
         # Limit to reasonable size
-        max_bids = 160000
-        while len(self._all_bids) > max_bids:
+        while len(self._all_bids) > self._max_bids:
             self._filter_fraction *= 0.85
             down_bond = (
                 self._my_best_utility
@@ -217,17 +259,20 @@ class AgentLG(SAONegotiator):
         self._previous_max_utility = self._max_opponent_utility
 
         # Time-based expansion
-        if time < 0.6:
-            # Early phase: expand every 0.1 time
-            if time - self._last_concession_time > 0.1:
+        if time < self._early_phase_time:
+            # Early phase: expand every early_expansion_interval time
+            if time - self._last_concession_time > self._early_expansion_interval:
                 self._num_possible_bids = min(
                     len(self._all_bids),
                     self._num_possible_bids + len(self._all_bids) // 10,
                 )
                 self._last_concession_time = time
-        elif time < 0.9:
-            # Middle phase: expand every 0.05 if opponent conceded
-            if time - self._last_concession_time > 0.05 and opponent_conceded:
+        elif time < self._panic_phase_time:
+            # Middle phase: expand every middle_expansion_interval if opponent conceded
+            if (
+                time - self._last_concession_time > self._middle_expansion_interval
+                and opponent_conceded
+            ):
                 self._num_possible_bids = min(
                     len(self._all_bids),
                     self._num_possible_bids + len(self._all_bids) // 20,
@@ -235,7 +280,7 @@ class AgentLG(SAONegotiator):
                 self._last_concession_time = time
         else:
             # Panic phase: expand more aggressively
-            if time - self._last_concession_time > 0.008:
+            if time - self._last_concession_time > self._panic_expansion_interval:
                 floor = (self._my_best_utility + self._opp_first_utility) / 2
                 for i, bd in enumerate(self._all_bids):
                     if bd.utility < floor:
@@ -251,7 +296,7 @@ class AgentLG(SAONegotiator):
             return None
 
         # Very end: offer opponent's best bid
-        if time > 0.9995 and self._max_opponent_bid is not None:
+        if time > self._end_phase_time and self._max_opponent_bid is not None:
             return self._max_opponent_bid
 
         self._expand_bid_pool(time)
@@ -296,20 +341,24 @@ class AgentLG(SAONegotiator):
 
         # Multiple acceptance conditions
         # 1. Offer is nearly as good as our last bid
-        if offer_utility >= self._my_last_utility * 0.99:
+        if offer_utility >= self._my_last_utility * self._accept_ratio:
             return ResponseType.ACCEPT_OFFER
 
-        # 2. Near deadline with 90% of our bid value
-        if time > 0.999 and offer_utility >= self._my_last_utility * 0.9:
+        # 2. Near deadline with near_deadline_accept_ratio of our bid value
+        if (
+            time > self._near_deadline_time
+            and offer_utility
+            >= self._my_last_utility * self._near_deadline_accept_ratio
+        ):
             return ResponseType.ACCEPT_OFFER
 
         # 3. Offer meets minimum threshold
         min_threshold = (
             (self._my_best_utility + self._opp_first_utility) / 2
             if self._opp_first_utility > 0
-            else self._my_best_utility * 0.7
+            else self._my_best_utility * self._fallback_utility_ratio
         )
-        if time > 0.9 and offer_utility >= min_threshold:
+        if time > self._late_accept_time and offer_utility >= min_threshold:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

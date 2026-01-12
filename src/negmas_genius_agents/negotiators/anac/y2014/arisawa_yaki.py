@@ -65,6 +65,13 @@ class ArisawaYaki(SAONegotiator):
     Args:
         wave_period: Time period for one complete wave cycle (default 0.2).
         wave_amplitude: Amplitude of utility oscillation (default 0.1).
+        wave_dampen_time: Time threshold when wave dampening begins (default 0.8).
+        deadline_acceptance_time: Time threshold for near-deadline acceptance (default 0.98).
+        concession_multiplier: Multiplier for base linear concession (default 0.5).
+        lowered_threshold_factor: Factor for lowering target when no candidates (default 0.95).
+        own_utility_weight: Weight for own utility in bid scoring (default 0.7).
+        opponent_utility_weight: Weight for opponent utility in bid scoring (default 0.3).
+        top_candidates_divisor: Divisor for selecting top candidates (default 3).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -78,6 +85,13 @@ class ArisawaYaki(SAONegotiator):
         self,
         wave_period: float = 0.2,
         wave_amplitude: float = 0.1,
+        wave_dampen_time: float = 0.8,
+        deadline_acceptance_time: float = 0.98,
+        concession_multiplier: float = 0.5,
+        lowered_threshold_factor: float = 0.95,
+        own_utility_weight: float = 0.7,
+        opponent_utility_weight: float = 0.3,
+        top_candidates_divisor: int = 3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -97,6 +111,13 @@ class ArisawaYaki(SAONegotiator):
         )
         self._wave_period = wave_period
         self._wave_amplitude = wave_amplitude
+        self._wave_dampen_time = wave_dampen_time
+        self._deadline_acceptance_time = deadline_acceptance_time
+        self._concession_multiplier = concession_multiplier
+        self._lowered_threshold_factor = lowered_threshold_factor
+        self._own_utility_weight = own_utility_weight
+        self._opponent_utility_weight = opponent_utility_weight
+        self._top_candidates_divisor = top_candidates_divisor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -183,15 +204,18 @@ class ArisawaYaki(SAONegotiator):
         """Compute target utility with wave oscillation."""
         # Base linear concession
         base_target = (
-            self._max_utility - (self._max_utility - self._min_utility) * time * 0.5
+            self._max_utility
+            - (self._max_utility - self._min_utility)
+            * time
+            * self._concession_multiplier
         )
 
         # Add wave component
         wave = self._compute_wave_factor(time)
 
         # Dampen wave near deadline
-        if time > 0.8:
-            wave *= (1 - time) / 0.2
+        if time > self._wave_dampen_time:
+            wave *= (1 - time) / (1.0 - self._wave_dampen_time)
 
         target = base_target + wave
         return max(self._min_utility, min(self._max_utility, target))
@@ -205,7 +229,7 @@ class ArisawaYaki(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(target)
 
         if not candidates:
-            lowered = target * 0.95
+            lowered = target * self._lowered_threshold_factor
             candidates = self._outcome_space.get_bids_above(lowered)
             if not candidates:
                 return self._outcome_space.outcomes[0].bid
@@ -217,7 +241,10 @@ class ArisawaYaki(SAONegotiator):
 
             for bd in candidates:
                 opp_util = self._estimate_opponent_utility(bd.bid)
-                score = 0.7 * bd.utility + 0.3 * opp_util
+                score = (
+                    self._own_utility_weight * bd.utility
+                    + self._opponent_utility_weight * opp_util
+                )
                 if score > best_score:
                     best_score = score
                     best_bid = bd.bid
@@ -225,7 +252,9 @@ class ArisawaYaki(SAONegotiator):
             if best_bid is not None:
                 return best_bid
 
-        return random.choice(candidates[: max(1, len(candidates) // 3)]).bid
+        return random.choice(
+            candidates[: max(1, len(candidates) // self._top_candidates_divisor)]
+        ).bid
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:
         """Generate a proposal."""
@@ -265,7 +294,7 @@ class ArisawaYaki(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Near deadline
-        if time > 0.98 and offer_utility >= self._min_utility:
+        if time > self._deadline_acceptance_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

@@ -68,6 +68,12 @@ class TUDelftGroup2(SAONegotiator):
     Args:
         alpha: Weight for own utility in bid selection (default 0.6).
         beta: Exponent for polynomial concession curve (default 0.5).
+        acceleration_time: Time threshold for accelerated concession (default 0.95).
+        late_acceptance_time: Time threshold for late-game acceptance (default 0.99).
+        time_weight_multiplier: Multiplier for time-based weighting (default 3.0).
+        concession_multiplier: Multiplier for base concession (default 0.5).
+        acceleration_factor: Factor for late-game acceleration (default 0.1).
+        top_candidates_divisor: Divisor for selecting top candidates (default 3).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -81,6 +87,12 @@ class TUDelftGroup2(SAONegotiator):
         self,
         alpha: float = 0.6,
         beta: float = 0.5,
+        acceleration_time: float = 0.95,
+        late_acceptance_time: float = 0.99,
+        time_weight_multiplier: float = 3.0,
+        concession_multiplier: float = 0.5,
+        acceleration_factor: float = 0.1,
+        top_candidates_divisor: int = 3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -100,6 +112,12 @@ class TUDelftGroup2(SAONegotiator):
         )
         self._alpha = alpha
         self._beta = beta
+        self._acceleration_time = acceleration_time
+        self._late_acceptance_time = late_acceptance_time
+        self._time_weight_multiplier = time_weight_multiplier
+        self._concession_multiplier = concession_multiplier
+        self._acceleration_factor = acceleration_factor
+        self._top_candidates_divisor = top_candidates_divisor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -154,7 +172,7 @@ class TUDelftGroup2(SAONegotiator):
             self._best_opponent_bid = bid
 
         # Weight by time (later bids are more informative)
-        weight = 1.0 + time * 3.0
+        weight = 1.0 + time * self._time_weight_multiplier
 
         for i, value in enumerate(bid):
             if i not in self._opponent_value_weights:
@@ -203,12 +221,20 @@ class TUDelftGroup2(SAONegotiator):
     def _compute_target_utility(self, time: float) -> float:
         """Compute target utility using polynomial concession."""
         # Polynomial curve: starts at max, ends near min
-        concession = (time**self._beta) * (self._max_utility - self._min_utility)
-        target = self._max_utility - concession * 0.5  # Only concede halfway
+        concession = (
+            (time**self._beta)
+            * (self._max_utility - self._min_utility)
+            * self._concession_multiplier
+        )
+        target = self._max_utility - concession
 
         # Accelerate near deadline
-        if time > 0.95:
-            extra = (time - 0.95) / 0.05 * 0.1
+        if time > self._acceleration_time:
+            extra = (
+                (time - self._acceleration_time)
+                / (1.0 - self._acceleration_time)
+                * self._acceleration_factor
+            )
             target -= extra
 
         return max(self._min_utility, target)
@@ -242,7 +268,9 @@ class TUDelftGroup2(SAONegotiator):
                 return best_bid
 
         # No model yet, random from top candidates
-        return random.choice(candidates[: max(1, len(candidates) // 3)]).bid
+        return random.choice(
+            candidates[: max(1, len(candidates) // self._top_candidates_divisor)]
+        ).bid
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:
         """Generate a proposal."""
@@ -284,7 +312,7 @@ class TUDelftGroup2(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Late game acceptance
-        if time > 0.99 and offer_utility >= self._min_utility:
+        if time > self._late_acceptance_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

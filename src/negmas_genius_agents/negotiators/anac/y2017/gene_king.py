@@ -58,6 +58,7 @@ class GeneKing(SAONegotiator):
     Args:
         min_utility: Minimum acceptable utility (default 0.6).
         population_size: Number of bids to maintain in population (default 10).
+        late_game_threshold: Time threshold for late game pressure (default 0.95).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -71,6 +72,7 @@ class GeneKing(SAONegotiator):
         self,
         min_utility: float = 0.6,
         population_size: int = 10,
+        late_game_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -90,6 +92,7 @@ class GeneKing(SAONegotiator):
         )
         self._min_utility = min_utility
         self._population_size = population_size
+        self._late_game_threshold = late_game_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -167,8 +170,10 @@ class GeneKing(SAONegotiator):
             threshold -= 0.03
 
         # Late game pressure
-        if time > 0.95:
-            pressure = (time - 0.95) / 0.05
+        if time > self._late_game_threshold:
+            pressure = (time - self._late_game_threshold) / (
+                1.0 - self._late_game_threshold
+            )
             threshold -= 0.1 * pressure
 
         return max(min(threshold, self._max_utility), self._min_utility)

@@ -61,6 +61,9 @@ class AresParty(SAONegotiator):
 
     Args:
         e: Concession exponent (default 0.08, very Boulware)
+        first_half_time_threshold: Time threshold for first half phase (default 0.5)
+        second_half_time_threshold: Time threshold for second half/final phase transition (default 0.9)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.98)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -73,6 +76,9 @@ class AresParty(SAONegotiator):
     def __init__(
         self,
         e: float = 0.08,
+        first_half_time_threshold: float = 0.5,
+        second_half_time_threshold: float = 0.9,
+        deadline_time_threshold: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -91,6 +97,9 @@ class AresParty(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._first_half_time_threshold = first_half_time_threshold
+        self._second_half_time_threshold = second_half_time_threshold
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -151,18 +160,22 @@ class AresParty(SAONegotiator):
         if self._opponent_weakening:
             e *= 0.5
 
-        if time < 0.5:
+        if time < self._first_half_time_threshold:
             # First half: very aggressive, barely concede
-            f_t = math.pow(time / 0.5, 1 / e)
+            f_t = math.pow(time / self._first_half_time_threshold, 1 / e)
             return self._max_utility - (self._max_utility - 0.85) * f_t * 0.3
-        elif time < 0.9:
+        elif time < self._second_half_time_threshold:
             # Second half: moderate concession
-            progress = (time - 0.5) / 0.4
+            progress = (time - self._first_half_time_threshold) / (
+                self._second_half_time_threshold - self._first_half_time_threshold
+            )
             f_t = math.pow(progress, 1 / e)
             return 0.85 - (0.85 - self._min_acceptable) * f_t * 0.5
         else:
             # Final phase: tactical retreat
-            progress = (time - 0.9) / 0.1
+            progress = (time - self._second_half_time_threshold) / (
+                1.0 - self._second_half_time_threshold
+            )
             return (
                 self._min_acceptable
                 - (self._min_acceptable - self._min_utility - 0.1) * progress * 0.6
@@ -216,7 +229,7 @@ class AresParty(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Very end: accept if better than expected
-        if time > 0.98:
+        if time > self._deadline_time_threshold:
             if offer_utility >= max(self._best_opponent_utility, self._min_acceptable):
                 return ResponseType.ACCEPT_OFFER
 

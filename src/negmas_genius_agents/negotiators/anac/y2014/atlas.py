@@ -67,6 +67,14 @@ class Atlas(SAONegotiator):
     Args:
         concession_speed: Speed of S-curve concession (default 1.5).
         min_target: Minimum target utility threshold (default 0.6).
+        sigmoid_steepness: Steepness of the sigmoid function (default 10).
+        sigmoid_midpoint: Midpoint of the sigmoid function (default 0.5).
+        concession_multiplier: Multiplier for base concession (default 0.5).
+        base_target_weight: Weight for base target in blending (default 0.7).
+        pareto_target_weight: Weight for Pareto target in blending (default 0.3).
+        lowered_threshold_factor: Factor for lowering target when no candidates (default 0.95).
+        top_candidates_divisor: Divisor for selecting top candidates (default 3).
+        deadline_acceptance_time: Time threshold for near-deadline acceptance (default 0.98).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -80,6 +88,14 @@ class Atlas(SAONegotiator):
         self,
         concession_speed: float = 1.5,
         min_target: float = 0.6,
+        sigmoid_steepness: float = 10,
+        sigmoid_midpoint: float = 0.5,
+        concession_multiplier: float = 0.5,
+        base_target_weight: float = 0.7,
+        pareto_target_weight: float = 0.3,
+        lowered_threshold_factor: float = 0.95,
+        top_candidates_divisor: int = 3,
+        deadline_acceptance_time: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -99,6 +115,14 @@ class Atlas(SAONegotiator):
         )
         self._concession_speed = concession_speed
         self._min_target = min_target
+        self._sigmoid_steepness = sigmoid_steepness
+        self._sigmoid_midpoint = sigmoid_midpoint
+        self._concession_multiplier = concession_multiplier
+        self._base_target_weight = base_target_weight
+        self._pareto_target_weight = pareto_target_weight
+        self._lowered_threshold_factor = lowered_threshold_factor
+        self._top_candidates_divisor = top_candidates_divisor
+        self._deadline_acceptance_time = deadline_acceptance_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -209,21 +233,28 @@ class Atlas(SAONegotiator):
         """Compute target utility using smooth concession curve."""
         # Smooth S-curve concession
         # Uses sigmoid-like function: slow at start, faster middle, slow at end
-        sigmoid_time = 1 / (1 + math.exp(-10 * (time - 0.5)))
+        sigmoid_time = 1 / (
+            1 + math.exp(-self._sigmoid_steepness * (time - self._sigmoid_midpoint))
+        )
 
         # Adjust with concession speed
         adjusted_time = sigmoid_time ** (1 / self._concession_speed)
 
         base_target = (
             self._max_utility
-            - adjusted_time * (self._max_utility - self._min_utility) * 0.5
+            - adjusted_time
+            * (self._max_utility - self._min_utility)
+            * self._concession_multiplier
         )
 
         # Consider Pareto estimation
         pareto_target = self._get_pareto_target()
 
         # Blend base and Pareto targets
-        target = 0.7 * base_target + 0.3 * pareto_target
+        target = (
+            self._base_target_weight * base_target
+            + self._pareto_target_weight * pareto_target
+        )
 
         return max(self._min_utility, min(self._max_utility, target))
 
@@ -236,7 +267,7 @@ class Atlas(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(target)
 
         if not candidates:
-            lowered = target * 0.95
+            lowered = target * self._lowered_threshold_factor
             candidates = self._outcome_space.get_bids_above(lowered)
             if not candidates:
                 return self._outcome_space.outcomes[0].bid
@@ -257,7 +288,9 @@ class Atlas(SAONegotiator):
             if best_bid is not None:
                 return best_bid
 
-        return random.choice(candidates[: max(1, len(candidates) // 3)]).bid
+        return random.choice(
+            candidates[: max(1, len(candidates) // self._top_candidates_divisor)]
+        ).bid
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:
         """Generate a proposal."""
@@ -297,7 +330,7 @@ class Atlas(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Near deadline
-        if time > 0.98 and offer_utility >= self._min_utility:
+        if time > self._deadline_acceptance_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

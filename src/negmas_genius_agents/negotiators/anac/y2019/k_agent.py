@@ -83,6 +83,9 @@ class KAgent(SAONegotiator):
     Args:
         initial_target: Starting target utility (default 0.95)
         min_target: Minimum acceptable utility (default 0.6)
+        near_deadline_time: Time threshold for near deadline (default 0.98)
+        final_deadline_time: Time threshold for final deadline (default 0.99)
+        final_best_ratio: Ratio of best received utility for final deadline acceptance (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -96,6 +99,9 @@ class KAgent(SAONegotiator):
         self,
         initial_target: float = 0.95,
         min_target: float = 0.6,
+        near_deadline_time: float = 0.98,
+        final_deadline_time: float = 0.99,
+        final_best_ratio: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -115,6 +121,9 @@ class KAgent(SAONegotiator):
         )
         self._initial_target = initial_target
         self._min_target = min_target
+        self._near_deadline_time = near_deadline_time
+        self._final_deadline_time = final_deadline_time
+        self._final_best_ratio = final_best_ratio
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -272,11 +281,11 @@ class KAgent(SAONegotiator):
         if offer_utility >= target:
             return ResponseType.ACCEPT_OFFER
 
-        if time >= 0.98 and offer_utility >= self._min_target:
+        if time >= self._near_deadline_time and offer_utility >= self._min_target:
             return ResponseType.ACCEPT_OFFER
 
-        if time >= 0.99 and self._opponent_offers:
-            if offer_utility >= max(self._opponent_offers) * 0.95:
+        if time >= self._final_deadline_time and self._opponent_offers:
+            if offer_utility >= max(self._opponent_offers) * self._final_best_ratio:
                 return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

@@ -70,6 +70,9 @@ class WinkyAgent(SAONegotiator):
 
     Args:
         e: Concession exponent (default 0.2, conceder-like curve)
+        deadline_threshold: Time threshold for deadline acceptance (default 0.99)
+        deadline_min_utility: Minimum utility for deadline acceptance (default 0.5)
+        deadline_best_ratio: Ratio of best received utility for deadline acceptance (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -82,6 +85,9 @@ class WinkyAgent(SAONegotiator):
     def __init__(
         self,
         e: float = 0.2,
+        deadline_threshold: float = 0.99,
+        deadline_min_utility: float = 0.5,
+        deadline_best_ratio: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -100,6 +106,9 @@ class WinkyAgent(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._deadline_threshold = deadline_threshold
+        self._deadline_min_utility = deadline_min_utility
+        self._deadline_best_ratio = deadline_best_ratio
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -271,10 +280,10 @@ class WinkyAgent(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline, accept if reasonable
-        if time >= 0.99:
-            if offer_utility >= 0.5:
+        if time >= self._deadline_threshold:
+            if offer_utility >= self._deadline_min_utility:
                 return ResponseType.ACCEPT_OFFER
-            if offer_utility >= self._best_received_utility * 0.95:
+            if offer_utility >= self._best_received_utility * self._deadline_best_ratio:
                 return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

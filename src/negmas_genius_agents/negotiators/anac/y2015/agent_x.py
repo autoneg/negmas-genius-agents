@@ -62,6 +62,9 @@ class AgentX(SAONegotiator):
 
     Args:
         e: Concession exponent controlling concession speed (default 0.2)
+        exploration_time_threshold: Time threshold for exploration phase (default 0.25)
+        main_time_threshold: Time threshold for main/end phase transition (default 0.75)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -74,6 +77,9 @@ class AgentX(SAONegotiator):
     def __init__(
         self,
         e: float = 0.2,
+        exploration_time_threshold: float = 0.25,
+        main_time_threshold: float = 0.75,
+        deadline_time_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -92,6 +98,9 @@ class AgentX(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._exploration_time_threshold = exploration_time_threshold
+        self._main_time_threshold = main_time_threshold
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -182,12 +191,14 @@ class AgentX(SAONegotiator):
         elif self._avg_opponent_utility < 0.3:
             e *= 1.2  # Opponent tough, concede more
 
-        if time < 0.25:
+        if time < self._exploration_time_threshold:
             # Exploration phase: stay high but vary
             return self._max_utility * (0.90 + random.uniform(0, 0.08))
-        elif time < 0.75:
+        elif time < self._main_time_threshold:
             # Main phase: gradual concession
-            progress = (time - 0.25) / 0.5
+            progress = (time - self._exploration_time_threshold) / (
+                self._main_time_threshold - self._exploration_time_threshold
+            )
             f_t = math.pow(progress, 1 / e)
             target = (
                 self._max_utility * 0.95 - (self._max_utility * 0.95 - 0.55) * f_t * 0.7
@@ -195,7 +206,9 @@ class AgentX(SAONegotiator):
             return max(target, self._min_utility + 0.1)
         else:
             # End phase: more aggressive
-            progress = (time - 0.75) / 0.25
+            progress = (time - self._main_time_threshold) / (
+                1.0 - self._main_time_threshold
+            )
             base = 0.55
             target = base - (base - self._min_utility - 0.05) * progress * 0.8
             return max(target, self._min_utility + 0.05)
@@ -215,7 +228,7 @@ class AgentX(SAONegotiator):
             return self._outcome_space.outcomes[0].bid
 
         # Early: explore different high-utility bids
-        if time < 0.25:
+        if time < self._exploration_time_threshold:
             self._exploration_index = (self._exploration_index + 1) % min(
                 len(candidates), 10
             )
@@ -275,7 +288,7 @@ class AgentX(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # End-game acceptance
-        if time > 0.95:
+        if time > self._deadline_time_threshold:
             if offer_utility >= max(
                 self._best_opponent_utility * 0.95, self._min_utility + 0.1
             ):

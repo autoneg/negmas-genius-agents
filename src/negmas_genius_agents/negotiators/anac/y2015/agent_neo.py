@@ -59,6 +59,9 @@ class AgentNeo(SAONegotiator):
 
     Args:
         e: Concession exponent controlling concession speed (default 0.2)
+        early_time_threshold: Time threshold for early phase (default 0.2)
+        main_time_threshold: Time threshold for main/end phase transition (default 0.8)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -71,6 +74,9 @@ class AgentNeo(SAONegotiator):
     def __init__(
         self,
         e: float = 0.2,
+        early_time_threshold: float = 0.2,
+        main_time_threshold: float = 0.8,
+        deadline_time_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -89,6 +95,9 @@ class AgentNeo(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._early_time_threshold = early_time_threshold
+        self._main_time_threshold = main_time_threshold
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -172,18 +181,22 @@ class AgentNeo(SAONegotiator):
         if self._opponent_concession_detected:
             e *= 0.8  # Be more aggressive if opponent is conceding
 
-        if time < 0.2:
+        if time < self._early_time_threshold:
             # Early phase: very firm
             return self._max_utility * 0.95
-        elif time < 0.8:
+        elif time < self._main_time_threshold:
             # Main phase: gradual concession
-            progress = (time - 0.2) / 0.6
+            progress = (time - self._early_time_threshold) / (
+                self._main_time_threshold - self._early_time_threshold
+            )
             f_t = math.pow(progress, 1 / e)
             target = self._max_utility * 0.95 - (self._max_utility * 0.95 - 0.6) * f_t
             return max(target, self._reservation_value)
         else:
             # End phase: accelerated concession
-            progress = (time - 0.8) / 0.2
+            progress = (time - self._main_time_threshold) / (
+                1.0 - self._main_time_threshold
+            )
             base = 0.6
             target = base - (base - self._min_utility - 0.1) * progress * 0.5
             return max(target, self._reservation_value)
@@ -257,7 +270,10 @@ class AgentNeo(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # End-game: accept if reasonable
-        if time > 0.95 and offer_utility >= self._best_opponent_utility:
+        if (
+            time > self._deadline_time_threshold
+            and offer_utility >= self._best_opponent_utility
+        ):
             if offer_utility > self._reservation_value:
                 return ResponseType.ACCEPT_OFFER
 

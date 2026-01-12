@@ -61,6 +61,10 @@ class CUHKAgent2015(SAONegotiator):
 
     Args:
         min_utility: Minimum acceptable utility (default 0.55)
+        initial_time_threshold: Time threshold for initial phase (default 0.2)
+        main_time_threshold: Time threshold for main/end phase transition (default 0.8)
+        nash_accept_time_threshold: Time after which AC_Nash applies (default 0.9)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.98)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -73,6 +77,10 @@ class CUHKAgent2015(SAONegotiator):
     def __init__(
         self,
         min_utility: float = 0.55,
+        initial_time_threshold: float = 0.2,
+        main_time_threshold: float = 0.8,
+        nash_accept_time_threshold: float = 0.9,
+        deadline_time_threshold: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -91,6 +99,10 @@ class CUHKAgent2015(SAONegotiator):
             **kwargs,
         )
         self._min_utility = min_utility
+        self._initial_time_threshold = initial_time_threshold
+        self._main_time_threshold = main_time_threshold
+        self._nash_accept_time_threshold = nash_accept_time_threshold
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -174,12 +186,14 @@ class CUHKAgent2015(SAONegotiator):
 
     def _compute_threshold(self, time: float) -> float:
         """Compute threshold with CUHK strategy."""
-        if time < 0.2:
+        if time < self._initial_time_threshold:
             # Initial phase: high threshold
             return self._max_utility * 0.95
-        elif time < 0.8:
+        elif time < self._main_time_threshold:
             # Main phase: concede toward Nash
-            progress = (time - 0.2) / 0.6
+            progress = (time - self._initial_time_threshold) / (
+                self._main_time_threshold - self._initial_time_threshold
+            )
             f_t = math.pow(progress, 2)  # Quadratic concession
             target = (
                 self._max_utility * 0.95
@@ -188,7 +202,9 @@ class CUHKAgent2015(SAONegotiator):
             return max(target, self._min_utility)
         else:
             # End phase: more aggressive concession
-            progress = (time - 0.8) / 0.2
+            progress = (time - self._main_time_threshold) / (
+                1.0 - self._main_time_threshold
+            )
             target = (
                 self._estimated_nash
                 - (self._estimated_nash - self._min_utility) * progress * 0.6
@@ -210,7 +226,7 @@ class CUHKAgent2015(SAONegotiator):
             return self._outcome_space.outcomes[0].bid
 
         # Try to find Nash-like bid
-        if self._value_frequencies and time > 0.2:
+        if self._value_frequencies and time > self._initial_time_threshold:
             best_bid = None
             best_nash_score = -1.0
 
@@ -265,11 +281,14 @@ class CUHKAgent2015(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # AC_Nash: accept if above Nash estimate
-        if time > 0.9 and offer_utility >= self._estimated_nash:
+        if (
+            time > self._nash_accept_time_threshold
+            and offer_utility >= self._estimated_nash
+        ):
             return ResponseType.ACCEPT_OFFER
 
         # End-game
-        if time > 0.98 and offer_utility >= self._min_utility:
+        if time > self._deadline_time_threshold and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

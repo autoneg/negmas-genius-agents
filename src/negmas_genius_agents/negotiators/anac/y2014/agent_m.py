@@ -59,6 +59,10 @@ class AgentM(SAONegotiator):
 
     Args:
         num_iterations: Number of SA iterations for bid search (default 1000).
+        temperature_base: Base temperature coefficient for SA (default 0.01).
+        base_threshold: Starting acceptance threshold (default 0.999).
+        time_divisor: Divisor for time-based threshold reduction (default 10).
+        min_threshold: Minimum acceptance threshold floor (default 0.5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -71,6 +75,10 @@ class AgentM(SAONegotiator):
     def __init__(
         self,
         num_iterations: int = 1000,
+        temperature_base: float = 0.01,
+        base_threshold: float = 0.999,
+        time_divisor: float = 10.0,
+        min_threshold: float = 0.5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -89,6 +97,10 @@ class AgentM(SAONegotiator):
             **kwargs,
         )
         self._num_iterations = num_iterations
+        self._temperature_base = temperature_base
+        self._base_threshold = base_threshold
+        self._time_divisor = time_divisor
+        self._min_threshold = min_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -135,7 +147,9 @@ class AgentM(SAONegotiator):
             next_util = next_bid.utility
 
             # Temperature decreases over time
-            temperature = 0.01 * math.pow(1.0 - (i / self._num_iterations), 2)
+            temperature = self._temperature_base * math.pow(
+                1.0 - (i / self._num_iterations), 2
+            )
 
             # Acceptance probability
             if next_util > current_util:
@@ -178,12 +192,14 @@ class AgentM(SAONegotiator):
     def _compute_threshold(self, time: float) -> float:
         """Compute acceptance threshold."""
         if self._outcome_space is None:
-            return 0.5
+            return self._min_threshold
 
-        base_threshold = 0.999 - self._concession_rate - time / 10
+        threshold = (
+            self._base_threshold - self._concession_rate - time / self._time_divisor
+        )
 
         # Ensure minimum threshold
-        return max(base_threshold, 0.5)
+        return max(threshold, self._min_threshold)
 
     def _select_bid(self, time: float) -> Outcome | None:
         """Select a bid to offer."""

@@ -78,6 +78,22 @@ class AgentMR(SAONegotiator):
         risk_aversion: Risk aversion coefficient (default 0.5). Higher values
             prefer lower but more certain outcomes.
         min_utility: Minimum acceptable utility (default 0.6).
+        compromise_time: Time threshold for entering compromise phase (default 0.9).
+        final_deadline_time: Time threshold for accepting any offer above
+            minimum utility (default 0.99).
+        stdev_multiplier: Multiplier for standard deviation in agreement
+            probability estimation (default 2.0).
+        exploration_concession_factor: Concession factor during exploration
+            (default 0.5).
+        compromise_start_utility: Starting utility multiplier for compromise
+            phase (default 0.75).
+        exploration_tolerance: Bid selection tolerance during exploration
+            (default 0.05).
+        exploitation_tolerance: Bid selection tolerance during exploitation
+            (default 0.02).
+        top_k_candidates: Number of top candidates to select from (default 5).
+        acceptance_margin: Margin below opponent best for compromise acceptance
+            (default 0.02).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -92,6 +108,15 @@ class AgentMR(SAONegotiator):
         exploration_ratio: float = 0.3,
         risk_aversion: float = 0.5,
         min_utility: float = 0.6,
+        compromise_time: float = 0.9,
+        final_deadline_time: float = 0.99,
+        stdev_multiplier: float = 2.0,
+        exploration_concession_factor: float = 0.5,
+        compromise_start_utility: float = 0.75,
+        exploration_tolerance: float = 0.05,
+        exploitation_tolerance: float = 0.02,
+        top_k_candidates: int = 5,
+        acceptance_margin: float = 0.02,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -112,6 +137,15 @@ class AgentMR(SAONegotiator):
         self._exploration_ratio = exploration_ratio
         self._risk_aversion = risk_aversion
         self._min_utility = min_utility
+        self._compromise_time = compromise_time
+        self._final_deadline_time = final_deadline_time
+        self._stdev_multiplier = stdev_multiplier
+        self._exploration_concession_factor = exploration_concession_factor
+        self._compromise_start_utility = compromise_start_utility
+        self._exploration_tolerance = exploration_tolerance
+        self._exploitation_tolerance = exploitation_tolerance
+        self._top_k_candidates = top_k_candidates
+        self._acceptance_margin = acceptance_margin
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -187,7 +221,7 @@ class AgentMR(SAONegotiator):
         """Update the current negotiation phase based on time."""
         if time < self._exploration_ratio:
             self._current_phase = "exploration"
-        elif time < 0.9:
+        elif time < self._compromise_time:
             self._current_phase = "exploitation"
         else:
             self._current_phase = "compromise"
@@ -272,7 +306,9 @@ class AgentMR(SAONegotiator):
                 if self._opponent_utility_variance > 0
                 else 0
             )
-            self._estimated_agreement_probability = max(0.2, 1.0 - stdev * 2)
+            self._estimated_agreement_probability = max(
+                0.2, 1.0 - stdev * self._stdev_multiplier
+            )
         else:
             self._estimated_agreement_probability = 0.5
 
@@ -302,20 +338,25 @@ class AgentMR(SAONegotiator):
         if self._current_phase == "exploration":
             # During exploration, bid high to learn about opponent
             base_target = (
-                self._max_utility - (self._max_utility - self._min_utility) * time * 0.5
+                self._max_utility
+                - (self._max_utility - self._min_utility)
+                * time
+                * self._exploration_concession_factor
             )
         elif self._current_phase == "exploitation":
             # During exploitation, use Boulware-like concession
             adjusted_time = (time - self._exploration_ratio) / (
-                0.9 - self._exploration_ratio
+                self._compromise_time - self._exploration_ratio
             )
             base_target = self._max_utility - (
                 self._max_utility - self._min_utility
             ) * math.pow(adjusted_time, 2)
         else:
             # Compromise phase - concede faster
-            adjusted_time = (time - 0.9) / 0.1
-            start_util = self._max_utility * 0.75  # Approximate utility at t=0.9
+            adjusted_time = (time - self._compromise_time) / (
+                1.0 - self._compromise_time
+            )
+            start_util = self._max_utility * self._compromise_start_utility
             base_target = start_util - (start_util - self._min_utility) * adjusted_time
 
         # Apply risk adjustment
@@ -337,9 +378,9 @@ class AgentMR(SAONegotiator):
 
         # In exploration phase, add some randomness
         if self._current_phase == "exploration":
-            tolerance = 0.05
+            tolerance = self._exploration_tolerance
         else:
-            tolerance = 0.02
+            tolerance = self._exploitation_tolerance
 
         # Check if opponent's best bid meets our target
         if (
@@ -368,7 +409,7 @@ class AgentMR(SAONegotiator):
             selected = random.choice(candidates)
         else:
             # Select from top candidates
-            top_k = min(5, len(candidates))
+            top_k = min(self._top_k_candidates, len(candidates))
             selected = random.choice(candidates[:top_k])
 
         return selected.bid
@@ -394,12 +435,12 @@ class AgentMR(SAONegotiator):
         # Phase-specific acceptance
         if self._current_phase == "compromise":
             # In compromise phase, be more flexible
-            if offer_utility >= self._opponent_best_utility - 0.02:
+            if offer_utility >= self._opponent_best_utility - self._acceptance_margin:
                 return True
             if offer_utility >= self._min_utility:
                 return True
 
-        if time > 0.99:
+        if time > self._final_deadline_time:
             # Very near deadline
             if offer_utility >= self._min_utility:
                 return True

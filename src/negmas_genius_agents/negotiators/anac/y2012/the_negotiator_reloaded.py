@@ -74,6 +74,32 @@ class TheNegotiatorReloaded(SAONegotiator):
         concession_factor: Controls base concession speed (default 0.02).
             Lower values result in slower (tougher) concession.
         min_utility: Minimum acceptable utility (default 0.65).
+        flexibility_time: Time threshold for increasing flexibility near
+            deadline (default 0.9).
+        near_deadline_time: Time threshold for relaxed acceptance near deadline
+            (default 0.95).
+        final_deadline_time: Time threshold for accepting any offer above
+            minimum utility (default 0.99).
+        min_toughness: Minimum opponent toughness estimate (default 0.1).
+        max_toughness: Maximum opponent toughness estimate (default 0.9).
+        toughness_stdev_multiplier: Multiplier for standard deviation in
+            toughness calculation (default 5.0).
+        tough_opponent_threshold: Threshold for tough opponent detection
+            (default 0.7).
+        flexible_opponent_threshold: Threshold for flexible opponent detection
+            (default 0.3).
+        tough_opponent_factor: Factor applied to concession when opponent is
+            tough (default 0.5).
+        flexible_opponent_factor: Factor applied to concession when opponent is
+            flexible (default 1.5).
+        min_concession_factor: Minimum concession factor (default 0.01).
+        max_concession_factor: Maximum concession factor (default 0.1).
+        flexibility_adjustment: Adjustment factor for flexibility near deadline
+            (default 0.5).
+        bid_tolerance: Tolerance for bid selection range (default 0.03).
+        top_k_candidates: Number of top candidates to select from (default 5).
+        acceptance_margin: Margin below opponent best for near-deadline
+            acceptance (default 0.02).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -87,6 +113,22 @@ class TheNegotiatorReloaded(SAONegotiator):
         self,
         concession_factor: float = 0.02,
         min_utility: float = 0.65,
+        flexibility_time: float = 0.9,
+        near_deadline_time: float = 0.95,
+        final_deadline_time: float = 0.99,
+        min_toughness: float = 0.1,
+        max_toughness: float = 0.9,
+        toughness_stdev_multiplier: float = 5.0,
+        tough_opponent_threshold: float = 0.7,
+        flexible_opponent_threshold: float = 0.3,
+        tough_opponent_factor: float = 0.5,
+        flexible_opponent_factor: float = 1.5,
+        min_concession_factor: float = 0.01,
+        max_concession_factor: float = 0.1,
+        flexibility_adjustment: float = 0.5,
+        bid_tolerance: float = 0.03,
+        top_k_candidates: int = 5,
+        acceptance_margin: float = 0.02,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -106,6 +148,22 @@ class TheNegotiatorReloaded(SAONegotiator):
         )
         self._concession_factor = concession_factor
         self._min_utility = min_utility
+        self._flexibility_time = flexibility_time
+        self._near_deadline_time = near_deadline_time
+        self._final_deadline_time = final_deadline_time
+        self._min_toughness = min_toughness
+        self._max_toughness = max_toughness
+        self._toughness_stdev_multiplier = toughness_stdev_multiplier
+        self._tough_opponent_threshold = tough_opponent_threshold
+        self._flexible_opponent_threshold = flexible_opponent_threshold
+        self._tough_opponent_factor = tough_opponent_factor
+        self._flexible_opponent_factor = flexible_opponent_factor
+        self._min_concession_factor = min_concession_factor
+        self._max_concession_factor = max_concession_factor
+        self._flexibility_adjustment = flexibility_adjustment
+        self._bid_tolerance = bid_tolerance
+        self._top_k_candidates = top_k_candidates
+        self._acceptance_margin = acceptance_margin
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -221,7 +279,10 @@ class TheNegotiatorReloaded(SAONegotiator):
         stdev = math.sqrt(variance) if variance > 0 else 0
 
         # Normalize toughness: high stdev = low toughness
-        self._opponent_toughness = max(0.1, min(0.9, 1.0 - stdev * 5))
+        self._opponent_toughness = max(
+            self._min_toughness,
+            min(self._max_toughness, 1.0 - stdev * self._toughness_stdev_multiplier),
+        )
 
     def _compute_target_utility(self, time: float) -> float:
         """
@@ -236,12 +297,12 @@ class TheNegotiatorReloaded(SAONegotiator):
         e = self._concession_factor
 
         # Adapt concession rate based on opponent toughness
-        if self._opponent_toughness > 0.7:
+        if self._opponent_toughness > self._tough_opponent_threshold:
             # Tough opponent - concede slower
-            e = max(0.01, e * 0.5)
-        elif self._opponent_toughness < 0.3:
+            e = max(self._min_concession_factor, e * self._tough_opponent_factor)
+        elif self._opponent_toughness < self._flexible_opponent_threshold:
             # Flexible opponent - we can be tougher
-            e = min(0.1, e * 1.5)
+            e = min(self._max_concession_factor, e * self._flexible_opponent_factor)
 
         # Calculate concession
         if e > 0:
@@ -255,9 +316,14 @@ class TheNegotiatorReloaded(SAONegotiator):
 
         # Apply time pressure adjustment
         self._time_pressure = time * time  # Quadratic time pressure
-        if time > 0.9:
+        if time > self._flexibility_time:
             # Near deadline, increase flexibility
-            adjustment = (time - 0.9) * 0.5 * (self._max_utility - self._min_utility)
+            adjustment = (
+                (time - self._flexibility_time)
+                / (1.0 - self._flexibility_time)
+                * self._flexibility_adjustment
+                * (self._max_utility - self._min_utility)
+            )
             target = max(self._min_utility, target - adjustment)
 
         return max(target, self._min_utility, self._reservation_value)
@@ -284,10 +350,9 @@ class TheNegotiatorReloaded(SAONegotiator):
             return self._opponent_best_bid
 
         # Get candidates near target utility
-        tolerance = 0.03
         candidates = self._outcome_space.get_bids_in_range(
-            self._target_utility - tolerance,
-            min(1.0, self._target_utility + tolerance),
+            self._target_utility - self._bid_tolerance,
+            min(1.0, self._target_utility + self._bid_tolerance),
         )
 
         if not candidates:
@@ -301,7 +366,7 @@ class TheNegotiatorReloaded(SAONegotiator):
 
         # Select randomly from top candidates
         if len(candidates) > 1:
-            top_k = min(5, len(candidates))
+            top_k = min(self._top_k_candidates, len(candidates))
             selected = random.choice(candidates[:top_k])
         else:
             selected = candidates[0]
@@ -327,12 +392,12 @@ class TheNegotiatorReloaded(SAONegotiator):
             return True
 
         # Near deadline strategies
-        if time > 0.95:
+        if time > self._near_deadline_time:
             # Accept if close to opponent's best
-            if offer_utility >= self._opponent_best_utility - 0.02:
+            if offer_utility >= self._opponent_best_utility - self._acceptance_margin:
                 return True
 
-        if time > 0.99:
+        if time > self._final_deadline_time:
             # Very near deadline, accept if above minimum
             if offer_utility >= self._min_utility:
                 return True

@@ -69,6 +69,9 @@ class EAgent(SAONegotiator):
     Args:
         decay_rate: Exponential decay rate (default 3.0, rapid decay)
         min_utility: Minimum acceptable utility (default 0.5)
+        near_deadline_time: Time threshold for near deadline (default 0.95)
+        final_deadline_time: Time threshold for final deadline (default 0.99)
+        final_best_ratio: Ratio of best received utility for final deadline acceptance (default 0.9)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -82,6 +85,9 @@ class EAgent(SAONegotiator):
         self,
         decay_rate: float = 3.0,
         min_utility: float = 0.5,
+        near_deadline_time: float = 0.95,
+        final_deadline_time: float = 0.99,
+        final_best_ratio: float = 0.9,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -101,6 +107,9 @@ class EAgent(SAONegotiator):
         )
         self._decay_rate = decay_rate
         self._min_utility = min_utility
+        self._near_deadline_time = near_deadline_time
+        self._final_deadline_time = final_deadline_time
+        self._final_best_ratio = final_best_ratio
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -184,11 +193,11 @@ class EAgent(SAONegotiator):
         if offer_utility >= target:
             return ResponseType.ACCEPT_OFFER
 
-        if time >= 0.95 and offer_utility >= self._min_utility:
+        if time >= self._near_deadline_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
-        if time >= 0.99:
-            if offer_utility >= self._best_received_utility * 0.9:
+        if time >= self._final_deadline_time:
+            if offer_utility >= self._best_received_utility * self._final_best_ratio:
                 return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

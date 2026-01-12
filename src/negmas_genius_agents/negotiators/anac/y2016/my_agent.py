@@ -87,6 +87,10 @@ class MyAgent(SAONegotiator):
     Args:
         min_utility: Minimum acceptable utility threshold (default 0.6)
         concession_rate: Base concession rate parameter (default 0.1)
+        phase1_end: End time for phase 1 (default 0.2)
+        phase2_end: End time for phase 2 (default 0.8)
+        deadline_time: Time threshold for deadline acceptance (default 0.95)
+        critical_time: Time threshold for critical deadline acceptance (default 0.99)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -100,6 +104,10 @@ class MyAgent(SAONegotiator):
         self,
         min_utility: float = 0.6,
         concession_rate: float = 0.1,
+        phase1_end: float = 0.2,
+        phase2_end: float = 0.8,
+        deadline_time: float = 0.95,
+        critical_time: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -119,6 +127,10 @@ class MyAgent(SAONegotiator):
         )
         self._min_utility = min_utility
         self._concession_rate = concession_rate
+        self._phase1_end = phase1_end
+        self._phase2_end = phase2_end
+        self._deadline_time = deadline_time
+        self._critical_time = critical_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -324,18 +336,20 @@ class MyAgent(SAONegotiator):
         """
         Calculate target utility based on time and negotiation phase.
 
-        Phase 1 (t < 0.2): Stay near max utility
-        Phase 2 (0.2 <= t < 0.8): Gradual concession toward Nash
-        Phase 3 (t >= 0.8): More aggressive concession
+        Phase 1 (t < phase1_end): Stay near max utility
+        Phase 2 (phase1_end <= t < phase2_end): Gradual concession toward Nash
+        Phase 3 (t >= phase2_end): More aggressive concession
         """
-        if time < 0.2:
+        if time < self._phase1_end:
             # Phase 1: Conservative
             # Linear concession from max to 0.95 * max
-            phase_progress = time / 0.2
+            phase_progress = time / self._phase1_end
             target = self._max_utility - phase_progress * 0.05 * self._max_utility
-        elif time < 0.8:
+        elif time < self._phase2_end:
             # Phase 2: Gradual concession toward Nash point
-            phase_progress = (time - 0.2) / 0.6
+            phase_progress = (time - self._phase1_end) / (
+                self._phase2_end - self._phase1_end
+            )
 
             # Start from end of phase 1
             phase1_end = self._max_utility * 0.95
@@ -350,7 +364,7 @@ class MyAgent(SAONegotiator):
             target = phase1_end - concession * (phase1_end - nash_target)
         else:
             # Phase 3: More aggressive concession
-            phase_progress = (time - 0.8) / 0.2
+            phase_progress = (time - self._phase2_end) / (1.0 - self._phase2_end)
 
             # Start from Nash utility
             phase2_end = max(self._nash_utility, self._reservation_value)
@@ -471,12 +485,12 @@ class MyAgent(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline: accept if above reservation and decent
-        if time >= 0.95:
+        if time >= self._deadline_time:
             if offer_utility >= self._reservation_value:
                 return ResponseType.ACCEPT_OFFER
 
         # Very near deadline: accept best received offer if reasonable
-        if time >= 0.99:
+        if time >= self._critical_time:
             if self._opponent_best_bid_utility >= self._reservation_value:
                 return ResponseType.ACCEPT_OFFER
 

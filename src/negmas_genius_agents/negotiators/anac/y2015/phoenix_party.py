@@ -61,6 +61,9 @@ class PhoenixParty(SAONegotiator):
     Args:
         initial_threshold: Starting threshold (default 0.98)
         min_threshold: Minimum acceptable utility (default 0.5)
+        phase1_time_threshold: Time threshold for phase 1 (aggressive) (default 0.3)
+        phase2_time_threshold: Time threshold for phase 2 (adaptive) (default 0.6)
+        phase3_time_threshold: Time threshold for phase 3 (final) (default 0.8)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -74,6 +77,9 @@ class PhoenixParty(SAONegotiator):
         self,
         initial_threshold: float = 0.98,
         min_threshold: float = 0.5,
+        phase1_time_threshold: float = 0.3,
+        phase2_time_threshold: float = 0.6,
+        phase3_time_threshold: float = 0.8,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -93,6 +99,9 @@ class PhoenixParty(SAONegotiator):
         )
         self._initial_threshold = initial_threshold
         self._min_threshold = min_threshold
+        self._phase1_time_threshold = phase1_time_threshold
+        self._phase2_time_threshold = phase2_time_threshold
+        self._phase3_time_threshold = phase3_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -156,10 +165,12 @@ class PhoenixParty(SAONegotiator):
         # Phoenix phases affect concession
         if self._phase == 1:
             # Aggressive phase
-            if time < 0.3:
+            if time < self._phase1_time_threshold:
                 return self._initial_threshold
-            elif time < 0.6:
-                progress = (time - 0.3) / 0.3
+            elif time < self._phase2_time_threshold:
+                progress = (time - self._phase1_time_threshold) / (
+                    self._phase2_time_threshold - self._phase1_time_threshold
+                )
                 return self._initial_threshold - 0.15 * progress
             else:
                 # Time to consider rebirth
@@ -170,8 +181,10 @@ class PhoenixParty(SAONegotiator):
         elif self._phase == 2:
             # Adaptive phase - concede based on opponent best
             target = max(self._opponent_best_for_us + 0.1, self._min_threshold + 0.2)
-            if time < 0.8:
-                progress = (time - 0.6) / 0.2
+            if time < self._phase3_time_threshold:
+                progress = (time - self._phase2_time_threshold) / (
+                    self._phase3_time_threshold - self._phase2_time_threshold
+                )
                 base = self._initial_threshold - 0.15
                 return base - (base - target) * progress
             else:
@@ -181,7 +194,11 @@ class PhoenixParty(SAONegotiator):
 
         else:
             # Final phase - more aggressive concession
-            progress = min(1.0, (time - 0.8) / 0.2)
+            progress = min(
+                1.0,
+                (time - self._phase3_time_threshold)
+                / (1.0 - self._phase3_time_threshold),
+            )
             target = self._min_threshold + 0.1
             current = max(self._opponent_best_for_us, self._min_threshold + 0.2)
             return current - (current - target) * progress

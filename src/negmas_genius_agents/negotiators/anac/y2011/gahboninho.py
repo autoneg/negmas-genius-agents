@@ -84,6 +84,31 @@ class Gahboninho(SAONegotiator):
     Args:
         initial_noise: Starting estimate of opponent toughness (0=nice, 1=tough)
         compromising_factor: Multiplier for acceptance threshold
+        early_phase_actions: Number of actions in early phase (default 40)
+        early_phase_time: Time threshold for early phase (default 0.15)
+        early_phase_min_util: Minimum utility at end of early phase (default 0.925)
+        noise_update_interval: Number of bids between noise updates (default 20)
+        noise_decrease_max: Maximum noise decrease rate (default 0.015)
+        noise_decrease_min: Minimum noise decrease rate (default 0.003)
+        noise_decrease_base: Base noise decrease rate (default 0.01)
+        noise_domain_ref: Reference domain size for noise calculation (default 400)
+        phase1_time: Time threshold for phase 1 (default 0.85)
+        phase1_min_util: Minimum utility factor for phase 1 (default 0.9125)
+        phase2_time: Time threshold for phase 2 (default 0.92)
+        phase2_min_util: Minimum utility factor for phase 2 (default 0.84)
+        phase3_time: Time threshold for phase 3 (default 0.94)
+        phase3_min_util: Minimum utility factor for phase 3 (default 0.775)
+        phase4_time: Time threshold for phase 4 (default 0.985)
+        phase4_min_util: Minimum utility factor for phase 4 (default 0.7)
+        panic_time: Time threshold for panic mode (default 0.9996)
+        panic_min_util: Minimum utility factor for panic mode (default 0.5)
+        base_rate_limit: Base maximum decrease per step (default 0.0009)
+        panic_rate_limit_base: Base rate limit in panic mode (default 0.001)
+        panic_rate_limit_factor: Rate limit factor in panic mode (default 0.01)
+        panic_rate_limit_divisor: Divisor for panic rate limit (default 0.015)
+        bid_selection_factor: Factor for bid selection threshold (default 0.95)
+        early_accept_threshold: Early phase acceptance threshold (default 0.95)
+        min_target_utility: Minimum target utility floor (default 0.5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -97,6 +122,31 @@ class Gahboninho(SAONegotiator):
         self,
         initial_noise: float = 0.4,
         compromising_factor: float = 0.95,
+        early_phase_actions: int = 40,
+        early_phase_time: float = 0.15,
+        early_phase_min_util: float = 0.925,
+        noise_update_interval: int = 20,
+        noise_decrease_max: float = 0.015,
+        noise_decrease_min: float = 0.003,
+        noise_decrease_base: float = 0.01,
+        noise_domain_ref: int = 400,
+        phase1_time: float = 0.85,
+        phase1_min_util: float = 0.9125,
+        phase2_time: float = 0.92,
+        phase2_min_util: float = 0.84,
+        phase3_time: float = 0.94,
+        phase3_min_util: float = 0.775,
+        phase4_time: float = 0.985,
+        phase4_min_util: float = 0.7,
+        panic_time: float = 0.9996,
+        panic_min_util: float = 0.5,
+        base_rate_limit: float = 0.0009,
+        panic_rate_limit_base: float = 0.001,
+        panic_rate_limit_factor: float = 0.01,
+        panic_rate_limit_divisor: float = 0.015,
+        bid_selection_factor: float = 0.95,
+        early_accept_threshold: float = 0.95,
+        min_target_utility: float = 0.5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -116,6 +166,31 @@ class Gahboninho(SAONegotiator):
         )
         self._initial_noise = initial_noise
         self._compromising_factor = compromising_factor
+        self._early_phase_actions = early_phase_actions
+        self._early_phase_time = early_phase_time
+        self._early_phase_min_util = early_phase_min_util
+        self._noise_update_interval = noise_update_interval
+        self._noise_decrease_max = noise_decrease_max
+        self._noise_decrease_min = noise_decrease_min
+        self._noise_decrease_base = noise_decrease_base
+        self._noise_domain_ref = noise_domain_ref
+        self._phase1_time = phase1_time
+        self._phase1_min_util = phase1_min_util
+        self._phase2_time = phase2_time
+        self._phase2_min_util = phase2_min_util
+        self._phase3_time = phase3_time
+        self._phase3_min_util = phase3_min_util
+        self._phase4_time = phase4_time
+        self._phase4_min_util = phase4_min_util
+        self._panic_time = panic_time
+        self._panic_min_util = panic_min_util
+        self._base_rate_limit = base_rate_limit
+        self._panic_rate_limit_base = panic_rate_limit_base
+        self._panic_rate_limit_factor = panic_rate_limit_factor
+        self._panic_rate_limit_divisor = panic_rate_limit_divisor
+        self._bid_selection_factor = bid_selection_factor
+        self._early_accept_threshold = early_accept_threshold
+        self._min_target_utility = min_target_utility
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -180,12 +255,21 @@ class Gahboninho(SAONegotiator):
 
     def _update_noise(self, time: float) -> None:
         """Update noise estimate based on opponent behavior."""
-        if self._opponent_bid_count < 20 or self._opponent_bid_count % 20 != 0:
+        if (
+            self._opponent_bid_count < self._noise_update_interval
+            or self._opponent_bid_count % self._noise_update_interval != 0
+        ):
             return
 
         # Estimate domain size for noise decrease rate
         domain_size = len(self._outcome_space.outcomes) if self._outcome_space else 1000
-        noise_decrease_rate = min(0.015, max(0.003, 0.01 * domain_size / 400))
+        noise_decrease_rate = min(
+            self._noise_decrease_max,
+            max(
+                self._noise_decrease_min,
+                self._noise_decrease_base * domain_size / self._noise_domain_ref,
+            ),
+        )
 
         # Check if opponent is conceding
         if self._best_opponent_utility > self._previous_similarity:
@@ -202,31 +286,38 @@ class Gahboninho(SAONegotiator):
         # Discount factor (assume 1.0 if not available)
         df = 1.0
 
-        # Early phase: gradual decrease from 1.0 to 0.925
-        if self._first_actions < 40 and time < 0.15:
-            util_decrease = (1.0 - 0.925) / 40
-            return 0.925 + util_decrease * (40 - self._first_actions)
+        # Early phase: gradual decrease from 1.0 to early_phase_min_util
+        if (
+            self._first_actions < self._early_phase_actions
+            and time < self._early_phase_time
+        ):
+            util_decrease = (
+                1.0 - self._early_phase_min_util
+            ) / self._early_phase_actions
+            return self._early_phase_min_util + util_decrease * (
+                self._early_phase_actions - self._first_actions
+            )
 
         # Main phase calculation
         min_util = math.pow(df, 2 * time)
         max_util = min_util * (1 + 6 * self._noise * math.pow(df, 5))
 
         # Phase-dependent adjustments
-        if time < 0.85 * df:
-            min_util *= max(self._best_opponent_utility, 0.9125)
+        if time < self._phase1_time * df:
+            min_util *= max(self._best_opponent_utility, self._phase1_min_util)
             self._compromising_factor = 0.95
-        elif time <= 0.92 * df:
-            min_util *= max(self._best_opponent_utility, 0.84)
+        elif time <= self._phase2_time * df:
+            min_util *= max(self._best_opponent_utility, self._phase2_min_util)
             self._compromising_factor = 0.94
-        elif time <= 0.94 * df:
-            min_util *= max(self._best_opponent_utility, 0.775)
+        elif time <= self._phase3_time * df:
+            min_util *= max(self._best_opponent_utility, self._phase3_min_util)
             self._compromising_factor = 0.93
-        elif time <= 0.985:
-            min_util *= max(self._best_opponent_utility, 0.7)
+        elif time <= self._phase4_time:
+            min_util *= max(self._best_opponent_utility, self._phase4_min_util)
             self._compromising_factor = 0.91
-        elif time <= 0.9996:
+        elif time <= self._panic_time:
             # Rapid concession allowed
-            min_util *= max(self._best_opponent_utility, 0.5)
+            min_util *= max(self._best_opponent_utility, self._panic_min_util)
             self._compromising_factor = 0.90
         else:
             # Frenzy mode
@@ -236,14 +327,19 @@ class Gahboninho(SAONegotiator):
         target = min(1.0, max_util - (max_util - min_util) * time)
 
         # Rate limit changes
-        max_decrease = 0.0009
-        if time > 0.985:
-            max_decrease = 0.001 + 0.01 * (time - 0.985) / 0.015
+        max_decrease = self._base_rate_limit
+        if time > self._phase4_time:
+            max_decrease = (
+                self._panic_rate_limit_base
+                + self._panic_rate_limit_factor
+                * (time - self._phase4_time)
+                / self._panic_rate_limit_divisor
+            )
 
         if self._last_offer_utility - target > max_decrease:
             target = self._last_offer_utility - max_decrease
 
-        return max(0.5, target)
+        return max(self._min_target_utility, target)
 
     def _select_bid(self, target: float) -> Outcome | None:
         """Select a bid near the target utility."""
@@ -258,7 +354,7 @@ class Gahboninho(SAONegotiator):
         for bd in self._outcome_space.outcomes:
             if bd.utility >= target:
                 return bd.bid
-            if bd.utility < target * 0.95:
+            if bd.utility < target * self._bid_selection_factor:
                 break
 
         # Fallback to best
@@ -302,7 +398,10 @@ class Gahboninho(SAONegotiator):
         self._update_noise(time)
 
         # Early phase acceptance
-        if self._first_actions < 40 and offer_utility > 0.95:
+        if (
+            self._first_actions < self._early_phase_actions
+            and offer_utility > self._early_accept_threshold
+        ):
             return ResponseType.ACCEPT_OFFER
 
         # Normal acceptance

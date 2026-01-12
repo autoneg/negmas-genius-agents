@@ -70,6 +70,10 @@ class AgentK(SAONegotiator):
 
     Args:
         tremor: Randomness factor (default 2.0)
+        search_limit: Iterations before reducing bid target (default 500)
+        bid_target_decrement: How much to reduce bid target each cycle (default 0.01)
+        max_search_iterations: Safety limit for bid search (default 10000)
+        min_accept_probability: Threshold below which acceptance is rejected (default 0.1)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -82,6 +86,10 @@ class AgentK(SAONegotiator):
     def __init__(
         self,
         tremor: float = 2.0,
+        search_limit: int = 500,
+        bid_target_decrement: float = 0.01,
+        max_search_iterations: int = 10000,
+        min_accept_probability: float = 0.1,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -100,6 +108,10 @@ class AgentK(SAONegotiator):
             **kwargs,
         )
         self._tremor = tremor
+        self._search_limit = search_limit
+        self._bid_target_decrement = bid_target_decrement
+        self._max_search_iterations = max_search_iterations
+        self._min_accept_probability = min_accept_probability
         self._initialized = False
 
         # Statistics tracking
@@ -248,7 +260,7 @@ class AgentK(SAONegotiator):
         satisfy = offered_utility - self._target
 
         p = (math.pow(time, alpha) / 5) + utility_evaluation + satisfy
-        if p < 0.1:
+        if p < self._min_accept_probability:
             p = 0.0
 
         return max(0.0, min(1.0, p))
@@ -296,8 +308,8 @@ class AgentK(SAONegotiator):
         # Random search for a bid meeting bid_target (matches Java searchBid loop)
         loop = 0
         while True:
-            if loop > 500:
-                self._bid_target -= 0.01
+            if loop > self._search_limit:
+                self._bid_target -= self._bid_target_decrement
                 loop = 0
 
             next_bid = self._search_random_bid()
@@ -309,7 +321,7 @@ class AgentK(SAONegotiator):
             loop += 1
 
             # Safety limit to prevent infinite loops (Java relies on eventually finding a bid)
-            if loop > 10000:
+            if loop > self._max_search_iterations:
                 break
 
         return None

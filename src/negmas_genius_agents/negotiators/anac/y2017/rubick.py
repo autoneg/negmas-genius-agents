@@ -59,6 +59,7 @@ class Rubick(SAONegotiator):
     Args:
         min_utility: Minimum acceptable utility (default 0.6).
         initial_threshold: Starting acceptance threshold (default 0.95).
+        late_game_threshold: Time threshold for late game pressure (default 0.9).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -72,6 +73,7 @@ class Rubick(SAONegotiator):
         self,
         min_utility: float = 0.6,
         initial_threshold: float = 0.95,
+        late_game_threshold: float = 0.9,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -91,6 +93,7 @@ class Rubick(SAONegotiator):
         )
         self._min_utility = min_utility
         self._initial_threshold = initial_threshold
+        self._late_game_threshold = late_game_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -162,8 +165,10 @@ class Rubick(SAONegotiator):
         threshold = base_threshold + adaptation
 
         # Late game pressure
-        if time > 0.9:
-            time_pressure = (time - 0.9) / 0.1
+        if time > self._late_game_threshold:
+            time_pressure = (time - self._late_game_threshold) / (
+                1.0 - self._late_game_threshold
+            )
             threshold = threshold - 0.1 * time_pressure
 
         return max(threshold, self._min_utility)

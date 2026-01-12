@@ -65,6 +65,14 @@ class BraveCat(SAONegotiator):
 
     Args:
         acceptance_alpha: Weight for AC_combi vs AC_next voting (default 0.8).
+        early_phase_end: Time threshold ending early high-utility phase (default 0.2).
+        late_phase_start: Time threshold starting faster concession phase (default 0.8).
+        emergency_time: Time threshold for emergency acceptance (default 0.99).
+        middle_phase_exponent: Exponent for middle phase concession (default 1.5).
+        middle_phase_concession_factor: Concession factor for middle phase (default 0.3).
+        late_phase_exponent: Exponent for late phase concession (default 0.5).
+        late_phase_concession_factor: Concession factor for late phase (default 0.5).
+        top_candidates_divisor: Divisor for selecting top candidates (default 3).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -77,6 +85,14 @@ class BraveCat(SAONegotiator):
     def __init__(
         self,
         acceptance_alpha: float = 0.8,
+        early_phase_end: float = 0.2,
+        late_phase_start: float = 0.8,
+        emergency_time: float = 0.99,
+        middle_phase_exponent: float = 1.5,
+        middle_phase_concession_factor: float = 0.3,
+        late_phase_exponent: float = 0.5,
+        late_phase_concession_factor: float = 0.5,
+        top_candidates_divisor: int = 3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -95,6 +111,14 @@ class BraveCat(SAONegotiator):
             **kwargs,
         )
         self._acceptance_alpha = acceptance_alpha
+        self._early_phase_end = early_phase_end
+        self._late_phase_start = late_phase_start
+        self._emergency_time = emergency_time
+        self._middle_phase_exponent = middle_phase_exponent
+        self._middle_phase_concession_factor = middle_phase_concession_factor
+        self._late_phase_exponent = late_phase_exponent
+        self._late_phase_concession_factor = late_phase_concession_factor
+        self._top_candidates_divisor = top_candidates_divisor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -179,19 +203,35 @@ class BraveCat(SAONegotiator):
     def _compute_target_utility(self, time: float) -> float:
         """Compute adaptive target utility."""
         # BraveCat uses a sigmoid-like curve
-        if time < 0.2:
+        if time < self._early_phase_end:
             # Stay high early
             return self._max_utility
-        elif time < 0.8:
+        elif time < self._late_phase_start:
             # Gradual concession
-            phase_time = (time - 0.2) / 0.6
-            concession = phase_time**1.5 * (self._max_utility - self._min_utility) * 0.3
+            phase_time = (time - self._early_phase_end) / (
+                self._late_phase_start - self._early_phase_end
+            )
+            concession = (
+                phase_time**self._middle_phase_exponent
+                * (self._max_utility - self._min_utility)
+                * self._middle_phase_concession_factor
+            )
             return self._max_utility - concession
         else:
             # Faster concession near end
-            phase_time = (time - 0.8) / 0.2
-            base = self._max_utility - (self._max_utility - self._min_utility) * 0.3
-            extra = phase_time**0.5 * (base - self._min_utility) * 0.5
+            phase_time = (time - self._late_phase_start) / (
+                1.0 - self._late_phase_start
+            )
+            base = (
+                self._max_utility
+                - (self._max_utility - self._min_utility)
+                * self._middle_phase_concession_factor
+            )
+            extra = (
+                phase_time**self._late_phase_exponent
+                * (base - self._min_utility)
+                * self._late_phase_concession_factor
+            )
             return max(self._min_utility, base - extra)
 
     def _select_bid(self, time: float) -> Outcome | None:
@@ -220,7 +260,9 @@ class BraveCat(SAONegotiator):
                 return best_bid
 
         # No model yet, return random from top
-        return random.choice(candidates[: max(1, len(candidates) // 3)]).bid
+        return random.choice(
+            candidates[: max(1, len(candidates) // self._top_candidates_divisor)]
+        ).bid
 
     def _ac_combi(self, offer_utility: float, time: float) -> bool:
         """Combined acceptance condition."""
@@ -276,7 +318,7 @@ class BraveCat(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Emergency acceptance near deadline
-        if time > 0.99 and offer_utility >= self._min_utility:
+        if time > self._emergency_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

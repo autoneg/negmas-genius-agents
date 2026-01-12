@@ -59,6 +59,7 @@ class PonPokoAgent(SAONegotiator):
 
     Args:
         pattern: Which threshold pattern to use (0-4, or None for random).
+        late_concession_threshold: Time threshold for pattern 3 late concession (default 0.99).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -71,6 +72,7 @@ class PonPokoAgent(SAONegotiator):
     def __init__(
         self,
         pattern: int | None = None,
+        late_concession_threshold: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -89,6 +91,7 @@ class PonPokoAgent(SAONegotiator):
             **kwargs,
         )
         self._pattern = pattern if pattern is not None else random.randint(0, 4)
+        self._late_concession_threshold = late_concession_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -132,7 +135,7 @@ class PonPokoAgent(SAONegotiator):
         elif self._pattern == 3:
             self._threshold_high = 1 - 0.05 * time
             self._threshold_low = 1 - 0.1 * time
-            if time > 0.99:
+            if time > self._late_concession_threshold:
                 self._threshold_low = 1 - 0.3 * time
         elif self._pattern == 4:
             self._threshold_high = 1 - 0.15 * time * abs(math.sin(time * 20))

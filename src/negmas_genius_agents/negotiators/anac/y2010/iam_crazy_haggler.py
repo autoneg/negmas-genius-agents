@@ -62,6 +62,10 @@ class IAMcrazyHaggler(SAONegotiator):
         acceptance_threshold: Minimum utility to accept (default 0.9).
         bid_threshold: Minimum utility for random bid selection (default 0.9).
         deadline_threshold: Acceptance threshold near deadline (default 0.7).
+        stubborn_phase_end: Time until which to stay stubborn (default 0.95).
+        deadline_transition_end: End of deadline transition phase (default 0.99).
+        final_deadline_time: Time for final deadline check (default 0.995).
+        final_acceptance_factor: Factor for final acceptance check (default 0.99).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -76,6 +80,10 @@ class IAMcrazyHaggler(SAONegotiator):
         acceptance_threshold: float = 0.9,
         bid_threshold: float = 0.9,
         deadline_threshold: float = 0.7,
+        stubborn_phase_end: float = 0.95,
+        deadline_transition_end: float = 0.99,
+        final_deadline_time: float = 0.995,
+        final_acceptance_factor: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -96,6 +104,10 @@ class IAMcrazyHaggler(SAONegotiator):
         self._acceptance_threshold = acceptance_threshold
         self._bid_threshold = bid_threshold
         self._deadline_threshold = deadline_threshold
+        self._stubborn_phase_end = stubborn_phase_end
+        self._deadline_transition_end = deadline_transition_end
+        self._final_deadline_time = final_deadline_time
+        self._final_acceptance_factor = final_acceptance_factor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -175,12 +187,14 @@ class IAMcrazyHaggler(SAONegotiator):
         Returns:
             Current acceptance threshold.
         """
-        if time < 0.95:
+        if time < self._stubborn_phase_end:
             # Stay stubborn most of the time
             return self._acceptance_threshold
-        elif time < 0.99:
+        elif time < self._deadline_transition_end:
             # Gradually lower threshold near deadline
-            progress = (time - 0.95) / 0.04  # 0 to 1 in time 0.95-0.99
+            progress = (time - self._stubborn_phase_end) / (
+                self._deadline_transition_end - self._stubborn_phase_end
+            )
             return self._acceptance_threshold - progress * (
                 self._acceptance_threshold - self._deadline_threshold
             )
@@ -219,7 +233,11 @@ class IAMcrazyHaggler(SAONegotiator):
             return True
 
         # Very close to deadline: consider best opponent offer
-        if time > 0.995 and offer_utility >= self._best_opponent_utility * 0.99:
+        if (
+            time > self._final_deadline_time
+            and offer_utility
+            >= self._best_opponent_utility * self._final_acceptance_factor
+        ):
             return True
 
         return False

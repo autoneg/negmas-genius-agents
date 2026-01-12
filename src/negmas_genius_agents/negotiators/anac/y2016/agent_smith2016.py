@@ -80,6 +80,10 @@ class AgentSmith2016(SAONegotiator):
     Args:
         e: Base concession exponent (default 0.15)
         min_utility: Minimum acceptable utility threshold (default 0.6)
+        phase1_end: End time for phase 1 (default 0.1)
+        phase2_end: End time for phase 2 (default 0.85)
+        early_time: Time threshold for early phase best-bid offering (default 0.03)
+        deadline_time: Time threshold for deadline acceptance (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -93,6 +97,10 @@ class AgentSmith2016(SAONegotiator):
         self,
         e: float = 0.15,
         min_utility: float = 0.6,
+        phase1_end: float = 0.1,
+        phase2_end: float = 0.85,
+        early_time: float = 0.03,
+        deadline_time: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -112,6 +120,10 @@ class AgentSmith2016(SAONegotiator):
         )
         self._e = e
         self._min_utility = min_utility
+        self._phase1_end = phase1_end
+        self._phase2_end = phase2_end
+        self._early_time = early_time
+        self._deadline_time = deadline_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -268,17 +280,19 @@ class AgentSmith2016(SAONegotiator):
             # Opponent hardening, be more firm
             adjusted_e = max(0.08, self._e * 0.7)
 
-        if time < 0.1:
+        if time < self._phase1_end:
             return self._max_utility * 0.97
-        elif time < 0.85:
-            phase_time = (time - 0.1) / 0.75
+        elif time < self._phase2_end:
+            phase_time = (time - self._phase1_end) / (
+                self._phase2_end - self._phase1_end
+            )
             f_t = math.pow(phase_time, 1 / adjusted_e) if adjusted_e > 0 else phase_time
             start = self._max_utility * 0.97
             end = self._max_utility * 0.72
             return start - (start - end) * f_t
         else:
             # End-game
-            phase_time = (time - 0.85) / 0.15
+            phase_time = (time - self._phase2_end) / (1.0 - self._phase2_end)
             start = self._max_utility * 0.72
             end = self._reservation_value
             return max(start - (start - end) * phase_time, self._reservation_value)
@@ -320,7 +334,7 @@ class AgentSmith2016(SAONegotiator):
 
         time = state.relative_time
 
-        if time < 0.03:
+        if time < self._early_time:
             return self._best_bid
 
         bid = self._select_bid(time)
@@ -357,7 +371,7 @@ class AgentSmith2016(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline
-        if time >= 0.95 and offer_utility >= self._reservation_value:
+        if time >= self._deadline_time and offer_utility >= self._reservation_value:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

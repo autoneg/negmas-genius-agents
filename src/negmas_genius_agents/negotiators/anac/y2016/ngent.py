@@ -78,6 +78,10 @@ class Ngent(SAONegotiator):
         min_utility: Minimum acceptable utility threshold (default 0.6)
         gentleness: Concession gentleness parameter (default 0.25,
             lower = gentler/slower concession)
+        early_phase_end: End time for early max-utility phase (default 0.05)
+        early_time: Time threshold for early phase best-bid offering (default 0.02)
+        deadline_time: Time threshold for deadline acceptance (default 0.95)
+        critical_time: Time threshold for critical deadline acceptance (default 0.99)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -91,6 +95,10 @@ class Ngent(SAONegotiator):
         self,
         min_utility: float = 0.6,
         gentleness: float = 0.25,
+        early_phase_end: float = 0.05,
+        early_time: float = 0.02,
+        deadline_time: float = 0.95,
+        critical_time: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -110,6 +118,10 @@ class Ngent(SAONegotiator):
         )
         self._min_utility = min_utility
         self._gentleness = gentleness
+        self._early_phase_end = early_phase_end
+        self._early_time = early_time
+        self._deadline_time = deadline_time
+        self._critical_time = critical_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -208,7 +220,7 @@ class Ngent(SAONegotiator):
 
     def _get_target_utility(self, time: float) -> float:
         """Calculate target utility with gentle concession."""
-        if time < 0.05:
+        if time < self._early_phase_end:
             return self._max_utility
 
         # Gentle concession formula
@@ -259,7 +271,7 @@ class Ngent(SAONegotiator):
         time = state.relative_time
 
         # Early game
-        if time < 0.02:
+        if time < self._early_time:
             return self._best_bid
 
         return self._select_bid(time)
@@ -287,11 +299,14 @@ class Ngent(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline: accept if above reservation
-        if time >= 0.95 and offer_utility >= self._reservation_value:
+        if time >= self._deadline_time and offer_utility >= self._reservation_value:
             return ResponseType.ACCEPT_OFFER
 
         # Very near deadline: accept best received
-        if time >= 0.99 and self._best_received_utility >= self._reservation_value:
+        if (
+            time >= self._critical_time
+            and self._best_received_utility >= self._reservation_value
+        ):
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

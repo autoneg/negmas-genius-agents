@@ -61,6 +61,7 @@ class Mosa(SAONegotiator):
         min_utility: Minimum acceptable utility (default 0.6).
         initial_temperature: Starting temperature (default 1.0).
         cooling_rate: Exponential decay rate (default 0.95).
+        late_game_threshold: Time threshold for late game acceleration (default 0.9).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -75,6 +76,7 @@ class Mosa(SAONegotiator):
         min_utility: float = 0.6,
         initial_temperature: float = 1.0,
         cooling_rate: float = 0.95,
+        late_game_threshold: float = 0.9,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -95,6 +97,7 @@ class Mosa(SAONegotiator):
         self._min_utility = min_utility
         self._initial_temperature = initial_temperature
         self._cooling_rate = cooling_rate
+        self._late_game_threshold = late_game_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -163,8 +166,10 @@ class Mosa(SAONegotiator):
             threshold = max(threshold, self._best_opponent_utility - 0.05)
 
         # Late game acceleration
-        if time > 0.9:
-            late_factor = (time - 0.9) / 0.1
+        if time > self._late_game_threshold:
+            late_factor = (time - self._late_game_threshold) / (
+                1.0 - self._late_game_threshold
+            )
             # Blend toward best opponent utility
             target = max(self._best_opponent_utility, self._min_utility)
             threshold = threshold * (1 - late_factor) + target * late_factor

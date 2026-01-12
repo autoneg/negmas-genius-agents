@@ -64,6 +64,21 @@ class AgentKF(SAONegotiator):
     Args:
         tremor: Randomness factor for exploration (default 2.0)
         late_game_threshold: Time after which to be more aggressive (default 0.9)
+        emergency_threshold: Time after which to accept any reasonable offer (default 0.995)
+        emergency_min_utility: Minimum utility for emergency acceptance (default 0.5)
+        concession_detection_threshold: Minimum utility increase to detect opponent concession (default 0.02)
+        estimate_max_multiplier: Multiplier for max_received_utility in estimate_max (default 0.98)
+        concession_alpha_multiplier: Alpha multiplier when opponent is conceding (default 1.2)
+        max_ratio: Maximum ratio value for target calculations (default 2.0)
+        m_intercept: Intercept for m calculation (default 400)
+        m_slope: Slope for m calculation (default -300)
+        late_factor_bonus: Probability bonus added in late game (default 0.2)
+        min_accept_probability: Minimum probability threshold before zeroing (default 0.1)
+        late_game_min_acceptable_multiplier: Multiplier for max_received_utility in late game (default 0.95)
+        late_game_min_acceptable_floor: Floor value for late game min acceptable (default 0.5)
+        max_bid_attempts: Maximum attempts to find suitable bid (default 50)
+        bid_tolerance: Tolerance for bid utility matching (default 0.95)
+        target_reduction_step: Amount to reduce target per retry cycle (default 0.02)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -77,6 +92,21 @@ class AgentKF(SAONegotiator):
         self,
         tremor: float = 2.0,
         late_game_threshold: float = 0.9,
+        emergency_threshold: float = 0.995,
+        emergency_min_utility: float = 0.5,
+        concession_detection_threshold: float = 0.02,
+        estimate_max_multiplier: float = 0.98,
+        concession_alpha_multiplier: float = 1.2,
+        max_ratio: float = 2.0,
+        m_intercept: float = 400,
+        m_slope: float = -300,
+        late_factor_bonus: float = 0.2,
+        min_accept_probability: float = 0.1,
+        late_game_min_acceptable_multiplier: float = 0.95,
+        late_game_min_acceptable_floor: float = 0.5,
+        max_bid_attempts: int = 50,
+        bid_tolerance: float = 0.95,
+        target_reduction_step: float = 0.02,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -96,6 +126,21 @@ class AgentKF(SAONegotiator):
         )
         self._tremor = tremor
         self._late_game_threshold = late_game_threshold
+        self._emergency_threshold = emergency_threshold
+        self._emergency_min_utility = emergency_min_utility
+        self._concession_detection_threshold = concession_detection_threshold
+        self._estimate_max_multiplier = estimate_max_multiplier
+        self._concession_alpha_multiplier = concession_alpha_multiplier
+        self._max_ratio = max_ratio
+        self._m_intercept = m_intercept
+        self._m_slope = m_slope
+        self._late_factor_bonus = late_factor_bonus
+        self._min_accept_probability = min_accept_probability
+        self._late_game_min_acceptable_multiplier = late_game_min_acceptable_multiplier
+        self._late_game_min_acceptable_floor = late_game_min_acceptable_floor
+        self._max_bid_attempts = max_bid_attempts
+        self._bid_tolerance = bid_tolerance
+        self._target_reduction_step = target_reduction_step
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -171,7 +216,11 @@ class AgentKF(SAONegotiator):
         # Track min/max received utilities
         if offered_utility > self._max_received_utility:
             # Detect if opponent is conceding
-            if self._rounds > 5 and offered_utility > self._max_received_utility + 0.02:
+            if (
+                self._rounds > 5
+                and offered_utility
+                > self._max_received_utility + self._concession_detection_threshold
+            ):
                 self._opponent_concession_detected = True
             self._max_received_utility = offered_utility
         if offered_utility < self._min_received_utility:
@@ -207,7 +256,9 @@ class AgentKF(SAONegotiator):
         estimate_max = mean + ((1 - mean) * deviation)
 
         # Also consider the actual max received
-        estimate_max = max(estimate_max, self._max_received_utility * 0.98)
+        estimate_max = max(
+            estimate_max, self._max_received_utility * self._estimate_max_multiplier
+        )
 
         # Calculate alpha (concession exponent) with tremor randomness
         # Higher alpha = more Boulware-like behavior
@@ -215,7 +266,7 @@ class AgentKF(SAONegotiator):
 
         # If opponent is conceding, we can be tougher
         if self._opponent_concession_detected:
-            alpha *= 1.2
+            alpha *= self._concession_alpha_multiplier
 
         beta = alpha + (random.random() * self._tremor) - (self._tremor / 2)
 
@@ -224,22 +275,28 @@ class AgentKF(SAONegotiator):
         pre_target2 = 1 - (math.pow(time, beta) * (1 - estimate_max))
 
         # Calculate ratio for target adjustment
-        ratio = (deviation + 0.1) / (1 - pre_target) if (1 - pre_target) != 0 else 2.0
-        if math.isnan(ratio) or ratio > 2.0:
-            ratio = 2.0
+        ratio = (
+            (deviation + 0.1) / (1 - pre_target)
+            if (1 - pre_target) != 0
+            else self._max_ratio
+        )
+        if math.isnan(ratio) or ratio > self._max_ratio:
+            ratio = self._max_ratio
 
         ratio2 = (
-            (deviation + 0.1) / (1 - pre_target2) if (1 - pre_target2) != 0 else 2.0
+            (deviation + 0.1) / (1 - pre_target2)
+            if (1 - pre_target2) != 0
+            else self._max_ratio
         )
-        if math.isnan(ratio2) or ratio2 > 2.0:
-            ratio2 = 2.0
+        if math.isnan(ratio2) or ratio2 > self._max_ratio:
+            ratio2 = self._max_ratio
 
         # Update targets
         self._target = ratio * pre_target + 1 - ratio
         self._bid_target = ratio2 * pre_target2 + 1 - ratio2
 
         # Apply target adjustment based on estimate_max
-        m = t * (-300) + 400
+        m = t * self._m_slope + self._m_intercept
 
         if self._target > estimate_max:
             r = self._target - estimate_max
@@ -272,9 +329,9 @@ class AgentKF(SAONegotiator):
             late_factor = (time - self._late_game_threshold) / (
                 1 - self._late_game_threshold
             )
-            p += late_factor * 0.2
+            p += late_factor * self._late_factor_bonus
 
-        if p < 0.1:
+        if p < self._min_accept_probability:
             p = 0.0
 
         return max(0.0, min(1.0, p))
@@ -314,25 +371,30 @@ class AgentKF(SAONegotiator):
             late_progress = (time - self._late_game_threshold) / (
                 1 - self._late_game_threshold
             )
-            min_acceptable = max(self._max_received_utility * 0.95, 0.5)
+            min_acceptable = max(
+                self._max_received_utility * self._late_game_min_acceptable_multiplier,
+                self._late_game_min_acceptable_floor,
+            )
             current_target = (
                 current_target - late_progress * (current_target - min_acceptable) * 0.5
             )
 
         # Search for a bid meeting bid_target
-        max_attempts = 50
+        max_attempts = self._max_bid_attempts
 
         for attempt in range(max_attempts):
             bid_details = self._outcome_space.get_bid_near_utility(current_target)
 
             if bid_details is not None:
                 bid_utility = float(self.ufun(bid_details.bid)) if self.ufun else 0.0
-                if bid_utility >= current_target * 0.95:  # Allow slight tolerance
+                if (
+                    bid_utility >= current_target * self._bid_tolerance
+                ):  # Allow slight tolerance
                     return bid_details.bid
 
             # Lower target slightly and retry
             if attempt > 0 and attempt % 10 == 0:
-                current_target -= 0.02
+                current_target -= self._target_reduction_step
 
         # Fallback: return best available bid
         if self._outcome_space.outcomes:
@@ -389,9 +451,11 @@ class AgentKF(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Emergency acceptance near deadline
-        if time > 0.995:
+        if time > self._emergency_threshold:
             offer_utility = float(self.ufun(offer))
-            if offer_utility > 0.5:  # Accept anything reasonable
+            if (
+                offer_utility > self._emergency_min_utility
+            ):  # Accept anything reasonable
                 return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

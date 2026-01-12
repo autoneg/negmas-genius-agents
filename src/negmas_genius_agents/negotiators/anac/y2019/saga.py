@@ -77,6 +77,8 @@ class SAGA(SAONegotiator):
         population_size: Size of the bid population (default 20)
         initial_threshold: Starting acceptance threshold (default 0.95)
         min_threshold: Minimum acceptance threshold (default 0.6)
+        deadline_threshold: Time threshold for deadline acceptance (default 0.99)
+        deadline_best_ratio: Ratio of best received utility for deadline acceptance (default 0.98)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -91,6 +93,8 @@ class SAGA(SAONegotiator):
         population_size: int = 20,
         initial_threshold: float = 0.95,
         min_threshold: float = 0.6,
+        deadline_threshold: float = 0.99,
+        deadline_best_ratio: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -111,6 +115,8 @@ class SAGA(SAONegotiator):
         self._population_size = population_size
         self._initial_threshold = initial_threshold
         self._min_threshold = min_threshold
+        self._deadline_threshold = deadline_threshold
+        self._deadline_best_ratio = deadline_best_ratio
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
@@ -385,8 +391,8 @@ class SAGA(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline, accept if better than what we've seen
-        if time >= 0.99:
-            if offer_utility >= self._best_received_utility * 0.98:
+        if time >= self._deadline_threshold:
+            if offer_utility >= self._best_received_utility * self._deadline_best_ratio:
                 return ResponseType.ACCEPT_OFFER
             # Accept anything above minimum threshold
             if offer_utility >= self._min_threshold:

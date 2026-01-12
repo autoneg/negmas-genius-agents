@@ -78,6 +78,37 @@ class OMACAgent(SAONegotiator):
         discount_threshold: Discount factor threshold below which agent
             concedes faster (default 0.9).
         min_utility: Minimum acceptable utility (default 0.65).
+        near_deadline_time: Time threshold for relaxed acceptance near deadline
+            (default 0.98).
+        final_deadline_time: Time threshold for accepting any offer above
+            minimum utility (default 0.995).
+        update_interval: Time interval between opponent model updates
+            (default 0.05).
+        initial_opponent_reservation: Initial estimate of opponent reservation
+            value (default 0.3).
+        high_concession_threshold: Concession rate threshold for high concession
+            detection (default 0.01).
+        high_concession_reservation_offset: Offset from best utility for high
+            concession reservation estimate (default 0.1).
+        low_concession_reservation_offset: Offset from best utility for low
+            concession reservation estimate (default 0.05).
+        min_reservation_high: Minimum reservation estimate for high concession
+            (default 0.2).
+        min_reservation_low: Minimum reservation estimate for low concession
+            (default 0.4).
+        fast_concession_rate: Rate threshold for fast opponent concession
+            (default 0.02).
+        moderate_concession_rate: Rate threshold for moderate opponent concession
+            (default 0.005).
+        beta_increase: Beta increase when opponent is conceding (default 0.5).
+        beta_decrease: Beta decrease when opponent is tough (default 0.3).
+        discount_beta_reduction: Beta reduction for high discounting (default 0.5).
+        max_beta: Maximum beta value (default 3.0).
+        min_beta: Minimum beta value (default 0.5).
+        min_beta_discount: Minimum beta after discount adjustment (default 0.3).
+        bid_tolerance: Tolerance for bid selection range (default 0.02).
+        acceptance_margin: Margin below opponent best for near-deadline acceptance
+            (default 0.02).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -92,6 +123,25 @@ class OMACAgent(SAONegotiator):
         beta: float = 1.5,
         discount_threshold: float = 0.9,
         min_utility: float = 0.65,
+        near_deadline_time: float = 0.98,
+        final_deadline_time: float = 0.995,
+        update_interval: float = 0.05,
+        initial_opponent_reservation: float = 0.3,
+        high_concession_threshold: float = 0.01,
+        high_concession_reservation_offset: float = 0.1,
+        low_concession_reservation_offset: float = 0.05,
+        min_reservation_high: float = 0.2,
+        min_reservation_low: float = 0.4,
+        fast_concession_rate: float = 0.02,
+        moderate_concession_rate: float = 0.005,
+        beta_increase: float = 0.5,
+        beta_decrease: float = 0.3,
+        discount_beta_reduction: float = 0.5,
+        max_beta: float = 3.0,
+        min_beta: float = 0.5,
+        min_beta_discount: float = 0.3,
+        bid_tolerance: float = 0.02,
+        acceptance_margin: float = 0.02,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -113,6 +163,25 @@ class OMACAgent(SAONegotiator):
         self._beta = beta
         self._discount_threshold = discount_threshold
         self._min_utility = min_utility
+        self._near_deadline_time = near_deadline_time
+        self._final_deadline_time = final_deadline_time
+        self._update_interval = update_interval
+        self._initial_opponent_reservation = initial_opponent_reservation
+        self._high_concession_threshold = high_concession_threshold
+        self._high_concession_reservation_offset = high_concession_reservation_offset
+        self._low_concession_reservation_offset = low_concession_reservation_offset
+        self._min_reservation_high = min_reservation_high
+        self._min_reservation_low = min_reservation_low
+        self._fast_concession_rate = fast_concession_rate
+        self._moderate_concession_rate = moderate_concession_rate
+        self._beta_increase = beta_increase
+        self._beta_decrease = beta_decrease
+        self._discount_beta_reduction = discount_beta_reduction
+        self._max_beta = max_beta
+        self._min_beta = min_beta
+        self._min_beta_discount = min_beta_discount
+        self._bid_tolerance = bid_tolerance
+        self._acceptance_margin = acceptance_margin
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -126,7 +195,7 @@ class OMACAgent(SAONegotiator):
         self._opponent_utilities: list[float] = []  # Our utility for their bids
         self._opponent_best_bid: Outcome | None = None
         self._opponent_best_utility: float = 0.0
-        self._estimated_opponent_reservation: float = 0.3
+        self._estimated_opponent_reservation: float = self._initial_opponent_reservation
         self._opponent_concession_rate: float = 0.0
 
         # Own bidding
@@ -136,7 +205,6 @@ class OMACAgent(SAONegotiator):
 
         # Time tracking
         self._time_of_last_update: float = 0.0
-        self._update_interval: float = 0.05
 
     def _initialize(self) -> None:
         """Initialize the outcome space and utility bounds."""
@@ -172,7 +240,7 @@ class OMACAgent(SAONegotiator):
         self._opponent_utilities = []
         self._opponent_best_bid = None
         self._opponent_best_utility = 0.0
-        self._estimated_opponent_reservation = 0.3
+        self._estimated_opponent_reservation = self._initial_opponent_reservation
         self._opponent_concession_rate = 0.0
         self._own_bids = []
         self._last_bid = None
@@ -233,15 +301,17 @@ class OMACAgent(SAONegotiator):
 
         # Estimate opponent's reservation based on their best offer and concession rate
         # If they're conceding quickly, they may accept lower; if slowly, they're tough
-        if self._opponent_concession_rate > 0.01:
+        if self._opponent_concession_rate > self._high_concession_threshold:
             # Opponent is conceding, estimate they might accept something reasonable
             self._estimated_opponent_reservation = max(
-                0.2, self._opponent_best_utility - 0.1
+                self._min_reservation_high,
+                self._opponent_best_utility - self._high_concession_reservation_offset,
             )
         else:
             # Opponent is tough, they probably want high utility
             self._estimated_opponent_reservation = max(
-                0.4, self._opponent_best_utility + 0.05
+                self._min_reservation_low,
+                self._opponent_best_utility + self._low_concession_reservation_offset,
             )
 
     def _update_beta(self, time: float) -> None:
@@ -260,20 +330,22 @@ class OMACAgent(SAONegotiator):
         self._estimate_opponent_reservation()
 
         # Base beta on opponent's concession rate
-        if self._opponent_concession_rate > 0.02:
+        if self._opponent_concession_rate > self._fast_concession_rate:
             # Opponent is conceding, we can be slightly tougher
-            self._beta = min(3.0, self._initial_beta + 0.5)
-        elif self._opponent_concession_rate > 0.005:
+            self._beta = min(self._max_beta, self._initial_beta + self._beta_increase)
+        elif self._opponent_concession_rate > self._moderate_concession_rate:
             # Opponent is moderately flexible
             self._beta = self._initial_beta
         else:
             # Opponent is tough, we need to be more flexible
-            self._beta = max(0.5, self._initial_beta - 0.3)
+            self._beta = max(self._min_beta, self._initial_beta - self._beta_decrease)
 
         # Adjust for discount factor
         if self._discount_factor < self._discount_threshold:
             # High discounting, need to close deal faster
-            self._beta = max(0.3, self._beta - 0.5)
+            self._beta = max(
+                self._min_beta_discount, self._beta - self._discount_beta_reduction
+            )
 
     def _compute_target_utility(self, time: float) -> float:
         """
@@ -323,9 +395,9 @@ class OMACAgent(SAONegotiator):
             return self._opponent_best_bid
 
         # Get candidates near target utility
-        tolerance = 0.02
         candidates = self._outcome_space.get_bids_in_range(
-            self._target_utility - tolerance, self._target_utility + tolerance
+            self._target_utility - self._bid_tolerance,
+            self._target_utility + self._bid_tolerance,
         )
 
         if not candidates:
@@ -364,12 +436,12 @@ class OMACAgent(SAONegotiator):
             return True
 
         # Near deadline strategies
-        if time > 0.98:
+        if time > self._near_deadline_time:
             # Accept if offer is close to opponent's best
-            if offer_utility >= self._opponent_best_utility - 0.02:
+            if offer_utility >= self._opponent_best_utility - self._acceptance_margin:
                 return True
 
-        if time > 0.995:
+        if time > self._final_deadline_time:
             # Very near deadline, accept if above minimum
             if offer_utility >= self._min_utility:
                 return True

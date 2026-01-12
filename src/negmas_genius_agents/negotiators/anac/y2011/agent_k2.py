@@ -62,6 +62,12 @@ class AgentK2(SAONegotiator):
 
     Args:
         tremor: Randomness factor for target calculation (default 2.0)
+        deadline_boost_time: Time threshold after which acceptance probability gets boosted (default 0.95)
+        deadline_boost_multiplier: Multiplier for deadline proximity bonus (default 2.0)
+        min_accept_probability: Minimum probability threshold for consideration (default 0.1)
+        bid_tolerance: Tolerance range for bid selection around target (default 0.02)
+        own_utility_weight: Weight for own utility in bid scoring (default 0.7)
+        opponent_utility_weight: Weight for opponent utility in bid scoring (default 0.3)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -74,6 +80,12 @@ class AgentK2(SAONegotiator):
     def __init__(
         self,
         tremor: float = 2.0,
+        deadline_boost_time: float = 0.95,
+        deadline_boost_multiplier: float = 2.0,
+        min_accept_probability: float = 0.1,
+        bid_tolerance: float = 0.02,
+        own_utility_weight: float = 0.7,
+        opponent_utility_weight: float = 0.3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -92,6 +104,18 @@ class AgentK2(SAONegotiator):
             **kwargs,
         )
         self._tremor = tremor
+        self._deadline_boost_time = deadline_boost_time
+        self._deadline_boost_multiplier = deadline_boost_multiplier
+        self._min_accept_probability = min_accept_probability
+        self._bid_tolerance = bid_tolerance
+        self._own_utility_weight = own_utility_weight
+        self._opponent_utility_weight = opponent_utility_weight
+        self._deadline_boost_time = deadline_boost_time
+        self._deadline_boost_multiplier = deadline_boost_multiplier
+        self._min_accept_probability = min_accept_probability
+        self._bid_tolerance = bid_tolerance
+        self._own_utility_weight = own_utility_weight
+        self._opponent_utility_weight = opponent_utility_weight
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -348,11 +372,13 @@ class AgentK2(SAONegotiator):
         p = (math.pow(time, alpha) / 5) + utility_evaluation + satisfy
 
         # K2 enhancement: boost acceptance near deadline
-        if time > 0.95:
-            time_bonus = (time - 0.95) * 2  # Up to 0.1 bonus at t=1
+        if time > self._deadline_boost_time:
+            time_bonus = (
+                time - self._deadline_boost_time
+            ) * self._deadline_boost_multiplier  # Up to 0.1 bonus at t=1
             p += time_bonus
 
-        if p < 0.1:
+        if p < self._min_accept_probability:
             p = 0.0
 
         return max(0.0, min(1.0, p))
@@ -385,7 +411,7 @@ class AgentK2(SAONegotiator):
 
         # Search for a bid meeting bid_target
         current_target = self._bid_target
-        tolerance = 0.02
+        tolerance = self._bid_tolerance
 
         # Get candidates near target
         candidates = self._outcome_space.get_bids_in_range(
@@ -402,7 +428,10 @@ class AgentK2(SAONegotiator):
                 for bd in candidates:
                     opp_util = self._get_opponent_utility(bd.bid)
                     # Score combines our utility and opponent utility
-                    score = bd.utility * 0.7 + opp_util * 0.3
+                    score = (
+                        bd.utility * self._own_utility_weight
+                        + opp_util * self._opponent_utility_weight
+                    )
                     if score > best_score:
                         best_score = score
                         best_bid = bd.bid

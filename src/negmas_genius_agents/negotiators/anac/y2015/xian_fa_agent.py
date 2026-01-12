@@ -58,6 +58,9 @@ class XianFaAgent(SAONegotiator):
 
     Args:
         e: Concession exponent (default 0.2)
+        rule1_time_threshold: Time threshold for Rule 1 - start high (default 0.2)
+        rule2_time_threshold: Time threshold for Rule 2 - slow concession (default 0.5)
+        rule3_time_threshold: Time threshold for Rule 3 - adapt to opponent (default 0.8)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -70,6 +73,9 @@ class XianFaAgent(SAONegotiator):
     def __init__(
         self,
         e: float = 0.2,
+        rule1_time_threshold: float = 0.2,
+        rule2_time_threshold: float = 0.5,
+        rule3_time_threshold: float = 0.8,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -88,6 +94,9 @@ class XianFaAgent(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._rule1_time_threshold = rule1_time_threshold
+        self._rule2_time_threshold = rule2_time_threshold
+        self._rule3_time_threshold = rule3_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -138,23 +147,29 @@ class XianFaAgent(SAONegotiator):
     def _compute_threshold(self, time: float) -> float:
         """Compute threshold following constitutional rules."""
         # Constitutional rules by phase
-        if time < 0.2:
+        if time < self._rule1_time_threshold:
             # Rule 1: Start high
             return self._max_utility * 0.95
-        elif time < 0.5:
+        elif time < self._rule2_time_threshold:
             # Rule 2: Slow concession
-            progress = (time - 0.2) / 0.3
+            progress = (time - self._rule1_time_threshold) / (
+                self._rule2_time_threshold - self._rule1_time_threshold
+            )
             f_t = math.pow(progress, 1 / self._e)
             return self._max_utility * 0.95 - 0.15 * f_t
-        elif time < 0.8:
+        elif time < self._rule3_time_threshold:
             # Rule 3: Adapt to opponent
             base = self._max_utility * 0.8
             target = max(self._best_opponent_utility + 0.05, self._constitutional_min)
-            progress = (time - 0.5) / 0.3
+            progress = (time - self._rule2_time_threshold) / (
+                self._rule3_time_threshold - self._rule2_time_threshold
+            )
             return base - (base - target) * progress
         else:
             # Rule 4: Final concession with constitutional minimum
-            progress = (time - 0.8) / 0.2
+            progress = (time - self._rule3_time_threshold) / (
+                1.0 - self._rule3_time_threshold
+            )
             current = max(self._best_opponent_utility + 0.05, self._constitutional_min)
             target = self._constitutional_min
             return current - (current - target) * progress * 0.5

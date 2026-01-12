@@ -79,6 +79,8 @@ class YXAgent(SAONegotiator):
 
     Args:
         min_threshold: Minimum acceptable utility threshold (default 0.7)
+        early_time: Time threshold for early phase best-bid offering (default 0.1)
+        deadline_time: Time threshold for deadline acceptance (default 0.98)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -91,6 +93,8 @@ class YXAgent(SAONegotiator):
     def __init__(
         self,
         min_threshold: float = 0.7,
+        early_time: float = 0.1,
+        deadline_time: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -109,6 +113,8 @@ class YXAgent(SAONegotiator):
             **kwargs,
         )
         self._min_threshold = min_threshold
+        self._early_time = early_time
+        self._deadline_time = deadline_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -263,7 +269,7 @@ class YXAgent(SAONegotiator):
         time = state.relative_time
 
         # Early game: offer best bid
-        if time < 0.1:
+        if time < self._early_time:
             return self._best_bid
 
         return self._select_bid(time)
@@ -293,7 +299,7 @@ class YXAgent(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline, accept if above minimum threshold
-        if time >= 0.98 and offer_utility >= self._min_threshold:
+        if time >= self._deadline_time and offer_utility >= self._min_threshold:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

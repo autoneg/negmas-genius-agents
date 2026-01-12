@@ -65,6 +65,7 @@ class AgreeableAgent2018(SAONegotiator):
         time_to_concede: Time before starting to concede (default 0.2).
         concession_factor: Concession curve parameter (default 0.1, Boulware-like).
         minimum_utility: Floor for target utility (default 0.8).
+        deadline_threshold: Time threshold for deadline acceptance (default 0.99).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -79,6 +80,7 @@ class AgreeableAgent2018(SAONegotiator):
         time_to_concede: float = 0.2,
         concession_factor: float = 0.1,
         minimum_utility: float = 0.8,
+        deadline_threshold: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -99,6 +101,7 @@ class AgreeableAgent2018(SAONegotiator):
         self._time_to_concede = time_to_concede
         self._concession_factor = concession_factor
         self._minimum_utility = minimum_utility
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -314,7 +317,10 @@ class AgreeableAgent2018(SAONegotiator):
             return True
 
         # Near deadline, accept if above reservation
-        if time >= 0.99 and offer_utility >= self._reservation_value:
+        if (
+            time >= self._deadline_threshold
+            and offer_utility >= self._reservation_value
+        ):
             return True
 
         return False

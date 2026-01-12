@@ -77,6 +77,10 @@ class Terra(SAONegotiator):
         firmness: Firmness parameter - concession exponent (default 0.15,
             lower = more firm with slower concession)
         min_utility: Minimum acceptable utility threshold (default 0.6)
+        phase1_end: End time for phase 1 firm phase (default 0.15)
+        phase2_end: End time for phase 2 Boulware phase (default 0.85)
+        early_time: Time threshold for early phase best-bid offering (default 0.03)
+        deadline_time: Time threshold for deadline acceptance (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -90,6 +94,10 @@ class Terra(SAONegotiator):
         self,
         firmness: float = 0.15,
         min_utility: float = 0.6,
+        phase1_end: float = 0.15,
+        phase2_end: float = 0.85,
+        early_time: float = 0.03,
+        deadline_time: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -109,6 +117,10 @@ class Terra(SAONegotiator):
         )
         self._firmness = firmness
         self._min_utility = min_utility
+        self._phase1_end = phase1_end
+        self._phase2_end = phase2_end
+        self._early_time = early_time
+        self._deadline_time = deadline_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -238,12 +250,14 @@ class Terra(SAONegotiator):
 
     def _get_target_utility(self, time: float) -> float:
         """Calculate target utility - firm early, flexible late."""
-        if time < 0.15:
+        if time < self._phase1_end:
             # Very firm in early phase
             return self._max_utility * 0.95
-        elif time < 0.85:
+        elif time < self._phase2_end:
             # Gradual Boulware concession
-            phase_time = (time - 0.15) / 0.7
+            phase_time = (time - self._phase1_end) / (
+                self._phase2_end - self._phase1_end
+            )
             f_t = (
                 math.pow(phase_time, 1 / self._firmness)
                 if self._firmness > 0
@@ -254,7 +268,7 @@ class Terra(SAONegotiator):
             return start - (start - end) * f_t
         else:
             # End-game: accelerated concession
-            phase_time = (time - 0.85) / 0.15
+            phase_time = (time - self._phase2_end) / (1.0 - self._phase2_end)
             start = self._max_utility * 0.75
             end = self._reservation_value
             return max(start - (start - end) * phase_time, self._reservation_value)
@@ -298,7 +312,7 @@ class Terra(SAONegotiator):
         time = state.relative_time
 
         # Very early: best bid
-        if time < 0.03:
+        if time < self._early_time:
             return self._best_bid
 
         bid = self._select_bid(time)
@@ -335,7 +349,7 @@ class Terra(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline
-        if time >= 0.95 and offer_utility >= self._reservation_value:
+        if time >= self._deadline_time and offer_utility >= self._reservation_value:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

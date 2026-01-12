@@ -60,6 +60,9 @@ class JonnyBlack(SAONegotiator):
 
     Args:
         e: Base concession exponent (default 0.15)
+        early_time_threshold: Time threshold for early phase (default 0.3)
+        main_time_threshold: Time threshold for main/end phase transition (default 0.8)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.98)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -72,6 +75,9 @@ class JonnyBlack(SAONegotiator):
     def __init__(
         self,
         e: float = 0.15,
+        early_time_threshold: float = 0.3,
+        main_time_threshold: float = 0.8,
+        deadline_time_threshold: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -90,6 +96,9 @@ class JonnyBlack(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._early_time_threshold = early_time_threshold
+        self._main_time_threshold = main_time_threshold
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -153,19 +162,23 @@ class JonnyBlack(SAONegotiator):
         if self._opponent_desperate:
             e *= 0.5
 
-        if time < 0.3:
+        if time < self._early_time_threshold:
             # Early: firm but mysterious
             base = self._max_utility * 0.92
             return base + self._mystery_factor
-        elif time < 0.8:
+        elif time < self._main_time_threshold:
             # Middle: unpredictable concession
-            progress = (time - 0.3) / 0.5
+            progress = (time - self._early_time_threshold) / (
+                self._main_time_threshold - self._early_time_threshold
+            )
             f_t = math.pow(progress, 1 / e)
             base = self._max_utility * 0.92 - (self._max_utility * 0.92 - 0.55) * f_t
             return max(base + self._mystery_factor, 0.5)
         else:
             # End: deal-making mode
-            progress = (time - 0.8) / 0.2
+            progress = (time - self._main_time_threshold) / (
+                1.0 - self._main_time_threshold
+            )
             base = 0.55 - (0.55 - 0.45) * progress * 0.5
             return max(base + self._mystery_factor, self._min_utility + 0.1)
 
@@ -218,7 +231,7 @@ class JonnyBlack(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Last-minute deal
-        if time > 0.98:
+        if time > self._deadline_time_threshold:
             if offer_utility >= max(
                 self._best_opponent_utility * 0.95, self._min_utility + 0.1
             ):

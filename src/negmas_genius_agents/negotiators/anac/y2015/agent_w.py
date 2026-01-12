@@ -59,6 +59,8 @@ class AgentW(SAONegotiator):
 
     Args:
         e: Base concession exponent (default 0.15)
+        main_phase_time_threshold: Time threshold for main phase (default 0.85)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -71,6 +73,8 @@ class AgentW(SAONegotiator):
     def __init__(
         self,
         e: float = 0.15,
+        main_phase_time_threshold: float = 0.85,
+        deadline_time_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -89,6 +93,8 @@ class AgentW(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._main_phase_time_threshold = main_phase_time_threshold
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -173,14 +179,16 @@ class AgentW(SAONegotiator):
             return self._max_utility * 0.95
 
         # Main negotiation phase
-        if time < 0.85:
-            progress = (time - 0.15) / 0.7
+        if time < self._main_phase_time_threshold:
+            progress = (time - 0.15) / (self._main_phase_time_threshold - 0.15)
             f_t = math.pow(progress, 1 / e)
             target = self._max_utility * 0.95 - (self._max_utility * 0.95 - 0.55) * f_t
             return max(target, self._reservation_value)
 
         # End phase
-        progress = (time - 0.85) / 0.15
+        progress = (time - self._main_phase_time_threshold) / (
+            1.0 - self._main_phase_time_threshold
+        )
         base = 0.55
         target = base - (base - self._min_utility - 0.1) * progress * 0.7
         return max(target, self._reservation_value)
@@ -236,7 +244,7 @@ class AgentW(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # End-game: accept reasonable offers
-        if time > 0.95:
+        if time > self._deadline_time_threshold:
             if offer_utility >= max(
                 self._best_opponent_utility, self._min_utility + 0.1
             ):

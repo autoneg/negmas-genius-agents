@@ -59,6 +59,7 @@ class TaxiBox(SAONegotiator):
     Args:
         min_utility: Minimum acceptable utility (default 0.55).
         base_rate: Base concession rate per time unit (default 0.3).
+        deadline_threshold: Time threshold for accelerated concession (default 0.8).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -72,6 +73,7 @@ class TaxiBox(SAONegotiator):
         self,
         min_utility: float = 0.55,
         base_rate: float = 0.3,
+        deadline_threshold: float = 0.8,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -91,6 +93,7 @@ class TaxiBox(SAONegotiator):
         )
         self._min_utility = min_utility
         self._base_rate = base_rate
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -165,8 +168,10 @@ class TaxiBox(SAONegotiator):
             rate *= 1.2
 
         # Accelerate near deadline
-        if time > 0.8:
-            late_factor = 1 + (time - 0.8) / 0.2
+        if time > self._deadline_threshold:
+            late_factor = 1 + (time - self._deadline_threshold) / (
+                1.0 - self._deadline_threshold
+            )
             rate *= late_factor
 
         # Accumulate concession

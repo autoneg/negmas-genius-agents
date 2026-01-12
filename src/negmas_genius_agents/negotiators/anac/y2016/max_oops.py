@@ -85,6 +85,11 @@ class MaxOops(SAONegotiator):
         aggression: Aggression level - concession exponent (default 0.1,
             lower = more aggressive with slower concession)
         min_utility: Minimum acceptable utility threshold (default 0.5)
+        phase1_end: End time for phase 1 aggressive phase (default 0.2)
+        phase2_end: End time for phase 2 Boulware phase (default 0.8)
+        recovery_phase_end: End time for recovery phase flexibility (default 0.9)
+        early_time: Time threshold for early phase best-bid offering (default 0.05)
+        deadline_time: Time threshold for deadline acceptance (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -98,6 +103,11 @@ class MaxOops(SAONegotiator):
         self,
         aggression: float = 0.1,
         min_utility: float = 0.5,
+        phase1_end: float = 0.2,
+        phase2_end: float = 0.8,
+        recovery_phase_end: float = 0.9,
+        early_time: float = 0.05,
+        deadline_time: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -117,6 +127,11 @@ class MaxOops(SAONegotiator):
         )
         self._aggression = aggression
         self._min_utility = min_utility
+        self._phase1_end = phase1_end
+        self._phase2_end = phase2_end
+        self._recovery_phase_end = recovery_phase_end
+        self._early_time = early_time
+        self._deadline_time = deadline_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -189,16 +204,18 @@ class MaxOops(SAONegotiator):
         """Aggressive target with recovery adjustment."""
         if self._in_recovery_mode:
             # In recovery: be more flexible
-            if time < 0.9:
+            if time < self._recovery_phase_end:
                 return max(self._recovery_threshold, self._reservation_value + 0.1)
             else:
                 return self._reservation_value
 
         # Normal aggressive mode
-        if time < 0.2:
+        if time < self._phase1_end:
             return self._max_utility * 0.98
-        elif time < 0.8:
-            phase_time = (time - 0.2) / 0.6
+        elif time < self._phase2_end:
+            phase_time = (time - self._phase1_end) / (
+                self._phase2_end - self._phase1_end
+            )
             f_t = (
                 math.pow(phase_time, 1 / self._aggression)
                 if self._aggression > 0
@@ -209,7 +226,7 @@ class MaxOops(SAONegotiator):
             return start - (start - end) * f_t
         else:
             # End-game
-            phase_time = (time - 0.8) / 0.2
+            phase_time = (time - self._phase2_end) / (1.0 - self._phase2_end)
             start = self._max_utility * 0.75
             end = self._reservation_value
             return max(start - (start - end) * phase_time, self._reservation_value)
@@ -251,7 +268,7 @@ class MaxOops(SAONegotiator):
 
         time = state.relative_time
 
-        if time < 0.05:
+        if time < self._early_time:
             return self._best_bid
 
         return self._select_bid(time)
@@ -284,7 +301,7 @@ class MaxOops(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # End-game acceptance
-        if time >= 0.95 and offer_utility >= self._reservation_value:
+        if time >= self._deadline_time and offer_utility >= self._reservation_value:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

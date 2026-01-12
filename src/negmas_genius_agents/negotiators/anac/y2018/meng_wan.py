@@ -62,6 +62,13 @@ class MengWan(SAONegotiator):
     Args:
         e: Concession exponent (default 5.0 for very slow Boulware).
         min_threshold: Minimum utility threshold (default 0.7).
+        early_threshold: Acceptance threshold before late phase (default 0.80).
+        mid_threshold: Acceptance threshold in middle late phase (default 0.75).
+        late_threshold: Acceptance threshold in very late phase (default 0.70).
+        mid_time_threshold: Time threshold for mid acceptance (default 0.95).
+        late_time_threshold: Time threshold for late acceptance (default 0.98).
+        time_pressure_threshold: Time threshold for time pressure acceptance (default 0.9).
+        deadline_threshold: Time threshold for deadline acceptance (default 0.99).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -75,6 +82,13 @@ class MengWan(SAONegotiator):
         self,
         e: float = 5.0,
         min_threshold: float = 0.7,
+        early_threshold: float = 0.80,
+        mid_threshold: float = 0.75,
+        late_threshold: float = 0.70,
+        mid_time_threshold: float = 0.95,
+        late_time_threshold: float = 0.98,
+        time_pressure_threshold: float = 0.9,
+        deadline_threshold: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -94,6 +108,13 @@ class MengWan(SAONegotiator):
         )
         self._e = e
         self._min_threshold = min_threshold
+        self._early_threshold = early_threshold
+        self._mid_threshold = mid_threshold
+        self._late_threshold = late_threshold
+        self._mid_time_threshold = mid_time_threshold
+        self._late_time_threshold = late_time_threshold
+        self._time_pressure_threshold = time_pressure_threshold
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -177,12 +198,12 @@ class MengWan(SAONegotiator):
 
     def _get_change_threshold(self, time: float) -> float:
         """Get the acceptance change threshold based on time."""
-        if time >= 0.98:
-            return 0.70
-        elif time >= 0.95:
-            return 0.75
+        if time >= self._late_time_threshold:
+            return self._late_threshold
+        elif time >= self._mid_time_threshold:
+            return self._mid_threshold
         else:
-            return 0.80
+            return self._early_threshold
 
     def _select_bid(self, time: float) -> Outcome | None:
         """Select a bid based on target utility and opponent model."""
@@ -252,11 +273,11 @@ class MengWan(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Accept if above change threshold and late in negotiation
-        if time >= 0.9 and offer_utility >= change_threshold:
+        if time >= self._time_pressure_threshold and offer_utility >= change_threshold:
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline, accept if above minimum
-        if time >= 0.99 and offer_utility >= self._min_threshold:
+        if time >= self._deadline_threshold and offer_utility >= self._min_threshold:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

@@ -62,6 +62,12 @@ class InoxAgent(SAONegotiator):
         e: Concession exponent controlling Boulware behavior (default 0.1)
         min_utility: Minimum acceptable utility / reservation value (default 0.65)
         late_game_start: Time point to start accelerated concession (default 0.85)
+        late_acceptance_threshold: Time after which to accept near opponent's best (default 0.95)
+        emergency_acceptance_threshold: Time after which to accept anything above min_utility (default 0.995)
+        early_concession_factor: Concession multiplier in early game (default 0.5)
+        late_concession_exponent: Exponent for late game concession (default 2)
+        bid_selection_divisor: Divisor for selecting from lower portion of candidates (default 3)
+        opponent_best_multiplier: Multiplier for opponent's best utility in acceptance (default 0.98)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -76,6 +82,12 @@ class InoxAgent(SAONegotiator):
         e: float = 0.1,
         min_utility: float = 0.65,
         late_game_start: float = 0.85,
+        late_acceptance_threshold: float = 0.95,
+        emergency_acceptance_threshold: float = 0.995,
+        early_concession_factor: float = 0.5,
+        late_concession_exponent: float = 2,
+        bid_selection_divisor: int = 3,
+        opponent_best_multiplier: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -96,6 +108,12 @@ class InoxAgent(SAONegotiator):
         self._e = e
         self._min_utility = min_utility
         self._late_game_start = late_game_start
+        self._late_acceptance_threshold = late_acceptance_threshold
+        self._emergency_acceptance_threshold = emergency_acceptance_threshold
+        self._early_concession_factor = early_concession_factor
+        self._late_concession_exponent = late_concession_exponent
+        self._bid_selection_divisor = bid_selection_divisor
+        self._opponent_best_multiplier = opponent_best_multiplier
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -141,7 +159,9 @@ class InoxAgent(SAONegotiator):
                 f_t = 0.0
 
             threshold = self._max_utility - (
-                (self._max_utility - self._min_utility) * f_t * 0.5
+                (self._max_utility - self._min_utility)
+                * f_t
+                * self._early_concession_factor
             )
         else:
             # Late game: accelerate concession
@@ -149,12 +169,13 @@ class InoxAgent(SAONegotiator):
 
             # Start from where early game left off
             early_end_threshold = self._max_utility - (
-                (self._max_utility - self._min_utility) * 0.5
+                (self._max_utility - self._min_utility) * self._early_concession_factor
             )
 
             # Concede towards minimum
             threshold = early_end_threshold - (
-                (early_end_threshold - self._min_utility) * math.pow(late_progress, 2)
+                (early_end_threshold - self._min_utility)
+                * math.pow(late_progress, self._late_concession_exponent)
             )
 
         return max(threshold, self._min_utility)
@@ -188,7 +209,7 @@ class InoxAgent(SAONegotiator):
         candidates_sorted = sorted(candidates, key=lambda x: x.utility)
 
         # Select from lower portion of candidates (closer to threshold)
-        select_range = max(1, len(candidates_sorted) // 3)
+        select_range = max(1, len(candidates_sorted) // self._bid_selection_divisor)
         selected = random.choice(candidates_sorted[:select_range])
 
         self._last_proposed_utility = selected.utility
@@ -235,16 +256,20 @@ class InoxAgent(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Late game: accept opponent's best if reasonable
-        if time > 0.95:
+        if time > self._late_acceptance_threshold:
             if (
                 self._opponent_best_bid is not None
-                and offer_utility >= self._opponent_best_utility * 0.98
+                and offer_utility
+                >= self._opponent_best_utility * self._opponent_best_multiplier
                 and offer_utility >= self._min_utility
             ):
                 return ResponseType.ACCEPT_OFFER
 
         # Very late: accept anything above minimum
-        if time > 0.995 and offer_utility >= self._min_utility:
+        if (
+            time > self._emergency_acceptance_threshold
+            and offer_utility >= self._min_utility
+        ):
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

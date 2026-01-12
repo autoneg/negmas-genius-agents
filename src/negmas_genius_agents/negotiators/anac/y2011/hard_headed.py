@@ -71,6 +71,12 @@ class HardHeaded(SAONegotiator):
         ka: Initial concession constant (default 0.05)
         e: Concession exponent (default 0.05, very slow concession)
         min_utility: Minimum acceptable utility (default 0.585)
+        learning_coef: Learning coefficient for opponent modeling (default 0.2)
+        learning_value_addition: Value addition for learning (default 1)
+        utility_tolerance: Tolerance for bid selection around target (default 0.01)
+        top_selected_bids: Number of top bids to consider for opponent utility (default 4)
+        ignore_discount_threshold: Discount factor threshold for standard concession (default 0.9)
+        late_concession_exponent: Concession exponent after step point (default 30.0)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -85,6 +91,12 @@ class HardHeaded(SAONegotiator):
         ka: float = 0.05,
         e: float = 0.05,
         min_utility: float = 0.585,
+        learning_coef: float = 0.2,
+        learning_value_addition: int = 1,
+        utility_tolerance: float = 0.01,
+        top_selected_bids: int = 4,
+        ignore_discount_threshold: float = 0.9,
+        late_concession_exponent: float = 30.0,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -124,11 +136,13 @@ class HardHeaded(SAONegotiator):
         self._opponent_best_bid_utility: float = 0.0
         self._last_opponent_bid: Outcome | None = None
 
-        # Constants from original
-        self._learning_coef = 0.2
-        self._learning_value_addition = 1
-        self._utility_tolerance = 0.01
-        self._top_selected_bids = 4
+        # Constants from original (now configurable)
+        self._learning_coef = learning_coef
+        self._learning_value_addition = learning_value_addition
+        self._utility_tolerance = utility_tolerance
+        self._top_selected_bids = top_selected_bids
+        self._ignore_discount_threshold = ignore_discount_threshold
+        self._late_concession_exponent = late_concession_exponent
 
     def _initialize(self) -> None:
         """Initialize the outcome space and utility bounds."""
@@ -278,9 +292,8 @@ class HardHeaded(SAONegotiator):
             Target utility value.
         """
         step_point = self._discount_factor
-        ignore_discount_threshold = 0.9
 
-        if step_point >= ignore_discount_threshold:
+        if step_point >= self._ignore_discount_threshold:
             # Standard concession when discount is high (near 1)
             fa = (
                 self._ka + (1 - self._ka) * (t / step_point) ** (1.0 / self._e)
@@ -304,7 +317,7 @@ class HardHeaded(SAONegotiator):
 
         else:
             # After step point: faster concession
-            temp_e = 30.0
+            temp_e = self._late_concession_exponent
             fa = self._ka + (1 - self._ka) * ((t - step_point) / (1 - step_point)) ** (
                 1.0 / temp_e
             )

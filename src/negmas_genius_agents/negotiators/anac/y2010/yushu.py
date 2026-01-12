@@ -70,11 +70,60 @@ class Yushu(SAONegotiator):
 
     Args:
         eagerness: Concession rate exponent (default 1.2, slightly faster than linear)
+        bid_lower_factor: Lower factor for bid selection range (default 0.96)
+        bid_upper_factor: Upper factor for bid selection range (default 1.08)
+        min_utility_floor: Absolute minimum utility floor (default 0.50)
+        rounds_threshold_1: Rounds threshold for first min utility tier (default 6.7)
+        rounds_threshold_2: Rounds threshold for second min utility tier (default 5.0)
+        rounds_threshold_3: Rounds threshold for third min utility tier (default 3.0)
+        rounds_threshold_4: Rounds threshold for fourth min utility tier (default 2.3)
+        min_utility_factor_1: Min utility factor for first tier (default 0.93)
+        min_utility_factor_2: Min utility factor for second tier (default 0.90)
+        min_utility_factor_3: Min utility factor for third tier (default 0.86)
+        min_utility_factor_4: Min utility factor for fourth tier (default 0.80)
+        min_utility_factor_5: Min utility factor for final tier (default 0.60)
+        opponent_utility_threshold: Threshold for opponent utility adjustment (default 0.75)
+        opponent_adjustment_divisor: Divisor for opponent utility adjustment (default 2.5)
+        scale_factor_base: Base for scale factor calculation (default 0.75)
+        rounds_early_threshold: Rounds threshold for early acceptable utility (default 15)
+        rounds_late_threshold: Rounds threshold for late decisions (default 8)
+        acceptable_utility_early: Acceptable utility factor when rounds >= early threshold (default 0.96)
+        acceptable_utility_late: Acceptable utility factor when rounds < early threshold (default 0.92)
+        deadline_rounds: Rounds threshold for using best opponent bid (default 1.6)
+        many_rounds_threshold: Rounds threshold for considering opponent bids (default 30)
+        preferences: NegMAS preferences/utility function.
+        ufun: Utility function (overrides preferences if given).
+        name: Negotiator name.
+        parent: Parent controller.
+        owner: Agent that owns this negotiator.
+        id: Unique identifier.
+        **kwargs: Additional arguments passed to parent.
     """
 
     def __init__(
         self,
         eagerness: float = 1.2,
+        bid_lower_factor: float = 0.96,
+        bid_upper_factor: float = 1.08,
+        min_utility_floor: float = 0.50,
+        rounds_threshold_1: float = 6.7,
+        rounds_threshold_2: float = 5.0,
+        rounds_threshold_3: float = 3.0,
+        rounds_threshold_4: float = 2.3,
+        min_utility_factor_1: float = 0.93,
+        min_utility_factor_2: float = 0.90,
+        min_utility_factor_3: float = 0.86,
+        min_utility_factor_4: float = 0.80,
+        min_utility_factor_5: float = 0.60,
+        opponent_utility_threshold: float = 0.75,
+        opponent_adjustment_divisor: float = 2.5,
+        scale_factor_base: float = 0.75,
+        rounds_early_threshold: int = 15,
+        rounds_late_threshold: int = 8,
+        acceptable_utility_early: float = 0.96,
+        acceptable_utility_late: float = 0.92,
+        deadline_rounds: float = 1.6,
+        many_rounds_threshold: int = 30,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -93,6 +142,27 @@ class Yushu(SAONegotiator):
             **kwargs,
         )
         self._eagerness = eagerness
+        self._bid_lower_factor = bid_lower_factor
+        self._bid_upper_factor = bid_upper_factor
+        self._min_utility_floor = min_utility_floor
+        self._rounds_threshold_1 = rounds_threshold_1
+        self._rounds_threshold_2 = rounds_threshold_2
+        self._rounds_threshold_3 = rounds_threshold_3
+        self._rounds_threshold_4 = rounds_threshold_4
+        self._min_utility_factor_1 = min_utility_factor_1
+        self._min_utility_factor_2 = min_utility_factor_2
+        self._min_utility_factor_3 = min_utility_factor_3
+        self._min_utility_factor_4 = min_utility_factor_4
+        self._min_utility_factor_5 = min_utility_factor_5
+        self._opponent_utility_threshold = opponent_utility_threshold
+        self._opponent_adjustment_divisor = opponent_adjustment_divisor
+        self._scale_factor_base = scale_factor_base
+        self._rounds_early_threshold = rounds_early_threshold
+        self._rounds_late_threshold = rounds_late_threshold
+        self._acceptable_utility_early = acceptable_utility_early
+        self._acceptable_utility_late = acceptable_utility_late
+        self._deadline_rounds = deadline_rounds
+        self._many_rounds_threshold = many_rounds_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -188,22 +258,30 @@ class Yushu(SAONegotiator):
             else 0.5
         )
 
-        if rounds_left > 6.7:
-            self._min_utility = 0.93 * self._max_utility
-        elif rounds_left > 5:
-            self._min_utility = 0.90 * self._max_utility
-        elif rounds_left > 3:
-            self._min_utility = 0.86 * self._max_utility
-        elif rounds_left > 2.3:
-            self._min_utility = 0.80 * self._max_utility
+        if rounds_left > self._rounds_threshold_1:
+            self._min_utility = self._min_utility_factor_1 * self._max_utility
+        elif rounds_left > self._rounds_threshold_2:
+            self._min_utility = self._min_utility_factor_2 * self._max_utility
+        elif rounds_left > self._rounds_threshold_3:
+            self._min_utility = self._min_utility_factor_3 * self._max_utility
+        elif rounds_left > self._rounds_threshold_4:
+            self._min_utility = self._min_utility_factor_4 * self._max_utility
         else:
-            self._min_utility = 0.60 * self._max_utility
+            self._min_utility = self._min_utility_factor_5 * self._max_utility
 
-        if avg_opp_util < 0.75 and len(self._opponent_history) > 3:
-            self._min_utility -= (0.75 - avg_opp_util) / 2.5
+        if (
+            avg_opp_util < self._opponent_utility_threshold
+            and len(self._opponent_history) > 3
+        ):
+            self._min_utility -= (
+                self._opponent_utility_threshold - avg_opp_util
+            ) / self._opponent_adjustment_divisor
 
-        self._min_utility = max(0.50, self._min_utility)
-        scale_factor = min(0.75, avg_opp_util) / 3 + 0.75
+        self._min_utility = max(self._min_utility_floor, self._min_utility)
+        scale_factor = (
+            min(self._opponent_utility_threshold, avg_opp_util) / 3
+            + self._scale_factor_base
+        )
         self._min_utility *= scale_factor
         self._min_utility = max(self._min_utility, avg_opp_util)
 
@@ -218,8 +296,8 @@ class Yushu(SAONegotiator):
         if self._outcome_space is None:
             return None
 
-        lower = 0.96 * target
-        upper = 1.08 * target
+        lower = self._bid_lower_factor * target
+        upper = self._bid_upper_factor * target
 
         candidates: list[Outcome] = []
         for bd in self._outcome_space.outcomes:
@@ -228,7 +306,10 @@ class Yushu(SAONegotiator):
             elif bd.utility < lower:
                 break
 
-        if self._best_ten_indices and self._estimate_rounds_left(time) > 30:
+        if (
+            self._best_ten_indices
+            and self._estimate_rounds_left(time) > self._many_rounds_threshold
+        ):
             best_opp_util = self._opponent_utilities[self._best_ten_indices[0]]
             for bd in self._outcome_space.outcomes:
                 if bd.utility >= best_opp_util and bd.bid not in candidates:
@@ -274,7 +355,7 @@ class Yushu(SAONegotiator):
 
         target = self._get_target_utility(time)
 
-        if rounds_left < 1.6 and self._best_ten_indices:
+        if rounds_left < self._deadline_rounds and self._best_ten_indices:
             self._suggest_bid = self._opponent_history[self._best_ten_indices[0]]
         else:
             self._suggest_bid = self._get_next_bid(target, time)
@@ -309,14 +390,19 @@ class Yushu(SAONegotiator):
         target = self._get_target_utility(time)
 
         acceptable_u = (
-            0.96 * self._max_utility if rounds_left >= 15 else 0.92 * self._max_utility
+            self._acceptable_utility_early * self._max_utility
+            if rounds_left >= self._rounds_early_threshold
+            else self._acceptable_utility_late * self._max_utility
         )
 
         if offer_utility >= target or offer_utility >= acceptable_u:
             if self._suggest_bid is None:
                 return ResponseType.ACCEPT_OFFER
             suggest_util = float(self.ufun(self._suggest_bid)) if self.ufun else 0
-            if rounds_left < 8 or suggest_util <= offer_utility:
+            if (
+                rounds_left < self._rounds_late_threshold
+                or suggest_util <= offer_utility
+            ):
                 return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

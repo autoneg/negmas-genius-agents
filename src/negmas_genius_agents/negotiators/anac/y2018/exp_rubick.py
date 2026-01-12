@@ -64,6 +64,8 @@ class ExpRubick(SAONegotiator):
     Args:
         min_utility: Minimum utility threshold (default 0.55).
         learning_rate: Rate of strategy adaptation (default 0.1).
+        time_pressure_threshold: Time threshold for time pressure acceptance (default 0.9).
+        deadline_threshold: Time threshold for deadline acceptance (default 0.98).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -77,6 +79,8 @@ class ExpRubick(SAONegotiator):
         self,
         min_utility: float = 0.55,
         learning_rate: float = 0.1,
+        time_pressure_threshold: float = 0.9,
+        deadline_threshold: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -96,6 +100,8 @@ class ExpRubick(SAONegotiator):
         )
         self._min_utility_param = min_utility
         self._learning_rate = learning_rate
+        self._time_pressure_threshold = time_pressure_threshold
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -270,10 +276,13 @@ class ExpRubick(SAONegotiator):
         if offer_utility >= target:
             return True
 
-        if time >= 0.9 and offer_utility >= self._min_utility_param:
+        if (
+            time >= self._time_pressure_threshold
+            and offer_utility >= self._min_utility_param
+        ):
             return True
 
-        if time >= 0.98 and offer_utility >= self._min_utility:
+        if time >= self._deadline_threshold and offer_utility >= self._min_utility:
             return True
 
         return False

@@ -67,6 +67,16 @@ class Aster(SAONegotiator):
     Args:
         threshold_decay: Rate of threshold decay over time (default 0.3).
         opponent_weight: Weight for opponent utility in star pattern (default 0.4).
+        time_weight_multiplier: Multiplier for time-based weighting (default 2.0).
+        positive_trend_threshold: Threshold for detecting positive trend (default 0.1).
+        negative_trend_threshold: Threshold for detecting negative trend (default -0.1).
+        positive_trend_decay_factor: Decay multiplier for positive trend (default 0.8).
+        negative_trend_decay_factor: Decay multiplier for negative trend (default 1.2).
+        decay_multiplier: Multiplier for final decay calculation (default 0.6).
+        lowered_threshold_factor: Factor for lowering target when no candidates (default 0.95).
+        top_candidates_divisor: Divisor for selecting top candidates (default 3).
+        historical_acceptance_time: Time threshold for historical acceptance (default 0.9).
+        emergency_acceptance_time: Time threshold for emergency acceptance (default 0.98).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -80,6 +90,16 @@ class Aster(SAONegotiator):
         self,
         threshold_decay: float = 0.3,
         opponent_weight: float = 0.4,
+        time_weight_multiplier: float = 2.0,
+        positive_trend_threshold: float = 0.1,
+        negative_trend_threshold: float = -0.1,
+        positive_trend_decay_factor: float = 0.8,
+        negative_trend_decay_factor: float = 1.2,
+        decay_multiplier: float = 0.6,
+        lowered_threshold_factor: float = 0.95,
+        top_candidates_divisor: int = 3,
+        historical_acceptance_time: float = 0.9,
+        emergency_acceptance_time: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -99,6 +119,16 @@ class Aster(SAONegotiator):
         )
         self._threshold_decay = threshold_decay
         self._opponent_weight = opponent_weight
+        self._time_weight_multiplier = time_weight_multiplier
+        self._positive_trend_threshold = positive_trend_threshold
+        self._negative_trend_threshold = negative_trend_threshold
+        self._positive_trend_decay_factor = positive_trend_decay_factor
+        self._negative_trend_decay_factor = negative_trend_decay_factor
+        self._decay_multiplier = decay_multiplier
+        self._lowered_threshold_factor = lowered_threshold_factor
+        self._top_candidates_divisor = top_candidates_divisor
+        self._historical_acceptance_time = historical_acceptance_time
+        self._emergency_acceptance_time = emergency_acceptance_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -151,7 +181,7 @@ class Aster(SAONegotiator):
             self._best_opponent_bid = bid
 
         # Time-weighted frequency update
-        weight = 1.0 + time * 2.0
+        weight = 1.0 + time * self._time_weight_multiplier
         for i, value in enumerate(bid):
             if i not in self._opponent_value_freq:
                 self._opponent_value_freq[i] = {}
@@ -207,14 +237,14 @@ class Aster(SAONegotiator):
                 for b in self._opponent_bids[-5:]
             ]
             trend = recent_utils[-1] - recent_utils[0]
-            if trend > 0.1:
+            if trend > self._positive_trend_threshold:
                 # Opponent improving offers, slow decay
-                decay *= 0.8
-            elif trend < -0.1:
+                decay *= self._positive_trend_decay_factor
+            elif trend < self._negative_trend_threshold:
                 # Opponent hardening, speed up decay
-                decay *= 1.2
+                decay *= self._negative_trend_decay_factor
 
-        target = self._max_utility - decay * 0.6
+        target = self._max_utility - decay * self._decay_multiplier
         return max(self._min_utility, target)
 
     def _select_bid(self, time: float) -> Outcome | None:
@@ -226,7 +256,7 @@ class Aster(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(target)
 
         if not candidates:
-            lowered = target * 0.95
+            lowered = target * self._lowered_threshold_factor
             candidates = self._outcome_space.get_bids_above(lowered)
             if not candidates:
                 return self._outcome_space.outcomes[0].bid
@@ -249,7 +279,9 @@ class Aster(SAONegotiator):
             if best_bid is not None:
                 return best_bid
 
-        return random.choice(candidates[: max(1, len(candidates) // 3)]).bid
+        return random.choice(
+            candidates[: max(1, len(candidates) // self._top_candidates_divisor)]
+        ).bid
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:
         """Generate a proposal."""
@@ -289,11 +321,17 @@ class Aster(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Criterion 3: Best opponent offer and close to deadline
-        if time > 0.9 and offer_utility >= self._best_opponent_utility:
+        if (
+            time > self._historical_acceptance_time
+            and offer_utility >= self._best_opponent_utility
+        ):
             return ResponseType.ACCEPT_OFFER
 
         # Criterion 4: Emergency acceptance
-        if time > 0.98 and offer_utility >= self._min_utility:
+        if (
+            time > self._emergency_acceptance_time
+            and offer_utility >= self._min_utility
+        ):
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

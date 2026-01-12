@@ -58,6 +58,8 @@ class PNegotiator(SAONegotiator):
 
     Args:
         e: Concession exponent (default 0.18)
+        probabilistic_accept_time_threshold: Time after which probabilistic acceptance starts (default 0.7)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -70,6 +72,8 @@ class PNegotiator(SAONegotiator):
     def __init__(
         self,
         e: float = 0.18,
+        probabilistic_accept_time_threshold: float = 0.7,
+        deadline_time_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -88,6 +92,8 @@ class PNegotiator(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._probabilistic_accept_time_threshold = probabilistic_accept_time_threshold
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -222,7 +228,7 @@ class PNegotiator(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Probabilistic acceptance: sometimes accept sub-threshold offers
-        if time > 0.7:
+        if time > self._probabilistic_accept_time_threshold:
             accept_prob = (offer_utility - self._min_acceptable) / (
                 threshold - self._min_acceptable + 0.01
             )
@@ -232,7 +238,7 @@ class PNegotiator(SAONegotiator):
                     return ResponseType.ACCEPT_OFFER
 
         # End-game
-        if time > 0.95:
+        if time > self._deadline_time_threshold:
             if offer_utility >= max(self._best_opponent_utility, self._min_acceptable):
                 return ResponseType.ACCEPT_OFFER
 

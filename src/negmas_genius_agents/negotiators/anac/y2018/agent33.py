@@ -59,6 +59,8 @@ class Agent33(SAONegotiator):
         initial_target: Initial target utility (default 0.95).
         min_utility: Minimum utility threshold (default 0.6).
         concession_start: Time to start conceding (default 0.1).
+        time_pressure_threshold: Time threshold for time pressure acceptance (default 0.9).
+        deadline_threshold: Time threshold for deadline acceptance (default 0.98).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -73,6 +75,8 @@ class Agent33(SAONegotiator):
         initial_target: float = 0.95,
         min_utility: float = 0.6,
         concession_start: float = 0.1,
+        time_pressure_threshold: float = 0.9,
+        deadline_threshold: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -93,6 +97,8 @@ class Agent33(SAONegotiator):
         self._initial_target = initial_target
         self._min_utility_param = min_utility
         self._concession_start = concession_start
+        self._time_pressure_threshold = time_pressure_threshold
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -172,13 +178,13 @@ class Agent33(SAONegotiator):
             return True
 
         # Time pressure
-        if time >= 0.9:
+        if time >= self._time_pressure_threshold:
             # Accept if above minimum
             if offer_utility >= self._min_utility_param:
                 return True
 
         # Near deadline
-        if time >= 0.98:
+        if time >= self._deadline_threshold:
             # Accept if better than best received
             if offer_utility >= self._best_received_utility * 0.95:
                 return True

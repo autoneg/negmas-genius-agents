@@ -59,6 +59,8 @@ class RandomDance(SAONegotiator):
     Args:
         min_utility: Minimum acceptable utility (default 0.5)
         dance_variance: How much to vary concession rate (default 0.1)
+        final_phase_time_threshold: Time after which final phase acceptance logic applies (default 0.9)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -72,6 +74,8 @@ class RandomDance(SAONegotiator):
         self,
         min_utility: float = 0.5,
         dance_variance: float = 0.1,
+        final_phase_time_threshold: float = 0.9,
+        deadline_time_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -91,6 +95,8 @@ class RandomDance(SAONegotiator):
         )
         self._min_utility = min_utility
         self._dance_variance = dance_variance
+        self._final_phase_time_threshold = final_phase_time_threshold
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -162,9 +168,11 @@ class RandomDance(SAONegotiator):
         base_threshold = self._compute_threshold(time)
 
         # In final phase (last 10% of time), accept if better than best seen
-        if time > 0.9:
+        if time > self._final_phase_time_threshold:
             # Acceptance threshold decreases more aggressively
-            urgency = (time - 0.9) / 0.1  # 0 to 1 in final phase
+            urgency = (time - self._final_phase_time_threshold) / (
+                1.0 - self._final_phase_time_threshold
+            )  # 0 to 1 in final phase
             # At deadline, accept anything above min_utility
             final_threshold = self._min_utility + (1 - urgency) * (
                 base_threshold - self._min_utility
@@ -241,7 +249,10 @@ class RandomDance(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # In final moments, accept if it's the best we've seen
-        if time > 0.95 and offer_utility >= self._best_opponent_utility:
+        if (
+            time > self._deadline_time_threshold
+            and offer_utility >= self._best_opponent_utility
+        ):
             if offer_utility >= self._min_utility:
                 return ResponseType.ACCEPT_OFFER
 

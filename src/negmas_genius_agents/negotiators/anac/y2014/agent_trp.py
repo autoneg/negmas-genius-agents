@@ -37,7 +37,7 @@ class AgentTRP(SAONegotiator):
 
     **Offering Strategy:**
         Combines time pressure with trade-off analysis for bid selection:
-        - Time pressure increases exponentially near deadline (0.8, 0.95 thresholds)
+        - Time pressure increases exponentially near deadline (pressure_phase1_end, pressure_phase2_end thresholds)
         - Base target computed from pressure-adjusted concession
         - Risk adjustment modifies target based on perceived opponent volatility
         - Final bids selected using trade-off score: own_weight * own_util +
@@ -47,10 +47,10 @@ class AgentTRP(SAONegotiator):
     **Acceptance Strategy:**
         Risk-aware multi-condition acceptance:
         1. Accept if offer utility meets target threshold
-        2. Accept below target if risk is high and time > 0.7 (risk threshold
-           = target - perceived_risk * risk_aversion * 0.1)
+        2. Accept below target if risk is high and time > risk_acceptance_time (risk threshold
+           = target - perceived_risk * risk_aversion * risk_adjustment_factor)
         3. Accept if offer matches or exceeds next planned bid utility
-        4. Emergency acceptance near deadline (t > 0.98) above minimum
+        4. Emergency acceptance near deadline (t > deadline_acceptance_time) above minimum
         This approach prevents missed deals when facing unpredictable opponents.
 
     **Opponent Modeling:**
@@ -64,6 +64,23 @@ class AgentTRP(SAONegotiator):
     Args:
         risk_aversion: Level of risk aversion [0-1] (default 0.5).
         trade_off_weight: Weight for opponent utility in bid selection (default 0.4).
+        pressure_phase1_end: Time threshold ending first pressure phase (default 0.8).
+        pressure_phase2_end: Time threshold ending second pressure phase (default 0.95).
+        risk_acceptance_time: Time threshold for risk-aware acceptance (default 0.7).
+        deadline_acceptance_time: Time threshold for near-deadline acceptance (default 0.98).
+        min_utility_floor: Floor value for minimum utility (default 0.5).
+        phase1_pressure_factor: Pressure factor during phase 1 (default 0.5).
+        phase1_to_phase2_base: Base pressure at start of phase 2 (default 0.4).
+        phase1_to_phase2_range: Pressure range during phase 2 (default 0.3).
+        phase2_to_end_base: Base pressure at start of final phase (default 0.7).
+        phase2_to_end_range: Pressure range during final phase (default 0.3).
+        risk_base: Base risk perception value (default 0.3).
+        variance_multiplier: Multiplier for variance in risk calculation (default 2.0).
+        lowered_threshold_factor: Factor to lower threshold when no candidates (default 0.95).
+        high_opponent_util_threshold: Threshold for high opponent utility (default 0.6).
+        risk_bonus_factor: Bonus factor for well-understood preferences (default 0.1).
+        risk_adjustment_factor: Factor for risk adjustment in acceptance (default 0.1).
+        top_candidates_divisor: Divisor to select top candidates (default 3).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -77,6 +94,23 @@ class AgentTRP(SAONegotiator):
         self,
         risk_aversion: float = 0.5,
         trade_off_weight: float = 0.4,
+        pressure_phase1_end: float = 0.8,
+        pressure_phase2_end: float = 0.95,
+        risk_acceptance_time: float = 0.7,
+        deadline_acceptance_time: float = 0.98,
+        min_utility_floor: float = 0.5,
+        phase1_pressure_factor: float = 0.5,
+        phase1_to_phase2_base: float = 0.4,
+        phase1_to_phase2_range: float = 0.3,
+        phase2_to_end_base: float = 0.7,
+        phase2_to_end_range: float = 0.3,
+        risk_base: float = 0.3,
+        variance_multiplier: float = 2.0,
+        lowered_threshold_factor: float = 0.95,
+        high_opponent_util_threshold: float = 0.6,
+        risk_bonus_factor: float = 0.1,
+        risk_adjustment_factor: float = 0.1,
+        top_candidates_divisor: int = 3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -96,6 +130,23 @@ class AgentTRP(SAONegotiator):
         )
         self._risk_aversion = risk_aversion
         self._trade_off_weight = trade_off_weight
+        self._pressure_phase1_end = pressure_phase1_end
+        self._pressure_phase2_end = pressure_phase2_end
+        self._risk_acceptance_time = risk_acceptance_time
+        self._deadline_acceptance_time = deadline_acceptance_time
+        self._min_utility_floor = min_utility_floor
+        self._phase1_pressure_factor = phase1_pressure_factor
+        self._phase1_to_phase2_base = phase1_to_phase2_base
+        self._phase1_to_phase2_range = phase1_to_phase2_range
+        self._phase2_to_end_base = phase2_to_end_base
+        self._phase2_to_end_range = phase2_to_end_range
+        self._risk_base = risk_base
+        self._variance_multiplier = variance_multiplier
+        self._lowered_threshold_factor = lowered_threshold_factor
+        self._high_opponent_util_threshold = high_opponent_util_threshold
+        self._risk_bonus_factor = risk_bonus_factor
+        self._risk_adjustment_factor = risk_adjustment_factor
+        self._top_candidates_divisor = top_candidates_divisor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -106,7 +157,7 @@ class AgentTRP(SAONegotiator):
         self._opponent_value_freq: dict[int, dict] = {}
 
         # State
-        self._min_utility: float = 0.5
+        self._min_utility: float = min_utility_floor
         self._max_utility: float = 1.0
         self._perceived_risk: float = 0.5
 
@@ -121,7 +172,9 @@ class AgentTRP(SAONegotiator):
         self._outcome_space = SortedOutcomeSpace(ufun=self.ufun)
         if self._outcome_space.outcomes:
             self._max_utility = self._outcome_space.max_utility
-            self._min_utility = max(0.5, self._outcome_space.min_utility)
+            self._min_utility = max(
+                self._min_utility_floor, self._outcome_space.min_utility
+            )
         self._initialized = True
 
     def on_negotiation_start(self, state: SAOState) -> None:
@@ -162,7 +215,9 @@ class AgentTRP(SAONegotiator):
                 (u - sum(recent_utils) / len(recent_utils)) ** 2 for u in recent_utils
             ) / len(recent_utils)
             # High variance = unpredictable opponent = higher risk
-            self._perceived_risk = min(1.0, 0.3 + variance * 2)
+            self._perceived_risk = min(
+                1.0, self._risk_base + variance * self._variance_multiplier
+            )
 
     def _estimate_opponent_utility(self, bid: Outcome) -> float:
         """Estimate opponent utility using frequency model."""
@@ -184,12 +239,22 @@ class AgentTRP(SAONegotiator):
     def _compute_time_pressure(self, time: float) -> float:
         """Compute time pressure factor."""
         # Pressure increases exponentially near deadline
-        if time < 0.8:
-            return time * 0.5
-        elif time < 0.95:
-            return 0.4 + (time - 0.8) / 0.15 * 0.3
+        if time < self._pressure_phase1_end:
+            return time * self._phase1_pressure_factor
+        elif time < self._pressure_phase2_end:
+            return (
+                self._phase1_to_phase2_base
+                + (time - self._pressure_phase1_end)
+                / (self._pressure_phase2_end - self._pressure_phase1_end)
+                * self._phase1_to_phase2_range
+            )
         else:
-            return 0.7 + (time - 0.95) / 0.05 * 0.3
+            return (
+                self._phase2_to_end_base
+                + (time - self._pressure_phase2_end)
+                / (1.0 - self._pressure_phase2_end)
+                * self._phase2_to_end_range
+            )
 
     def _compute_target_utility(self, time: float) -> float:
         """Compute target utility balancing trade-off, risk, and pressure."""
@@ -201,8 +266,10 @@ class AgentTRP(SAONegotiator):
         )
 
         # Adjust for risk
-        risk_adjustment = self._risk_aversion * self._perceived_risk * 0.1
-        if self._perceived_risk > 0.6:
+        risk_adjustment = (
+            self._risk_aversion * self._perceived_risk * self._risk_adjustment_factor
+        )
+        if self._perceived_risk > self._high_opponent_util_threshold:
             # High risk, be more accommodating
             base_target -= risk_adjustment
         else:
@@ -220,7 +287,7 @@ class AgentTRP(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(target)
 
         if not candidates:
-            lowered = target * 0.95
+            lowered = target * self._lowered_threshold_factor
             candidates = self._outcome_space.get_bids_above(lowered)
             if not candidates:
                 return self._outcome_space.outcomes[0].bid
@@ -237,8 +304,8 @@ class AgentTRP(SAONegotiator):
                 score = own_weight * bd.utility + self._trade_off_weight * opp_util
 
                 # Risk bonus for well-understood opponent preferences
-                if opp_util > 0.6:
-                    score += (1 - self._perceived_risk) * 0.1
+                if opp_util > self._high_opponent_util_threshold:
+                    score += (1 - self._perceived_risk) * self._risk_bonus_factor
 
                 if score > best_score:
                     best_score = score
@@ -247,7 +314,9 @@ class AgentTRP(SAONegotiator):
             if best_bid is not None:
                 return best_bid
 
-        return random.choice(candidates[: max(1, len(candidates) // 3)]).bid
+        return random.choice(
+            candidates[: max(1, len(candidates) // self._top_candidates_divisor)]
+        ).bid
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:
         """Generate a proposal."""
@@ -280,8 +349,11 @@ class AgentTRP(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Risk-aware: accept slightly below target if risk is high
-        risk_threshold = target - self._perceived_risk * self._risk_aversion * 0.1
-        if offer_utility >= risk_threshold and time > 0.7:
+        risk_threshold = (
+            target
+            - self._perceived_risk * self._risk_aversion * self._risk_adjustment_factor
+        )
+        if offer_utility >= risk_threshold and time > self._risk_acceptance_time:
             return ResponseType.ACCEPT_OFFER
 
         # Accept if better than our next offer
@@ -292,7 +364,7 @@ class AgentTRP(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Near deadline, accept if reasonable
-        if time > 0.98 and offer_utility >= self._min_utility:
+        if time > self._deadline_acceptance_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

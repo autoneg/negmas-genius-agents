@@ -61,6 +61,7 @@ class TheFawkes(SAONegotiator):
     Args:
         e: Concession exponent (default 0.2, Boulware-like)
         k: Initial utility threshold offset (default 0.0)
+        early_game_offers: Number of opponent offers before using opponent model (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -74,6 +75,7 @@ class TheFawkes(SAONegotiator):
         self,
         e: float = 0.2,
         k: float = 0.0,
+        early_game_offers: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -93,6 +95,7 @@ class TheFawkes(SAONegotiator):
         )
         self._e = e
         self._k = k
+        self._early_game_offers = early_game_offers
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -198,7 +201,7 @@ class TheFawkes(SAONegotiator):
             return None
 
         # If we have opponent model, select bid that maximizes opponent utility
-        if self._total_opponent_offers > 5:
+        if self._total_opponent_offers > self._early_game_offers:
             best_bid = None
             best_opponent_util = -1.0
 

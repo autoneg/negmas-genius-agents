@@ -73,6 +73,8 @@ class AgentLight(SAONegotiator):
     Args:
         e: Concession exponent for Boulware curve (default 0.2)
         min_utility: Minimum acceptable utility threshold (default 0.55)
+        early_time: Time threshold for early phase best-bid offering (default 0.02)
+        deadline_time: Time threshold for deadline acceptance (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -86,6 +88,8 @@ class AgentLight(SAONegotiator):
         self,
         e: float = 0.2,
         min_utility: float = 0.55,
+        early_time: float = 0.02,
+        deadline_time: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -105,6 +109,8 @@ class AgentLight(SAONegotiator):
         )
         self._e = e
         self._min_utility = min_utility
+        self._early_time = early_time
+        self._deadline_time = deadline_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -175,7 +181,7 @@ class AgentLight(SAONegotiator):
 
         time = state.relative_time
 
-        if time < 0.02:
+        if time < self._early_time:
             return self._best_bid
 
         return self._select_bid(time)
@@ -206,7 +212,7 @@ class AgentLight(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # End-game
-        if time > 0.95 and offer_utility >= self._reservation_value:
+        if time > self._deadline_time and offer_utility >= self._reservation_value:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

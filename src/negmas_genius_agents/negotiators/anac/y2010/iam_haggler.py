@@ -206,6 +206,17 @@ class IAMhaggler(SAONegotiator):
     Args:
         e: Concession exponent (default 2.0, Boulware-style)
         min_utility: Minimum acceptable utility floor (default 0.5)
+        bid_tolerance: Tolerance for bid selection around target (default 0.05)
+        nash_search_limit: Maximum candidates for Nash product search (default 50)
+        nash_bonus: Bonus factor for own utility in Nash product (default 0.01)
+        adaptive_e_increase: Factor to increase e when opponent concedes (default 1.5)
+        adaptive_e_decrease: Factor to decrease e when opponent hardens (default 0.7)
+        adaptive_e_max: Maximum adaptive e value (default 10.0)
+        adaptive_e_min: Minimum adaptive e value (default 0.5)
+        opponent_trend_threshold: Trend threshold for adaptation (default 0.02)
+        late_phase_time: Time for late acceptance phase (default 0.95)
+        late_acceptance_factor: Factor for late acceptance (default 0.95)
+        deadline_time: Time threshold for deadline acceptance (default 0.99)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -219,6 +230,17 @@ class IAMhaggler(SAONegotiator):
         self,
         e: float = 2.0,
         min_utility: float = 0.5,
+        bid_tolerance: float = 0.05,
+        nash_search_limit: int = 50,
+        nash_bonus: float = 0.01,
+        adaptive_e_increase: float = 1.5,
+        adaptive_e_decrease: float = 0.7,
+        adaptive_e_max: float = 10.0,
+        adaptive_e_min: float = 0.5,
+        opponent_trend_threshold: float = 0.02,
+        late_phase_time: float = 0.95,
+        late_acceptance_factor: float = 0.95,
+        deadline_time: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -238,6 +260,17 @@ class IAMhaggler(SAONegotiator):
         )
         self._e = e
         self._min_utility_param = min_utility
+        self._bid_tolerance = bid_tolerance
+        self._nash_search_limit = nash_search_limit
+        self._nash_bonus = nash_bonus
+        self._adaptive_e_increase = adaptive_e_increase
+        self._adaptive_e_decrease = adaptive_e_decrease
+        self._adaptive_e_max = adaptive_e_max
+        self._adaptive_e_min = adaptive_e_min
+        self._opponent_trend_threshold = opponent_trend_threshold
+        self._late_phase_time = late_phase_time
+        self._late_acceptance_factor = late_acceptance_factor
+        self._deadline_time = deadline_time
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._opponent_model: BayesianOpponentModel | None = None
@@ -317,12 +350,16 @@ class IAMhaggler(SAONegotiator):
             recent = [u for _, u in self._opponent_offers[-5:]]
             if len(recent) >= 2:
                 trend = recent[-1] - recent[0]
-                if trend > 0.02:
+                if trend > self._opponent_trend_threshold:
                     # Opponent is conceding, be more patient
-                    self._effective_e = min(self._e * 1.5, 10.0)
-                elif trend < -0.02:
+                    self._effective_e = min(
+                        self._e * self._adaptive_e_increase, self._adaptive_e_max
+                    )
+                elif trend < -self._opponent_trend_threshold:
                     # Opponent is hardening, concede more
-                    self._effective_e = max(self._e * 0.7, 0.5)
+                    self._effective_e = max(
+                        self._e * self._adaptive_e_decrease, self._adaptive_e_min
+                    )
                 else:
                     # Neutral, use default
                     self._effective_e = self._e
@@ -365,7 +402,9 @@ class IAMhaggler(SAONegotiator):
         target = self._get_target_utility(time)
 
         # Get bids near target utility
-        candidates = self._outcome_space.get_bids_in_range(target - 0.05, target + 0.05)
+        candidates = self._outcome_space.get_bids_in_range(
+            target - self._bid_tolerance, target + self._bid_tolerance
+        )
 
         if not candidates:
             # Fallback to bids above minimum
@@ -381,11 +420,13 @@ class IAMhaggler(SAONegotiator):
             best_bid = None
             best_score = -1.0
 
-            for bd in candidates[:50]:  # Limit search for efficiency
+            for bd in candidates[
+                : self._nash_search_limit
+            ]:  # Limit search for efficiency
                 own_util = bd.utility
                 opp_util = self._opponent_model.estimate_opponent_utility(bd.bid)
                 # Nash product + small bonus for own utility
-                score = own_util * opp_util + 0.01 * own_util
+                score = own_util * opp_util + self._nash_bonus * own_util
 
                 if score > best_score:
                     best_score = score
@@ -428,11 +469,15 @@ class IAMhaggler(SAONegotiator):
             return True
 
         # Accept best opponent offer near deadline
-        if time > 0.95 and offer_utility >= self._best_opponent_utility * 0.95:
+        if (
+            time > self._late_phase_time
+            and offer_utility
+            >= self._best_opponent_utility * self._late_acceptance_factor
+        ):
             return True
 
         # Accept anything above minimum very close to deadline
-        if time > 0.99 and offer_utility >= self._min_utility:
+        if time > self._deadline_time and offer_utility >= self._min_utility:
             return True
 
         return False

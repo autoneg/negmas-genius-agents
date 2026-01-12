@@ -73,6 +73,9 @@ class Gravity(SAONegotiator):
     Args:
         gravity: Gravitational constant for concession (default 2.0)
         min_utility: Minimum acceptable utility (default 0.5)
+        near_deadline_time: Time threshold for near deadline (default 0.95)
+        final_deadline_time: Time threshold for final deadline (default 0.99)
+        final_best_ratio: Ratio of best received utility for final deadline acceptance (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -86,6 +89,9 @@ class Gravity(SAONegotiator):
         self,
         gravity: float = 2.0,
         min_utility: float = 0.5,
+        near_deadline_time: float = 0.95,
+        final_deadline_time: float = 0.99,
+        final_best_ratio: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -105,6 +111,9 @@ class Gravity(SAONegotiator):
         )
         self._gravity = gravity
         self._min_utility = min_utility
+        self._near_deadline_time = near_deadline_time
+        self._final_deadline_time = final_deadline_time
+        self._final_best_ratio = final_best_ratio
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -249,10 +258,13 @@ class Gravity(SAONegotiator):
         if offer_utility >= target:
             return ResponseType.ACCEPT_OFFER
 
-        if time >= 0.95 and offer_utility >= self._min_utility:
+        if time >= self._near_deadline_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
-        if time >= 0.99 and offer_utility >= self._best_received_utility * 0.95:
+        if (
+            time >= self._final_deadline_time
+            and offer_utility >= self._best_received_utility * self._final_best_ratio
+        ):
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

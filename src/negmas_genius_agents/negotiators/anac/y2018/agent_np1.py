@@ -61,6 +61,8 @@ class AgentNP1(SAONegotiator):
     Args:
         e: Concession exponent (default 2.0, moderate concession speed).
         min_utility: Minimum utility threshold (default 0.55).
+        time_pressure_threshold: Time threshold for time pressure acceptance (default 0.9).
+        deadline_threshold: Time threshold for deadline acceptance (default 0.98).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -74,6 +76,8 @@ class AgentNP1(SAONegotiator):
         self,
         e: float = 2.0,
         min_utility: float = 0.55,
+        time_pressure_threshold: float = 0.9,
+        deadline_threshold: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -93,6 +97,8 @@ class AgentNP1(SAONegotiator):
         )
         self._e = e
         self._min_utility_param = min_utility
+        self._time_pressure_threshold = time_pressure_threshold
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -218,10 +224,13 @@ class AgentNP1(SAONegotiator):
             return True
 
         # Time pressure
-        if time >= 0.9 and offer_utility >= self._min_utility_param:
+        if (
+            time >= self._time_pressure_threshold
+            and offer_utility >= self._min_utility_param
+        ):
             return True
 
-        if time >= 0.98 and offer_utility >= self._min_utility:
+        if time >= self._deadline_threshold and offer_utility >= self._min_utility:
             return True
 
         return False

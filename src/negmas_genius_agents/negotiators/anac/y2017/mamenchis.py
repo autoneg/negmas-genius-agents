@@ -60,6 +60,7 @@ class Mamenchis(SAONegotiator):
     Args:
         min_utility: Minimum acceptable utility (default 0.6).
         patience: Controls concession patience, higher = slower (default 3.0).
+        late_game_threshold: Time threshold for late game adjustment (default 0.95).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -73,6 +74,7 @@ class Mamenchis(SAONegotiator):
         self,
         min_utility: float = 0.6,
         patience: float = 3.0,
+        late_game_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -92,6 +94,7 @@ class Mamenchis(SAONegotiator):
         )
         self._min_utility = min_utility
         self._patience = patience
+        self._late_game_threshold = late_game_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -161,7 +164,7 @@ class Mamenchis(SAONegotiator):
             threshold = max(threshold - 0.05, self._min_utility)
 
         # Late game adjustment
-        if time > 0.95:
+        if time > self._late_game_threshold:
             threshold = min(threshold, self._best_opponent_utility + 0.02)
             threshold = max(threshold, self._min_utility)
 

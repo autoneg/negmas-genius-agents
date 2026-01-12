@@ -57,6 +57,7 @@ class Gin(SAONegotiator):
     Args:
         min_utility: Minimum acceptable utility (default 0.65).
         smoothness: Controls concession curve smoothness (default 2.0).
+        late_game_threshold: Time threshold for late game acceleration (default 0.9).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -70,6 +71,7 @@ class Gin(SAONegotiator):
         self,
         min_utility: float = 0.65,
         smoothness: float = 2.0,
+        late_game_threshold: float = 0.9,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -89,6 +91,7 @@ class Gin(SAONegotiator):
         )
         self._min_utility = min_utility
         self._smoothness = smoothness
+        self._late_game_threshold = late_game_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -164,8 +167,10 @@ class Gin(SAONegotiator):
         threshold = self._max_utility - concession_rate * utility_range
 
         # Late game adjustment
-        if time > 0.9:
-            late_pressure = (time - 0.9) / 0.1
+        if time > self._late_game_threshold:
+            late_pressure = (time - self._late_game_threshold) / (
+                1.0 - self._late_game_threshold
+            )
             threshold -= 0.1 * late_pressure * late_pressure
 
         return max(threshold, self._min_utility)
@@ -232,7 +237,7 @@ class Gin(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Accept if better than expected future offers (near deadline)
-        if time > 0.9:
+        if time > self._late_game_threshold:
             expected_future = self._estimate_opponent_future_utility(time)
             if offer_utility >= expected_future - 0.02:
                 return ResponseType.ACCEPT_OFFER

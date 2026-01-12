@@ -66,6 +66,19 @@ class DoNA(SAONegotiator):
 
     Args:
         sample_size: Maximum bids to sample for domain analysis (default 100000).
+        last_moment_time: Time threshold for last-moment rapid concession (default 0.95).
+        deadline_time: Time threshold for deadline-based decisions (default 0.99).
+        stdev_multiplier: Multiplier for standard deviation in min utility calculation (default 2.4).
+        avg_multiplier: Multiplier for average utility in min utility calculation (default 1.2).
+        max_utility_cap: Maximum cap for computed min utility threshold (default 0.95).
+        time_weight_factor: Base multiplier for time-based frequency weighting (default 100).
+        high_discount_threshold: Discount factor threshold for last-moment strategy (default 0.8).
+        low_discount_threshold: Discount factor threshold for fast concession (default 0.2).
+        high_discount_progress_ratio: Progress ratio for high discount rapid concession (default 0.3).
+        low_discount_progress_ratio: Progress ratio for low discount concession (default 0.5).
+        medium_discount_progress_ratio: Progress ratio for medium discount concession (default 0.4).
+        medium_discount_time_base: Base value for medium discount time factor (default 0.5).
+        medium_discount_time_scale: Scale factor for medium discount time calculation (default 0.5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -78,6 +91,19 @@ class DoNA(SAONegotiator):
     def __init__(
         self,
         sample_size: int = 100000,
+        last_moment_time: float = 0.95,
+        deadline_time: float = 0.99,
+        stdev_multiplier: float = 2.4,
+        avg_multiplier: float = 1.2,
+        max_utility_cap: float = 0.95,
+        time_weight_factor: float = 100.0,
+        high_discount_threshold: float = 0.8,
+        low_discount_threshold: float = 0.2,
+        high_discount_progress_ratio: float = 0.3,
+        low_discount_progress_ratio: float = 0.5,
+        medium_discount_progress_ratio: float = 0.4,
+        medium_discount_time_base: float = 0.5,
+        medium_discount_time_scale: float = 0.5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -96,6 +122,19 @@ class DoNA(SAONegotiator):
             **kwargs,
         )
         self._sample_size = sample_size
+        self._last_moment_time = last_moment_time
+        self._deadline_time = deadline_time
+        self._stdev_multiplier = stdev_multiplier
+        self._avg_multiplier = avg_multiplier
+        self._max_utility_cap = max_utility_cap
+        self._time_weight_factor = time_weight_factor
+        self._high_discount_threshold = high_discount_threshold
+        self._low_discount_threshold = low_discount_threshold
+        self._high_discount_progress_ratio = high_discount_progress_ratio
+        self._low_discount_progress_ratio = low_discount_progress_ratio
+        self._medium_discount_progress_ratio = medium_discount_progress_ratio
+        self._medium_discount_time_base = medium_discount_time_base
+        self._medium_discount_time_scale = medium_discount_time_scale
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -145,7 +184,11 @@ class DoNA(SAONegotiator):
         self._stdev = math.sqrt(variance)
 
         # Compute minimum utility threshold
-        self._min_utility = min(2.4 * self._stdev + self._avg_utility * 1.2, 0.95)
+        self._min_utility = min(
+            self._stdev_multiplier * self._stdev
+            + self._avg_utility * self._avg_multiplier,
+            self._max_utility_cap,
+        )
 
         # Build sorted utility list
         for bd in self._outcome_space.outcomes:
@@ -183,7 +226,7 @@ class DoNA(SAONegotiator):
             self._best_opponent_bid = bid
 
         # Weight increases with time (later bids matter more)
-        weight = time * 100
+        weight = time * self._time_weight_factor
 
         # Update value weights
         for i, value in enumerate(bid):
@@ -201,27 +244,51 @@ class DoNA(SAONegotiator):
         # Calculate target utility based on time
         # High discount: wait until end
         # Low discount: concede faster
-        if self._discount_factor > 0.8:
+        if self._discount_factor > self._high_discount_threshold:
             # Last moment strategy - stay high until end
-            if time < 0.95:
+            if time < self._last_moment_time:
                 target = self._sorted_utilities[0]  # Best bid
             else:
                 # Rapid concession at end
-                progress = (time - 0.95) / 0.05
-                idx = int(progress * len(self._sorted_utilities) * 0.3)
+                progress = (time - self._last_moment_time) / (
+                    1.0 - self._last_moment_time
+                )
+                idx = int(
+                    progress
+                    * len(self._sorted_utilities)
+                    * self._high_discount_progress_ratio
+                )
                 target = self._sorted_utilities[
                     min(idx, len(self._sorted_utilities) - 1)
                 ]
-        elif self._discount_factor < 0.2:
+        elif self._discount_factor < self._low_discount_threshold:
             # Fast concession
             progress = time
-            idx = int(progress * len(self._sorted_utilities) * 0.5)
+            idx = int(
+                progress
+                * len(self._sorted_utilities)
+                * self._low_discount_progress_ratio
+            )
             target = self._sorted_utilities[min(idx, len(self._sorted_utilities) - 1)]
         else:
             # Medium - scaled time
-            time_factor = 1 / (((self._discount_factor - 0.2) / 0.6) * 0.5 + 0.5)
+            discount_range = (
+                self._high_discount_threshold - self._low_discount_threshold
+            )
+            time_factor = 1 / (
+                (
+                    (self._discount_factor - self._low_discount_threshold)
+                    / discount_range
+                )
+                * self._medium_discount_time_scale
+                + self._medium_discount_time_base
+            )
             scaled_time = min(1.0, time * time_factor)
-            idx = int(scaled_time * len(self._sorted_utilities) * 0.4)
+            idx = int(
+                scaled_time
+                * len(self._sorted_utilities)
+                * self._medium_discount_progress_ratio
+            )
             target = self._sorted_utilities[min(idx, len(self._sorted_utilities) - 1)]
 
         # Ensure above minimum
@@ -255,7 +322,7 @@ class DoNA(SAONegotiator):
         self._offer_count += 1
 
         # Consider offering opponent's best bid near deadline
-        if time > 0.99 and self._best_opponent_bid is not None:
+        if time > self._deadline_time and self._best_opponent_bid is not None:
             if self._best_opponent_utility >= self._min_utility:
                 return self._best_opponent_bid
 
@@ -295,7 +362,7 @@ class DoNA(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # 3. Accept near deadline if reasonable
-        if time > 0.99 and offer_utility >= self._reservation_value:
+        if time > self._deadline_time and offer_utility >= self._reservation_value:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

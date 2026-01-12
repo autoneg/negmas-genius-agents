@@ -72,6 +72,9 @@ class HardDealer(SAONegotiator):
     Args:
         high_threshold: Utility threshold for most of negotiation (default 0.9)
         deadline_threshold: Lower threshold near deadline (default 0.6)
+        phase1_time: Time threshold for phase 1 (default 0.9)
+        phase2_time: Time threshold for phase 2 (default 0.95)
+        final_accept_time: Time threshold for deadline acceptance (default 0.99)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -85,6 +88,9 @@ class HardDealer(SAONegotiator):
         self,
         high_threshold: float = 0.9,
         deadline_threshold: float = 0.6,
+        phase1_time: float = 0.9,
+        phase2_time: float = 0.95,
+        final_accept_time: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -104,6 +110,9 @@ class HardDealer(SAONegotiator):
         )
         self._high_threshold = high_threshold
         self._deadline_threshold = deadline_threshold
+        self._phase1_time = phase1_time
+        self._phase2_time = phase2_time
+        self._final_accept_time = final_accept_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -137,18 +146,20 @@ class HardDealer(SAONegotiator):
 
     def _get_target_utility(self, time: float) -> float:
         """Get target utility - high until near deadline."""
-        if time < 0.9:
+        if time < self._phase1_time:
             return self._high_threshold
-        elif time < 0.95:
+        elif time < self._phase2_time:
             # Quick drop
-            progress = (time - 0.9) / 0.05
+            progress = (time - self._phase1_time) / (
+                self._phase2_time - self._phase1_time
+            )
             return (
                 self._high_threshold
                 - (self._high_threshold - self._deadline_threshold) * progress * 0.5
             )
         else:
             # Final drop
-            progress = (time - 0.95) / 0.05
+            progress = (time - self._phase2_time) / (1.0 - self._phase2_time)
             mid = (
                 self._high_threshold
                 - (self._high_threshold - self._deadline_threshold) * 0.5
@@ -206,7 +217,10 @@ class HardDealer(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Very near deadline, accept reasonable offers
-        if time >= 0.99 and offer_utility >= self._deadline_threshold:
+        if (
+            time >= self._final_accept_time
+            and offer_utility >= self._deadline_threshold
+        ):
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

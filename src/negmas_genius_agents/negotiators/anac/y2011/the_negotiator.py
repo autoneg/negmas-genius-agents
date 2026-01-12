@@ -66,6 +66,25 @@ class TheNegotiator(SAONegotiator):
         initial_target: Initial target utility (default 0.95)
         min_utility: Minimum acceptable utility (default 0.5)
         concession_rate: Base concession rate (default 0.1)
+        early_phase_end: Time threshold for early phase end (default 0.2)
+        middle_phase_end: Time threshold for middle phase end (default 0.8)
+        late_phase_end: Time threshold for late phase end (default 0.95)
+        late_accept_time: Time threshold for late acceptance (default 0.9)
+        final_accept_time: Time threshold for final acceptance (default 0.98)
+        tough_avg_utility: Average utility threshold for tough opponent (default 0.5)
+        tough_concession_rate: Concession rate threshold for tough opponent (default 0.005)
+        early_rate_multiplier: Concession rate multiplier for early phase (default 0.5)
+        middle_rate_multiplier: Concession rate multiplier for middle phase (default 1.0)
+        late_rate_multiplier: Concession rate multiplier for late phase (default 2.0)
+        final_rate_multiplier: Concession rate multiplier for final phase (default 5.0)
+        tough_opponent_multiplier: Concession rate multiplier against tough opponents (default 1.5)
+        cooperative_opponent_multiplier: Concession rate multiplier against cooperative opponents (default 0.7)
+        cooperative_threshold: Concession rate threshold to detect cooperative opponent (default 0.01)
+        final_phase_best_bid_factor: Factor for best bid in final phase (default 1.05)
+        bid_tolerance: Tolerance for bid selection around target (default 0.03)
+        final_accept_factor: Factor for accepting best opponent bid in final phase (default 0.95)
+        min_bids_for_analysis: Minimum bids for opponent behavior analysis (default 5)
+        trend_window_size: Number of recent bids for trend analysis (default 10)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -80,6 +99,25 @@ class TheNegotiator(SAONegotiator):
         initial_target: float = 0.95,
         min_utility: float = 0.5,
         concession_rate: float = 0.1,
+        early_phase_end: float = 0.2,
+        middle_phase_end: float = 0.8,
+        late_phase_end: float = 0.95,
+        late_accept_time: float = 0.9,
+        final_accept_time: float = 0.98,
+        tough_avg_utility: float = 0.5,
+        tough_concession_rate: float = 0.005,
+        early_rate_multiplier: float = 0.5,
+        middle_rate_multiplier: float = 1.0,
+        late_rate_multiplier: float = 2.0,
+        final_rate_multiplier: float = 5.0,
+        tough_opponent_multiplier: float = 1.5,
+        cooperative_opponent_multiplier: float = 0.7,
+        cooperative_threshold: float = 0.01,
+        final_phase_best_bid_factor: float = 1.05,
+        bid_tolerance: float = 0.03,
+        final_accept_factor: float = 0.95,
+        min_bids_for_analysis: int = 5,
+        trend_window_size: int = 10,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -100,6 +138,25 @@ class TheNegotiator(SAONegotiator):
         self._initial_target = initial_target
         self._min_utility = min_utility
         self._concession_rate = concession_rate
+        self._early_phase_end = early_phase_end
+        self._middle_phase_end = middle_phase_end
+        self._late_phase_end = late_phase_end
+        self._late_accept_time = late_accept_time
+        self._final_accept_time = final_accept_time
+        self._tough_avg_utility = tough_avg_utility
+        self._tough_concession_rate = tough_concession_rate
+        self._early_rate_multiplier = early_rate_multiplier
+        self._middle_rate_multiplier = middle_rate_multiplier
+        self._late_rate_multiplier = late_rate_multiplier
+        self._final_rate_multiplier = final_rate_multiplier
+        self._tough_opponent_multiplier = tough_opponent_multiplier
+        self._cooperative_opponent_multiplier = cooperative_opponent_multiplier
+        self._cooperative_threshold = cooperative_threshold
+        self._final_phase_best_bid_factor = final_phase_best_bid_factor
+        self._bid_tolerance = bid_tolerance
+        self._final_accept_factor = final_accept_factor
+        self._min_bids_for_analysis = min_bids_for_analysis
+        self._trend_window_size = trend_window_size
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -203,11 +260,11 @@ class TheNegotiator(SAONegotiator):
 
     def _analyze_opponent_behavior(self) -> None:
         """Analyze opponent's concession behavior to adapt strategy."""
-        if len(self._opponent_utilities) < 5:
+        if len(self._opponent_utilities) < self._min_bids_for_analysis:
             return
 
         # Calculate recent trend
-        recent = self._opponent_utilities[-10:]
+        recent = self._opponent_utilities[-self._trend_window_size :]
         if len(recent) < 2:
             return
 
@@ -226,7 +283,8 @@ class TheNegotiator(SAONegotiator):
         # Determine if opponent is tough
         avg_utility = sum(self._opponent_utilities) / len(self._opponent_utilities)
         self._opponent_is_tough = (
-            avg_utility < 0.5 and self._opponent_concession_rate < 0.005
+            avg_utility < self._tough_avg_utility
+            and self._opponent_concession_rate < self._tough_concession_rate
         )
 
     def _get_opponent_utility(self, bid: Outcome) -> float:
@@ -281,26 +339,26 @@ class TheNegotiator(SAONegotiator):
             Target utility value.
         """
         # Phase-dependent base concession rate
-        if t < 0.2:
+        if t < self._early_phase_end:
             # Early phase: very slow concession
-            phase_rate = self._concession_rate * 0.5
-        elif t < 0.8:
+            phase_rate = self._concession_rate * self._early_rate_multiplier
+        elif t < self._middle_phase_end:
             # Middle phase: normal concession
-            phase_rate = self._concession_rate
-        elif t < 0.95:
+            phase_rate = self._concession_rate * self._middle_rate_multiplier
+        elif t < self._late_phase_end:
             # Late phase: faster concession
-            phase_rate = self._concession_rate * 2
+            phase_rate = self._concession_rate * self._late_rate_multiplier
         else:
             # Final phase: rapid concession
-            phase_rate = self._concession_rate * 5
+            phase_rate = self._concession_rate * self._final_rate_multiplier
 
         # Adapt based on opponent behavior
         if self._opponent_is_tough:
             # Against tough opponents, concede faster to reach agreement
-            phase_rate *= 1.5
-        elif self._opponent_concession_rate > 0.01:
+            phase_rate *= self._tough_opponent_multiplier
+        elif self._opponent_concession_rate > self._cooperative_threshold:
             # If opponent is conceding, we can stay tough
-            phase_rate *= 0.7
+            phase_rate *= self._cooperative_opponent_multiplier
 
         # Calculate target using Boulware-like curve
         if phase_rate > 0:
@@ -314,8 +372,10 @@ class TheNegotiator(SAONegotiator):
         target = max(target, self._min_utility)
 
         # In final phase, be willing to accept best opponent bid
-        if t > 0.95 and self._best_opponent_utility > self._min_utility:
-            target = min(target, self._best_opponent_utility * 1.05)
+        if t > self._late_phase_end and self._best_opponent_utility > self._min_utility:
+            target = min(
+                target, self._best_opponent_utility * self._final_phase_best_bid_factor
+            )
 
         return target
 
@@ -332,7 +392,7 @@ class TheNegotiator(SAONegotiator):
         if self._outcome_space is None:
             return None
 
-        tolerance = 0.03
+        tolerance = self._bid_tolerance
 
         # Get bids near target utility
         candidates = self._outcome_space.get_bids_in_range(
@@ -453,11 +513,14 @@ class TheNegotiator(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Late phase: accept if above minimum
-        if t > 0.9 and offer_utility >= self._min_utility:
+        if t > self._late_accept_time and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         # Final phase: accept best offer we've seen
-        if t > 0.98 and offer_utility >= self._best_opponent_utility * 0.95:
+        if (
+            t > self._final_accept_time
+            and offer_utility >= self._best_opponent_utility * self._final_accept_factor
+        ):
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

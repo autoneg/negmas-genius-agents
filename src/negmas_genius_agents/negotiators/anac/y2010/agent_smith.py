@@ -80,6 +80,27 @@ class AgentSmith(SAONegotiator):
           - Correlation with own concessions = TFT-like
 
     Args:
+        min_utility: Minimum acceptable utility floor (default 0.5).
+        variance_threshold: Variance threshold for classifying random opponent (default 0.05).
+        conceder_trend_threshold: Trend threshold for classifying conceder opponent (default 0.01).
+        hardhead_trend_threshold: Trend threshold for classifying hardhead opponent (default 0.005).
+        hardhead_mean_threshold: Mean threshold for classifying hardhead opponent (default 0.5).
+        hardhead_concession_rate: Concession rate against hardhead (default 0.5).
+        conceder_concession_rate: Concession rate against conceder (default 1.5).
+        tft_concession_rate: Concession rate against TFT-like opponent (default 1.2).
+        default_concession_rate: Default concession rate (default 1.0).
+        hardhead_exponent: Concession exponent against hardhead (default 0.1).
+        conceder_exponent: Concession exponent against conceder (default 2.0).
+        tft_exponent: Concession exponent against TFT-like (default 1.5).
+        default_exponent: Default concession exponent (default 1.0).
+        bid_tolerance: Tolerance for bid selection around target (default 0.03).
+        random_noise: Noise factor for random opponents (default 0.1).
+        deadline_start: Time to start deadline pressure (default 0.9).
+        late_phase_time: Time for late acceptance phase (default 0.95).
+        deadline_time: Time threshold for deadline acceptance (default 0.99).
+        hardhead_acceptance_factor: Acceptance factor against hardhead (default 0.95).
+        conceder_acceptance_factor: Acceptance factor against conceder (default 0.98).
+        default_acceptance_factor: Default acceptance factor (default 0.97).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -91,6 +112,27 @@ class AgentSmith(SAONegotiator):
 
     def __init__(
         self,
+        min_utility: float = 0.5,
+        variance_threshold: float = 0.05,
+        conceder_trend_threshold: float = 0.01,
+        hardhead_trend_threshold: float = 0.005,
+        hardhead_mean_threshold: float = 0.5,
+        hardhead_concession_rate: float = 0.5,
+        conceder_concession_rate: float = 1.5,
+        tft_concession_rate: float = 1.2,
+        default_concession_rate: float = 1.0,
+        hardhead_exponent: float = 0.1,
+        conceder_exponent: float = 2.0,
+        tft_exponent: float = 1.5,
+        default_exponent: float = 1.0,
+        bid_tolerance: float = 0.03,
+        random_noise: float = 0.1,
+        deadline_start: float = 0.9,
+        late_phase_time: float = 0.95,
+        deadline_time: float = 0.99,
+        hardhead_acceptance_factor: float = 0.95,
+        conceder_acceptance_factor: float = 0.98,
+        default_acceptance_factor: float = 0.97,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -108,6 +150,27 @@ class AgentSmith(SAONegotiator):
             id=id,
             **kwargs,
         )
+        self._min_utility_param = min_utility
+        self._variance_threshold = variance_threshold
+        self._conceder_trend_threshold = conceder_trend_threshold
+        self._hardhead_trend_threshold = hardhead_trend_threshold
+        self._hardhead_mean_threshold = hardhead_mean_threshold
+        self._hardhead_concession_rate = hardhead_concession_rate
+        self._conceder_concession_rate = conceder_concession_rate
+        self._tft_concession_rate = tft_concession_rate
+        self._default_concession_rate = default_concession_rate
+        self._hardhead_exponent = hardhead_exponent
+        self._conceder_exponent = conceder_exponent
+        self._tft_exponent = tft_exponent
+        self._default_exponent = default_exponent
+        self._bid_tolerance = bid_tolerance
+        self._random_noise = random_noise
+        self._deadline_start = deadline_start
+        self._late_phase_time = late_phase_time
+        self._deadline_time = deadline_time
+        self._hardhead_acceptance_factor = hardhead_acceptance_factor
+        self._conceder_acceptance_factor = conceder_acceptance_factor
+        self._default_acceptance_factor = default_acceptance_factor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -120,9 +183,11 @@ class AgentSmith(SAONegotiator):
         self._opponent_trend: float = 0.0
 
         # Strategy parameters
-        self._min_utility: float = 0.5
+        self._min_utility: float = min_utility
         self._max_utility: float = 1.0
-        self._concession_rate: float = 1.0  # Adjusted based on opponent
+        self._concession_rate: float = (
+            default_concession_rate  # Adjusted based on opponent
+        )
 
         # Tracking
         self._best_opponent_offer: Outcome | None = None
@@ -141,7 +206,9 @@ class AgentSmith(SAONegotiator):
 
         if self._outcome_space.outcomes:
             self._max_utility = self._outcome_space.max_utility
-            self._min_utility = max(0.5, self._outcome_space.min_utility)
+            self._min_utility = max(
+                self._min_utility_param, self._outcome_space.min_utility
+            )
 
         self._initialized = True
 
@@ -158,7 +225,7 @@ class AgentSmith(SAONegotiator):
         self._best_opponent_offer = None
         self._best_opponent_utility = 0.0
         self._our_last_offer_utility = 1.0
-        self._concession_rate = 1.0
+        self._concession_rate = self._default_concession_rate
 
     def _update_opponent_model(
         self, offer: Outcome, utility: float, time: float
@@ -217,17 +284,20 @@ class AgentSmith(SAONegotiator):
         mean = sum(utilities) / len(utilities)
 
         # High variance indicates random behavior
-        if self._opponent_variance > 0.05:
+        if self._opponent_variance > self._variance_threshold:
             self._opponent_type = OpponentType.RANDOM
             return
 
         # Positive trend indicates conceder
-        if self._opponent_trend > 0.01:
+        if self._opponent_trend > self._conceder_trend_threshold:
             self._opponent_type = OpponentType.CONCEDER
             return
 
         # Negative trend with low offers indicates hardhead
-        if self._opponent_trend < 0.005 and mean < 0.5:
+        if (
+            self._opponent_trend < self._hardhead_trend_threshold
+            and mean < self._hardhead_mean_threshold
+        ):
             self._opponent_type = OpponentType.HARDHEAD
             return
 
@@ -248,19 +318,19 @@ class AgentSmith(SAONegotiator):
         """Adjust our strategy based on opponent classification."""
         if self._opponent_type == OpponentType.HARDHEAD:
             # Against hardhead: be patient, slow concession
-            self._concession_rate = 0.5
+            self._concession_rate = self._hardhead_concession_rate
         elif self._opponent_type == OpponentType.CONCEDER:
             # Against conceder: match their speed
-            self._concession_rate = 1.5
+            self._concession_rate = self._conceder_concession_rate
         elif self._opponent_type == OpponentType.RANDOM:
             # Against random: use moderate strategy
-            self._concession_rate = 1.0
+            self._concession_rate = self._default_concession_rate
         elif self._opponent_type == OpponentType.TFTLIKE:
             # Against TFT: cooperate with gradual concessions
-            self._concession_rate = 1.2
+            self._concession_rate = self._tft_concession_rate
         else:
             # Unknown: default moderate strategy
-            self._concession_rate = 1.0
+            self._concession_rate = self._default_concession_rate
 
     def _get_target_utility(self, time: float) -> float:
         """
@@ -281,23 +351,23 @@ class AgentSmith(SAONegotiator):
         # Base concession function adjusted by opponent type
         if self._opponent_type == OpponentType.HARDHEAD:
             # Boulware: concede very slowly until deadline
-            e = 0.1
+            e = self._hardhead_exponent
             time_factor = math.pow(time, e)
         elif self._opponent_type == OpponentType.CONCEDER:
             # Match their concession rate
-            e = 2.0
+            e = self._conceder_exponent
             time_factor = math.pow(time, e)
         elif self._opponent_type == OpponentType.RANDOM:
             # Moderate polynomial
-            e = 1.0
+            e = self._default_exponent
             time_factor = math.pow(time, e)
         elif self._opponent_type == OpponentType.TFTLIKE:
             # Gradual linear concession
-            e = 1.5
+            e = self._tft_exponent
             time_factor = math.pow(time, e)
         else:
             # Default: moderate polynomial
-            e = 1.0
+            e = self._default_exponent
             time_factor = math.pow(time, e)
 
         # Scale by concession rate
@@ -310,9 +380,10 @@ class AgentSmith(SAONegotiator):
         )
 
         # Consider opponent's best offer near deadline
-        if time > 0.9 and self._best_opponent_utility > 0:
+        if time > self._deadline_start and self._best_opponent_utility > 0:
             # Gradually accept that we may need to take their best offer
-            deadline_pressure = (time - 0.9) / 0.1
+            deadline_duration = 1.0 - self._deadline_start
+            deadline_pressure = (time - self._deadline_start) / deadline_duration
             target = min(
                 target,
                 target * (1 - deadline_pressure)
@@ -341,13 +412,12 @@ class AgentSmith(SAONegotiator):
         # Add some randomness based on opponent type
         if self._opponent_type == OpponentType.RANDOM:
             # Be less predictable against random opponent
-            noise = (random.random() - 0.5) * 0.1
+            noise = (random.random() - 0.5) * self._random_noise
             target = max(self._min_utility, min(self._max_utility, target + noise))
 
         # Get candidates near target
-        tolerance = 0.03
         candidates = self._outcome_space.get_bids_in_range(
-            target - tolerance, target + tolerance
+            target - self._bid_tolerance, target + self._bid_tolerance
         )
 
         if candidates:
@@ -400,22 +470,31 @@ class AgentSmith(SAONegotiator):
             return True
 
         # Special handling near deadline based on opponent type
-        if time > 0.95:
+        if time > self._late_phase_time:
             if self._opponent_type == OpponentType.HARDHEAD:
                 # Hardhead won't concede, take what we can get
-                if offer_utility >= self._best_opponent_utility * 0.95:
+                if (
+                    offer_utility
+                    >= self._best_opponent_utility * self._hardhead_acceptance_factor
+                ):
                     return True
             elif self._opponent_type == OpponentType.CONCEDER:
                 # Conceder might give more, be slightly patient
-                if offer_utility >= self._best_opponent_utility * 0.98:
+                if (
+                    offer_utility
+                    >= self._best_opponent_utility * self._conceder_acceptance_factor
+                ):
                     return True
             else:
                 # Default deadline behavior
-                if offer_utility >= self._best_opponent_utility * 0.97:
+                if (
+                    offer_utility
+                    >= self._best_opponent_utility * self._default_acceptance_factor
+                ):
                     return True
 
         # Very close to deadline: accept above minimum
-        if time > 0.99 and offer_utility >= self._min_utility:
+        if time > self._deadline_time and offer_utility >= self._min_utility:
             return True
 
         return False

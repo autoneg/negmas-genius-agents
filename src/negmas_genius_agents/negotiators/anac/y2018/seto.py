@@ -72,6 +72,8 @@ class Seto(SAONegotiator):
         min_target: Minimum target utility floor (default 0.6).
         concession_start: Time to start conceding (default 0.3).
         aggressive_time: Time to start aggressive concession (default 0.9).
+        late_acceptance_time: Time threshold for late acceptance (default 0.95).
+        deadline_threshold: Time threshold for deadline acceptance (default 0.99).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -87,6 +89,8 @@ class Seto(SAONegotiator):
         min_target: float = 0.6,
         concession_start: float = 0.3,
         aggressive_time: float = 0.9,
+        late_acceptance_time: float = 0.95,
+        deadline_threshold: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -108,6 +112,8 @@ class Seto(SAONegotiator):
         self._min_target = min_target
         self._concession_start = concession_start
         self._aggressive_time = aggressive_time
+        self._late_acceptance_time = late_acceptance_time
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -216,7 +222,7 @@ class Seto(SAONegotiator):
             return True
 
         # Near deadline, be more lenient
-        if time >= 0.95:
+        if time >= self._late_acceptance_time:
             scaled_min = (
                 self._min_utility
                 + (self._max_utility - self._min_utility) * self._min_target
@@ -225,7 +231,7 @@ class Seto(SAONegotiator):
                 return True
 
         # Very near deadline, accept anything reasonable
-        if time >= 0.99:
+        if time >= self._deadline_threshold:
             # Accept if better than what we've seen
             if offer_utility >= self._best_received_utility * 0.95:
                 return True

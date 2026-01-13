@@ -294,7 +294,15 @@ class SAGA(SAONegotiator):
         threshold_for_new = max(0.7, self._current_threshold - 0.1)
         candidates = self._outcome_space.get_bids_above(threshold_for_new)
 
-        while len(new_population) < self._population_size:
+        # Limit iterations to avoid infinite loop when all candidates are duplicates
+        max_iterations = self._population_size * 10
+        iterations = 0
+
+        while (
+            len(new_population) < self._population_size and iterations < max_iterations
+        ):
+            iterations += 1
+
             if candidates and random.random() < 0.5:
                 # Immigration: add a random good bid
                 new_bid = random.choice(candidates).bid

@@ -362,7 +362,9 @@ __all__ = [
     "get_agents",
 ]
 
-__version__ = "0.1.0"
+from importlib.metadata import version as _get_version
+
+__version__ = _get_version("negmas-genius-agents")
 
 
 # Registry of all implemented agents organized by group and category

@@ -39,6 +39,37 @@ def _register_all() -> bool:
         # negmas registry not available, skip registration silently
         return False
 
+    def _register_negotiator(
+        cls: type,
+        short_name: str,
+        tags: set[str],
+    ) -> None:
+        """Register a negotiator with backward compatibility.
+
+        Attempts to register with the new API (source parameter) first,
+        falls back to the old API if source is not supported.
+        """
+        if negotiator_registry.is_registered(cls):
+            return
+
+        try:
+            # New API with source parameter
+            negotiator_registry.register(
+                cls,
+                short_name=short_name,
+                source="genius-agents",
+                tags=tags,
+            )
+        except TypeError:
+            # Old API without source parameter - convert bilateral-only tag back to kwarg
+            old_tags = tags - {"bilateral-only"}
+            negotiator_registry.register(
+                cls,
+                short_name=short_name,
+                tags=old_tags,
+                bilateral_only="bilateral-only" in tags,
+            )
+
     # Common tags for all agents in this package
     base_tags = {"genius-translated", "ai-generated"}
 
@@ -60,13 +91,11 @@ def _register_all() -> bool:
             TimeDependentAgentHardliner,
         ]
         for cls in basic_agents:
-            if not negotiator_registry.is_registered(cls):
-                negotiator_registry.register(
-                    cls,
-                    short_name=cls.__name__,
-                    tags=base_tags | {"time-dependent"},
-                    bilateral_only=True,
-                )
+            _register_negotiator(
+                cls,
+                short_name=cls.__name__,
+                tags=base_tags | {"time-dependent", "bilateral-only"},
+            )
     except ImportError:
         pass
 
@@ -92,14 +121,11 @@ def _register_all() -> bool:
             IAMcrazyHaggler,
         ]
         for cls in anac_2010_agents:
-            if not negotiator_registry.is_registered(cls):
-                negotiator_registry.register(
-                    cls,
-                    short_name=cls.__name__,
-                    tags=base_tags | {"anac", "anac-2010"},
-                    anac_year=2010,
-                    bilateral_only=True,
-                )
+            _register_negotiator(
+                cls,
+                short_name=cls.__name__,
+                tags=base_tags | {"anac", "anac-2010", "bilateral-only"},
+            )
     except ImportError:
         pass
 
@@ -123,14 +149,11 @@ def _register_all() -> bool:
             TheNegotiator,
         ]
         for cls in anac_2011_agents:
-            if not negotiator_registry.is_registered(cls):
-                negotiator_registry.register(
-                    cls,
-                    short_name=cls.__name__,
-                    tags=base_tags | {"anac", "anac-2011"},
-                    anac_year=2011,
-                    bilateral_only=True,
-                )
+            _register_negotiator(
+                cls,
+                short_name=cls.__name__,
+                tags=base_tags | {"anac", "anac-2011", "bilateral-only"},
+            )
     except ImportError:
         pass
 
@@ -156,14 +179,11 @@ def _register_all() -> bool:
             AgentMR,
         ]
         for cls in anac_2012_agents:
-            if not negotiator_registry.is_registered(cls):
-                negotiator_registry.register(
-                    cls,
-                    short_name=cls.__name__,
-                    tags=base_tags | {"anac", "anac-2012"},
-                    anac_year=2012,
-                    bilateral_only=True,
-                )
+            _register_negotiator(
+                cls,
+                short_name=cls.__name__,
+                tags=base_tags | {"anac", "anac-2012", "bilateral-only"},
+            )
     except ImportError:
         pass
 
@@ -189,14 +209,11 @@ def _register_all() -> bool:
             SlavaAgent,
         ]
         for cls in anac_2013_agents:
-            if not negotiator_registry.is_registered(cls):
-                negotiator_registry.register(
-                    cls,
-                    short_name=cls.__name__,
-                    tags=base_tags | {"anac", "anac-2013"},
-                    anac_year=2013,
-                    bilateral_only=True,
-                )
+            _register_negotiator(
+                cls,
+                short_name=cls.__name__,
+                tags=base_tags | {"anac", "anac-2013", "bilateral-only"},
+            )
     except ImportError:
         pass
 
@@ -238,14 +255,11 @@ def _register_all() -> bool:
             Atlas,
         ]
         for cls in anac_2014_agents:
-            if not negotiator_registry.is_registered(cls):
-                negotiator_registry.register(
-                    cls,
-                    short_name=cls.__name__,
-                    tags=base_tags | {"anac", "anac-2014"},
-                    anac_year=2014,
-                    bilateral_only=True,
-                )
+            _register_negotiator(
+                cls,
+                short_name=cls.__name__,
+                tags=base_tags | {"anac", "anac-2014", "bilateral-only"},
+            )
     except ImportError:
         pass
 
@@ -301,14 +315,11 @@ def _register_all() -> bool:
             XianFaAgent,
         ]
         for cls in anac_2015_agents:
-            if not negotiator_registry.is_registered(cls):
-                negotiator_registry.register(
-                    cls,
-                    short_name=cls.__name__,
-                    tags=base_tags | {"anac", "anac-2015"},
-                    anac_year=2015,
-                    bilateral_only=True,
-                )
+            _register_negotiator(
+                cls,
+                short_name=cls.__name__,
+                tags=base_tags | {"anac", "anac-2015", "bilateral-only"},
+            )
     except ImportError:
         pass
 
@@ -348,14 +359,11 @@ def _register_all() -> bool:
             Terra,
         ]
         for cls in anac_2016_agents:
-            if not negotiator_registry.is_registered(cls):
-                negotiator_registry.register(
-                    cls,
-                    short_name=cls.__name__,
-                    tags=base_tags | {"anac", "anac-2016"},
-                    anac_year=2016,
-                    bilateral_only=True,
-                )
+            _register_negotiator(
+                cls,
+                short_name=cls.__name__,
+                tags=base_tags | {"anac", "anac-2016", "bilateral-only"},
+            )
     except ImportError:
         pass
 
@@ -401,14 +409,11 @@ def _register_all() -> bool:
             TaxiBox,
         ]
         for cls in anac_2017_agents:
-            if not negotiator_registry.is_registered(cls):
-                negotiator_registry.register(
-                    cls,
-                    short_name=cls.__name__,
-                    tags=base_tags | {"anac", "anac-2017"},
-                    anac_year=2017,
-                    bilateral_only=True,
-                )
+            _register_negotiator(
+                cls,
+                short_name=cls.__name__,
+                tags=base_tags | {"anac", "anac-2017", "bilateral-only"},
+            )
     except ImportError:
         pass
 
@@ -450,14 +455,11 @@ def _register_all() -> bool:
             Yeela,
         ]
         for cls in anac_2018_agents:
-            if not negotiator_registry.is_registered(cls):
-                negotiator_registry.register(
-                    cls,
-                    short_name=cls.__name__,
-                    tags=base_tags | {"anac", "anac-2018"},
-                    anac_year=2018,
-                    bilateral_only=True,
-                )
+            _register_negotiator(
+                cls,
+                short_name=cls.__name__,
+                tags=base_tags | {"anac", "anac-2018", "bilateral-only"},
+            )
     except ImportError:
         pass
 
@@ -497,14 +499,11 @@ def _register_all() -> bool:
             WinkyAgent,
         ]
         for cls in anac_2019_agents:
-            if not negotiator_registry.is_registered(cls):
-                negotiator_registry.register(
-                    cls,
-                    short_name=cls.__name__,
-                    tags=base_tags | {"anac", "anac-2019"},
-                    anac_year=2019,
-                    bilateral_only=True,
-                )
+            _register_negotiator(
+                cls,
+                short_name=cls.__name__,
+                tags=base_tags | {"anac", "anac-2019", "bilateral-only"},
+            )
     except ImportError:
         pass
 

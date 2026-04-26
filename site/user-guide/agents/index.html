@@ -1,0 +1,2153 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Python reimplementations of Genius negotiating agents for NegMAS">
+      
+      
+        <meta name="author" content="Yasser Mohammad">
+      
+      
+        <link rel="canonical" href="https://yasserfarouk.github.io/negmas-genius-agents/user-guide/agents/">
+      
+      
+        <link rel="prev" href="../../getting-started/quickstart/">
+      
+      
+        <link rel="next" href="../negotiations/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Available Agents - negmas-genius-agents</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#available-agents" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="negmas-genius-agents" class="md-header__button md-logo" aria-label="negmas-genius-agents" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            negmas-genius-agents
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Available Agents
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/yasserfarouk/negmas-genius-agents" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    yasserfarouk/negmas-genius-agents
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/agents/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="negmas-genius-agents" class="md-nav__button md-logo" aria-label="negmas-genius-agents" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    negmas-genius-agents
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/yasserfarouk/negmas-genius-agents" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    yasserfarouk/negmas-genius-agents
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Available Agents
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Available Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Agents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2010" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2010
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2011" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2011
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2012" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2012
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2013" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2013
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2014" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2014
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2015" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2015
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2016" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2016
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2017" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2017
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2018" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2018
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2019" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2019
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../negotiations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running Negotiations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tournaments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running Tournaments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agents by Year
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/time-dependent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Time-Dependent Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utilities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Agents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2010" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2010
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2011" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2011
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2012" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2012
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2013" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2013
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2014" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2014
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2015" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2015
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2016" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2016
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2017" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2017
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2018" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2018
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anac-2019" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ANAC 2019
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="available-agents">Available Agents</h1>
+<p>This page lists all 124 negotiating agents available in the library, organized by ANAC competition year. Each agent is a Python reimplementation of its original Java Genius counterpart.</p>
+<div class="admonition warning">
+<p class="admonition-title">AI-Generated Implementations</p>
+<p>All agents in this library are AI-generated reimplementations based on the original
+Java source code from the Genius framework. While we strive for behavioral fidelity,
+they may not behave identically to the originals in all cases.</p>
+</div>
+<h2 id="quick-reference">Quick Reference</h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Winner</th>
+<th>Total Agents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>basic</td>
+<td>TimeDependentAgent</td>
+<td>5</td>
+</tr>
+<tr>
+<td>anac2010</td>
+<td>AgentK</td>
+<td>7</td>
+</tr>
+<tr>
+<td>anac2011</td>
+<td>HardHeaded</td>
+<td>6</td>
+</tr>
+<tr>
+<td>anac2012</td>
+<td>CUHKAgent</td>
+<td>7</td>
+</tr>
+<tr>
+<td>anac2013</td>
+<td>TheFawkes</td>
+<td>7</td>
+</tr>
+<tr>
+<td>anac2014</td>
+<td>AgentM</td>
+<td>15</td>
+</tr>
+<tr>
+<td>anac2015</td>
+<td>Atlas3</td>
+<td>22</td>
+</tr>
+<tr>
+<td>anac2016</td>
+<td>Caduceus</td>
+<td>14</td>
+</tr>
+<tr>
+<td>anac2017</td>
+<td>PonPokoAgent</td>
+<td>17</td>
+</tr>
+<tr>
+<td>anac2018</td>
+<td>AgreeableAgent2018</td>
+<td>15</td>
+</tr>
+<tr>
+<td>anac2019</td>
+<td>AgentGG</td>
+<td>14</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="basic-agents">Basic Agents</h2>
+<p>The <code>basic</code> group contains fundamental time-dependent agents that serve as baselines and building blocks.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">negmas_genius_agents</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_agents</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Get all basic agents</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">basic_agents</span> <span class="o">=</span> <span class="n">get_agents</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;basic&quot;</span><span class="p">)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Parameter</th>
+<th>Strategy Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TimeDependentAgent</code></td>
+<td>e=custom</td>
+<td>Base class with formula: <code>target(t) = Pmin + (Pmax-Pmin) * (1 - t^(1/e))</code></td>
+</tr>
+<tr>
+<td><code>TimeDependentAgentBoulware</code></td>
+<td>e=0.2</td>
+<td>Tough negotiator; concedes slowly, mainly near deadline</td>
+</tr>
+<tr>
+<td><code>TimeDependentAgentConceder</code></td>
+<td>e=2.0</td>
+<td>Cooperative; concedes quickly early in negotiation</td>
+</tr>
+<tr>
+<td><code>TimeDependentAgentLinear</code></td>
+<td>e=1.0</td>
+<td>Constant concession rate throughout</td>
+</tr>
+<tr>
+<td><code>TimeDependentAgentHardliner</code></td>
+<td>e=0</td>
+<td>Never concedes; always offers best bid for self</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="anac-2010">ANAC 2010</h2>
+<p>The first ANAC competition featured 7 agents.</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Rank</th>
+<th>Strategy Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AgentK</code></td>
+<td><strong>1st</strong></td>
+<td>Statistical opponent modeling with adaptive target; tracks mean/variance of offers</td>
+</tr>
+<tr>
+<td><code>Yushu</code></td>
+<td>2nd</td>
+<td>Time-dependent concession with best-10 opponent bid tracking</td>
+</tr>
+<tr>
+<td><code>Nozomi</code></td>
+<td>3rd</td>
+<td>Threat-based concession; mirrors opponent's concession behavior</td>
+</tr>
+<tr>
+<td><code>IAMhaggler</code></td>
+<td>4th</td>
+<td>Bayesian opponent model with Nash-product bid selection</td>
+</tr>
+<tr>
+<td><code>AgentFSEGA</code></td>
+<td>-</td>
+<td>Boulware concession with opponent reservation value estimation</td>
+</tr>
+<tr>
+<td><code>AgentSmith</code></td>
+<td>-</td>
+<td>Multi-strategy; classifies opponent as HardHead/Conceder/Random/TFT</td>
+</tr>
+<tr>
+<td><code>IAMcrazyHaggler</code></td>
+<td>-</td>
+<td>Random high-utility bidding with stubborn acceptance (exploits conceders)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="anac-2011">ANAC 2011</h2>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Rank</th>
+<th>Strategy Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HardHeaded</code></td>
+<td><strong>1st</strong></td>
+<td>Boulware concession with frequency-based opponent weight estimation</td>
+</tr>
+<tr>
+<td><code>Gahboninho</code></td>
+<td>2nd</td>
+<td>Three-phase strategy (early/main/panic) with opponent cooperativeness tracking</td>
+</tr>
+<tr>
+<td><code>IAMhaggler2011</code></td>
+<td>3rd</td>
+<td>Adaptive concession rate based on opponent behavior trends</td>
+</tr>
+<tr>
+<td><code>AgentK2</code></td>
+<td>-</td>
+<td>Enhanced AgentK with improved statistical acceptance</td>
+</tr>
+<tr>
+<td><code>BramAgent</code></td>
+<td>-</td>
+<td>Boulware with issue frequency tracking</td>
+</tr>
+<tr>
+<td><code>TheNegotiator</code></td>
+<td>-</td>
+<td>Four-phase strategy with linear regression opponent prediction</td>
+</tr>
+</tbody>
+</table>
+<h2 id="anac-2012">ANAC 2012</h2>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Rank</th>
+<th>Strategy Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CUHKAgent</code></td>
+<td><strong>1st</strong></td>
+<td>Two-phase concession with variance-based opponent toughness detection</td>
+</tr>
+<tr>
+<td><code>AgentLG</code></td>
+<td>2nd</td>
+<td>Multi-phase (early/compromise/panic/end) with value preference learning</td>
+</tr>
+<tr>
+<td><code>OMACAgent</code></td>
+<td>3rd</td>
+<td>Adaptive Boulware with opponent reservation value estimation</td>
+</tr>
+<tr>
+<td><code>TheNegotiatorReloaded</code></td>
+<td>-</td>
+<td>Improved TheNegotiator with toughness-based adaptation</td>
+</tr>
+<tr>
+<td><code>MetaAgent2012</code></td>
+<td>-</td>
+<td>Blends Boulware/Linear/Conceder based on opponent concession rate</td>
+</tr>
+<tr>
+<td><code>IAMhaggler2012</code></td>
+<td>-</td>
+<td>Nash-product maximization with consistency-weighted opponent model</td>
+</tr>
+<tr>
+<td><code>AgentMR</code></td>
+<td>-</td>
+<td>Three-phase (exploration/exploitation/compromise) with risk awareness</td>
+</tr>
+</tbody>
+</table>
+<h2 id="anac-2013">ANAC 2013</h2>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Rank</th>
+<th>Strategy Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TheFawkes</code></td>
+<td><strong>1st</strong></td>
+<td>AC_Next acceptance with adaptive concession and opponent classification</td>
+</tr>
+<tr>
+<td><code>MetaAgent2013</code></td>
+<td>2nd</td>
+<td>Strategy portfolio with domain-based selection</td>
+</tr>
+<tr>
+<td><code>TMFAgent</code></td>
+<td>3rd</td>
+<td>Time-management focused with exploration/exploitation balance</td>
+</tr>
+<tr>
+<td><code>AgentKF</code></td>
+<td>-</td>
+<td>Kalman filter-inspired statistical tracking</td>
+</tr>
+<tr>
+<td><code>GAgent</code></td>
+<td>-</td>
+<td>Nash-optimal bid selection with frequency analysis</td>
+</tr>
+<tr>
+<td><code>InoxAgent</code></td>
+<td>-</td>
+<td>Robust Boulware (e=0.05) with minimal opponent modeling</td>
+</tr>
+<tr>
+<td><code>SlavaAgent</code></td>
+<td>-</td>
+<td>Weighted bid scoring with issue importance estimation</td>
+</tr>
+</tbody>
+</table>
+<h2 id="anac-2014">ANAC 2014</h2>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Rank</th>
+<th>Strategy Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AgentM</code></td>
+<td><strong>1st</strong></td>
+<td>Simulated annealing bid search with adaptive acceptance</td>
+</tr>
+<tr>
+<td><code>DoNA</code></td>
+<td>2nd</td>
+<td>Deadline-oriented with domain analysis and opponent sensitivity</td>
+</tr>
+<tr>
+<td><code>Gangster</code></td>
+<td>3rd</td>
+<td>Multi-strategy gang voting (randomizes between tactics)</td>
+</tr>
+<tr>
+<td><code>WhaleAgent</code></td>
+<td>-</td>
+<td>Boulware curve with Nash product bid selection</td>
+</tr>
+<tr>
+<td><code>TUDelftGroup2</code></td>
+<td>-</td>
+<td>Polynomial concession with issue weighting</td>
+</tr>
+<tr>
+<td><code>E2Agent</code></td>
+<td>-</td>
+<td>Simple exploration-exploitation balance</td>
+</tr>
+<tr>
+<td><code>KGAgent</code></td>
+<td>-</td>
+<td>Knowledge-guided adaptive threshold</td>
+</tr>
+<tr>
+<td><code>AgentYK</code></td>
+<td>-</td>
+<td>Three-phase: hardball, concession, final flexibility</td>
+</tr>
+<tr>
+<td><code>BraveCat</code></td>
+<td>-</td>
+<td>BOA framework with combined acceptance criteria</td>
+</tr>
+<tr>
+<td><code>Atlas</code></td>
+<td>-</td>
+<td>Precursor to Atlas3 with Pareto estimation</td>
+</tr>
+<tr>
+<td><code>Aster</code></td>
+<td>-</td>
+<td>Multi-criteria star-pattern bid selection</td>
+</tr>
+<tr>
+<td><code>ArisawaYaki</code></td>
+<td>-</td>
+<td>Wave-based oscillation in concession</td>
+</tr>
+<tr>
+<td><code>AgentTD</code></td>
+<td>-</td>
+<td>Classic time-dependent (Boulware/Conceder switch)</td>
+</tr>
+<tr>
+<td><code>AgentTRP</code></td>
+<td>-</td>
+<td>Trade-off, Risk, and Pressure balancing</td>
+</tr>
+<tr>
+<td><code>AgentQuest</code></td>
+<td>-</td>
+<td>Quest-based goal setting with adaptive thresholds</td>
+</tr>
+</tbody>
+</table>
+<h2 id="anac-2015">ANAC 2015</h2>
+<p>Atlas3 was the winning agent and became highly influential in subsequent years.</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Rank</th>
+<th>Strategy Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Atlas3</code></td>
+<td><strong>1st</strong></td>
+<td>Three-phase Boulware with popular bid tracking for end-game</td>
+</tr>
+<tr>
+<td><code>ParsAgent</code></td>
+<td>2nd</td>
+<td>Nash product optimization with frequency-based opponent model</td>
+</tr>
+<tr>
+<td><code>RandomDance</code></td>
+<td>3rd</td>
+<td>Randomized exploration with adaptive acceptance</td>
+</tr>
+<tr>
+<td><code>AgentBuyog</code></td>
+<td>-</td>
+<td>Three-phase (tough/moderate/flexible) with deadline handling</td>
+</tr>
+<tr>
+<td><code>AgentH</code></td>
+<td>-</td>
+<td>Hybrid time-dependent with opponent tracking</td>
+</tr>
+<tr>
+<td><code>AgentHP</code></td>
+<td>-</td>
+<td>High-performance polynomial concession</td>
+</tr>
+<tr>
+<td><code>AgentNeo</code></td>
+<td>-</td>
+<td>"Chosen one" strategy with opponent hardness response</td>
+</tr>
+<tr>
+<td><code>AgentW</code></td>
+<td>-</td>
+<td>Weighted multi-criteria bid selection</td>
+</tr>
+<tr>
+<td><code>AgentX</code></td>
+<td>-</td>
+<td>Experimental adaptive concession</td>
+</tr>
+<tr>
+<td><code>AresParty</code></td>
+<td>-</td>
+<td>War-themed aggressive then cooperative</td>
+</tr>
+<tr>
+<td><code>CUHKAgent2015</code></td>
+<td>-</td>
+<td>Updated CUHK strategy with improved opponent model</td>
+</tr>
+<tr>
+<td><code>DrageKnight</code></td>
+<td>-</td>
+<td>Knight-themed defensive strategy</td>
+</tr>
+<tr>
+<td><code>Y2015Group2</code></td>
+<td>-</td>
+<td>Team-based development, balanced approach</td>
+</tr>
+<tr>
+<td><code>JonnyBlack</code></td>
+<td>-</td>
+<td>Dark-themed hardball strategy</td>
+</tr>
+<tr>
+<td><code>Kawaii</code></td>
+<td>-</td>
+<td>"Cute" adaptive strategy (actually quite aggressive)</td>
+</tr>
+<tr>
+<td><code>MeanBot</code></td>
+<td>-</td>
+<td>Mean/average-based decision making</td>
+</tr>
+<tr>
+<td><code>Mercury</code></td>
+<td>-</td>
+<td>Fast concession with deadline awareness</td>
+</tr>
+<tr>
+<td><code>PNegotiator</code></td>
+<td>-</td>
+<td>Probabilistic acceptance with exploration</td>
+</tr>
+<tr>
+<td><code>PhoenixParty</code></td>
+<td>-</td>
+<td>Rising from rejection with adaptive recovery</td>
+</tr>
+<tr>
+<td><code>PokerFace</code></td>
+<td>-</td>
+<td>Bluffing-inspired concealment of intentions</td>
+</tr>
+<tr>
+<td><code>SENGOKU</code></td>
+<td>-</td>
+<td>Japanese warfare-inspired multi-phase</td>
+</tr>
+<tr>
+<td><code>XianFaAgent</code></td>
+<td>-</td>
+<td>Chinese strategy with wisdom-based decisions</td>
+</tr>
+</tbody>
+</table>
+<h2 id="anac-2016">ANAC 2016</h2>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Rank</th>
+<th>Strategy Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Caduceus</code></td>
+<td><strong>1st</strong></td>
+<td>Meta-strategy voting with multi-agent ensemble</td>
+</tr>
+<tr>
+<td><code>YXAgent</code></td>
+<td>2nd</td>
+<td>Opponent hardness estimation with adaptive response</td>
+</tr>
+<tr>
+<td><code>MyAgent</code></td>
+<td>3rd</td>
+<td>Rubick-based with Nash equilibrium estimation</td>
+</tr>
+<tr>
+<td><code>AgentHP2</code></td>
+<td>-</td>
+<td>Multi-phase concession with trend detection</td>
+</tr>
+<tr>
+<td><code>AgentLight</code></td>
+<td>-</td>
+<td>Lightweight Boulware with minimal overhead</td>
+</tr>
+<tr>
+<td><code>AgentSmith2016</code></td>
+<td>-</td>
+<td>Updated Smith with Nash-based selection</td>
+</tr>
+<tr>
+<td><code>Atlas32016</code></td>
+<td>-</td>
+<td>Atlas3 with four-phase refinement</td>
+</tr>
+<tr>
+<td><code>ClockworkAgent</code></td>
+<td>-</td>
+<td>Precision timing with phase-based strategy</td>
+</tr>
+<tr>
+<td><code>Farma</code></td>
+<td>-</td>
+<td>Frequency-based opponent model, adaptive concession</td>
+</tr>
+<tr>
+<td><code>GrandmaAgent</code></td>
+<td>-</td>
+<td>Patient conservative with late concession</td>
+</tr>
+<tr>
+<td><code>MaxOops</code></td>
+<td>-</td>
+<td>Aggressive with recovery mechanisms</td>
+</tr>
+<tr>
+<td><code>Ngent</code></td>
+<td>-</td>
+<td>Gentle concession strategy</td>
+</tr>
+<tr>
+<td><code>ParsCat</code></td>
+<td>-</td>
+<td>Persian cat - Nash product with issue analysis</td>
+</tr>
+<tr>
+<td><code>Terra</code></td>
+<td>-</td>
+<td>Earth-themed firm-to-flexible three-phase</td>
+</tr>
+</tbody>
+</table>
+<h2 id="anac-2017">ANAC 2017</h2>
+<p>PonPokoAgent won with a surprisingly simple but effective randomized approach.</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Rank</th>
+<th>Strategy Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PonPokoAgent</code></td>
+<td><strong>1st</strong></td>
+<td>Randomized threshold patterns; no opponent modeling (simplicity wins!)</td>
+</tr>
+<tr>
+<td><code>CaduceusDC16</code></td>
+<td>2nd</td>
+<td>Multi-strategy ensemble with weighted voting</td>
+</tr>
+<tr>
+<td><code>BetaOne</code></td>
+<td>3rd</td>
+<td>Bayesian opponent modeling with three-phase strategy</td>
+</tr>
+<tr>
+<td><code>AgentF</code></td>
+<td>-</td>
+<td>Linear concession with simple opponent tracking</td>
+</tr>
+<tr>
+<td><code>AgentKN</code></td>
+<td>-</td>
+<td>Sigmoid concession curve with adaptive threshold</td>
+</tr>
+<tr>
+<td><code>Farma2017</code></td>
+<td>-</td>
+<td>Exponential concession with Nash-inspired selection</td>
+</tr>
+<tr>
+<td><code>GeneKing</code></td>
+<td>-</td>
+<td>Genetic algorithm-inspired population bidding</td>
+</tr>
+<tr>
+<td><code>Gin</code></td>
+<td>-</td>
+<td>Smooth polynomial with future offer estimation</td>
+</tr>
+<tr>
+<td><code>Group3</code></td>
+<td>-</td>
+<td>Three-phase: hardball, exploration, concession</td>
+</tr>
+<tr>
+<td><code>Imitator</code></td>
+<td>-</td>
+<td>Tit-for-tat inspired concession mirroring</td>
+</tr>
+<tr>
+<td><code>MadAgent</code></td>
+<td>-</td>
+<td>Unpredictable "madness" with random elements</td>
+</tr>
+<tr>
+<td><code>Mamenchis</code></td>
+<td>-</td>
+<td>Patient dinosaur - high patience parameter</td>
+</tr>
+<tr>
+<td><code>Mosa</code></td>
+<td>-</td>
+<td>Simulated annealing-inspired cooling schedule</td>
+</tr>
+<tr>
+<td><code>ParsAgent3</code></td>
+<td>-</td>
+<td>Third generation Pars with Nash optimization</td>
+</tr>
+<tr>
+<td><code>Rubick</code></td>
+<td>-</td>
+<td>Adaptive concession based on opponent behavior</td>
+</tr>
+<tr>
+<td><code>SimpleAgent2017</code></td>
+<td>-</td>
+<td>Baseline linear strategy for benchmarking</td>
+</tr>
+<tr>
+<td><code>TaxiBox</code></td>
+<td>-</td>
+<td>"Fare meter" accumulated concession</td>
+</tr>
+</tbody>
+</table>
+<h2 id="anac-2018">ANAC 2018</h2>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Rank</th>
+<th>Strategy Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AgreeableAgent2018</code></td>
+<td><strong>1st</strong></td>
+<td>Cooperative focus with adaptive compromise</td>
+</tr>
+<tr>
+<td><code>MengWan</code></td>
+<td>2nd</td>
+<td>Chinese university agent with trend-based modeling</td>
+</tr>
+<tr>
+<td><code>Seto</code></td>
+<td>3rd</td>
+<td>Threshold-based with multi-phase response</td>
+</tr>
+<tr>
+<td><code>Agent33</code></td>
+<td>-</td>
+<td>Triple-three structure (3 phases x 3 criteria)</td>
+</tr>
+<tr>
+<td><code>AgentHerb</code></td>
+<td>-</td>
+<td>Herbal patience - slow and steady</td>
+</tr>
+<tr>
+<td><code>AgentNP1</code></td>
+<td>-</td>
+<td>Nash product variant with issue weighting</td>
+</tr>
+<tr>
+<td><code>AteamAgent</code></td>
+<td>-</td>
+<td>Team A's collaborative approach</td>
+</tr>
+<tr>
+<td><code>ConDAgent</code></td>
+<td>-</td>
+<td>Condition-based with state machine transitions</td>
+</tr>
+<tr>
+<td><code>ExpRubick</code></td>
+<td>-</td>
+<td>Experimental Rubick with enhanced adaptation</td>
+</tr>
+<tr>
+<td><code>FullAgent</code></td>
+<td>-</td>
+<td>Complete implementation of multiple strategies</td>
+</tr>
+<tr>
+<td><code>IQSun2018</code></td>
+<td>-</td>
+<td>Intelligence quotient-based decision making</td>
+</tr>
+<tr>
+<td><code>PonPokoRampage</code></td>
+<td>-</td>
+<td>Aggressive PonPoko variant</td>
+</tr>
+<tr>
+<td><code>Shiboy</code></td>
+<td>-</td>
+<td>Japanese style with honor-based acceptance</td>
+</tr>
+<tr>
+<td><code>Sontag</code></td>
+<td>-</td>
+<td>Literary-inspired balanced strategy</td>
+</tr>
+<tr>
+<td><code>Yeela</code></td>
+<td>-</td>
+<td>Israeli agent with adaptive concession</td>
+</tr>
+</tbody>
+</table>
+<h2 id="anac-2019">ANAC 2019</h2>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Rank</th>
+<th>Strategy Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AgentGG</code></td>
+<td><strong>1st</strong></td>
+<td>Issue importance-based bidding with Nash estimation</td>
+</tr>
+<tr>
+<td><code>KakeSoba</code></td>
+<td>2nd</td>
+<td>Fixed threshold with bid diversification</td>
+</tr>
+<tr>
+<td><code>SAGA</code></td>
+<td>3rd</td>
+<td>Genetic algorithm with population evolution</td>
+</tr>
+<tr>
+<td><code>AgentGP</code></td>
+<td>3rd (Nash)</td>
+<td>UCB-style exploration/exploitation balance</td>
+</tr>
+<tr>
+<td><code>AgentLarry</code></td>
+<td>-</td>
+<td>Simple linear concession baseline</td>
+</tr>
+<tr>
+<td><code>DandikAgent</code></td>
+<td>-</td>
+<td>Boulware-style slow concession</td>
+</tr>
+<tr>
+<td><code>EAgent</code></td>
+<td>-</td>
+<td>Exponential decay concession curve</td>
+</tr>
+<tr>
+<td><code>FSEGA2019</code></td>
+<td>2nd (Nash)</td>
+<td>Adaptive concession based on opponent behavior</td>
+</tr>
+<tr>
+<td><code>GaravelAgent</code></td>
+<td>-</td>
+<td>Tit-for-tat inspired adaptation</td>
+</tr>
+<tr>
+<td><code>Gravity</code></td>
+<td>-</td>
+<td>Gravitational (accelerating) concession</td>
+</tr>
+<tr>
+<td><code>HardDealer</code></td>
+<td>-</td>
+<td>Aggressive hardball tactics</td>
+</tr>
+<tr>
+<td><code>KAgent</code></td>
+<td>-</td>
+<td>AgentK-inspired adaptive concession</td>
+</tr>
+<tr>
+<td><code>MINF</code></td>
+<td>-</td>
+<td>Minimal information for robustness</td>
+</tr>
+<tr>
+<td><code>WinkyAgent</code></td>
+<td>1st (Nash)</td>
+<td>Nash product maximization strategy</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="usage-example">Usage Example</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">negmas</span><span class="w"> </span><span class="kn">import</span> <span class="n">SAOMechanism</span><span class="p">,</span> <span class="n">make_issue</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">negmas.preferences</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearAdditiveUtilityFunction</span> <span class="k">as</span> <span class="n">U</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">negmas_genius_agents</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentK</span><span class="p">,</span> <span class="n">HardHeaded</span><span class="p">,</span> <span class="n">Atlas3</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Create negotiation scenario</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">issues</span> <span class="o">=</span> <span class="p">[</span><span class="n">make_issue</span><span class="p">(</span><span class="s2">&quot;price&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)),</span> <span class="n">make_issue</span><span class="p">(</span><span class="s2">&quot;quality&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">))]</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">mechanism</span> <span class="o">=</span> <span class="n">SAOMechanism</span><span class="p">(</span><span class="n">issues</span><span class="o">=</span><span class="n">issues</span><span class="p">,</span> <span class="n">n_steps</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># Create agents with utility functions</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">ufun1</span> <span class="o">=</span> <span class="n">U</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">issues</span><span class="o">=</span><span class="n">issues</span><span class="p">)</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">ufun2</span> <span class="o">=</span> <span class="n">U</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">issues</span><span class="o">=</span><span class="n">issues</span><span class="p">)</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="c1"># Use any ANAC agent</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="n">agent1</span> <span class="o">=</span> <span class="n">AgentK</span><span class="p">(</span><span class="n">ufun</span><span class="o">=</span><span class="n">ufun1</span><span class="p">)</span>  <span class="c1"># ANAC 2010 winner</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="n">agent2</span> <span class="o">=</span> <span class="n">Atlas3</span><span class="p">(</span><span class="n">ufun</span><span class="o">=</span><span class="n">ufun2</span><span class="p">)</span>  <span class="c1"># ANAC 2015 winner</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="c1"># Run negotiation</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="n">mechanism</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">agent1</span><span class="p">)</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="n">mechanism</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">agent2</span><span class="p">)</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="n">result</span> <span class="o">=</span> <span class="n">mechanism</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Agreement: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">agreement</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Agent1 utility: </span><span class="si">{</span><span class="n">ufun1</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">agreement</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Agent2 utility: </span><span class="si">{</span><span class="n">ufun2</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">agreement</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="../../api/agents/">API Reference</a> - Detailed API documentation for all agents</li>
+<li><a href="../../api/time-dependent/">Time-Dependent Agents</a> - Base strategy implementations</li>
+<li><a href="../../getting-started/quickstart/">Quickstart Guide</a> - Getting started tutorial</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024-2026 Yasser Mohammad
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

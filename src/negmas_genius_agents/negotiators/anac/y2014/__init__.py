@@ -24,8 +24,11 @@ from negmas_genius_agents.negotiators.anac.y2014.atlas import Atlas
 from negmas_genius_agents.negotiators.anac.y2014.brave_cat import BraveCat
 from negmas_genius_agents.negotiators.anac.y2014.dona import DoNA
 from negmas_genius_agents.negotiators.anac.y2014.e2_agent import E2Agent
+from negmas_genius_agents.negotiators.anac.y2014.flinch import Flinch
 from negmas_genius_agents.negotiators.anac.y2014.gangster import Gangster
 from negmas_genius_agents.negotiators.anac.y2014.kg_agent import KGAgent
+from negmas_genius_agents.negotiators.anac.y2014.simpatico_agent import SimpaticoAgent
+from negmas_genius_agents.negotiators.anac.y2014.sobut import Sobut
 from negmas_genius_agents.negotiators.anac.y2014.tu_delft_group2 import TUDelftGroup2
 from negmas_genius_agents.negotiators.anac.y2014.whale_agent import WhaleAgent
 
@@ -48,4 +51,7 @@ __all__ = [
     "ArisawaYaki",
     "Aster",
     "Atlas",
+    "Flinch",
+    "SimpaticoAgent",
+    "Sobut",
 ]

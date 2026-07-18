@@ -72,6 +72,7 @@ def test_python_agent_runs(name):
     assert isinstance(reached, bool)  # ran to completion without raising
 
 
+@pytest.mark.java_comparison
 @pytest.mark.skipif(not BRIDGE_RUNNING, reason="Genius bridge not running")
 @pytest.mark.parametrize("name", sorted(AGENT_MAPPING.keys()))
 def test_python_vs_java_behavior(name):

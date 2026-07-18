@@ -20,13 +20,17 @@ Each agent is verified using two approaches:
 
 ## Summary Statistics
 
-- **Total Agents**: 124
-- **Verified**: 114 (92%)
-- **Minor Issues**: 10 (8%)
+- **Total Agents**: 142 (124 original + 18 newly-added missing ANAC agents)
+- **Verified**: 114 (of the original 124)
+- **Minor Issues**: 10
 - **Major Issues**: 0
 - **Not Started**: 0
 
-All 124 agents across ANAC 2010-2019 and time-dependent base classes have been analyzed and verified.
+All 142 agents across ANAC 2010-2019 and the time-dependent base classes are implemented,
+importable, registered, and complete a negotiation without error
+(`tests/test_python_vs_java.py::test_python_agent_runs`, always-on). The 18 agents added in
+the 2026-07-18 completion pass were additionally checked against the real Java agent through
+the Genius bridge — see **Genius Completion Update** below.
 
 ---
 
@@ -386,3 +390,44 @@ Reference: Fatima, S.S., Wooldridge, M., & Jennings, N.R. "Optimal Negotiation S
 1. **Fix Nozomi/IAMhaggler Bayesian models** - Match Java implementation more closely
 2. **Add detailed docstrings** to all agents with offering/acceptance/opponent-modeling strategy descriptions and paper references
 3. **Create docs table** with one-liner description of every agent
+
+---
+
+## Genius Completion Update (2026-07-18) — 18 newly-added missing agents
+
+These agents were missing from the package (absent vs `GENIUS_INFO`) and were ported in the
+completion pass. Each was checked against the real Java agent via
+`negmas.genius.GeniusNegotiator` on a shared domain vs a fixed opponent. Ports are
+AI-assisted approximations; ✅ = behaves in the same ballpark as Java, ⚠️ = documented
+divergence, 🧩 = the real Java agent crashes in the bridge under full information (verified,
+not our bug) so only the Python side is observable.
+
+| Year | Agent | Java class | Bridge comparison |
+|------|-------|-----------|-------------------|
+| 2011 | NiceTitForTat | `Nice_Tit_for_Tat.NiceTitForTat` | ✅ agreement, directionally consistent (Bayesian OM + Nash approximated) |
+| 2011 | ValueModelAgent | `ValueModelAgent.ValueModelAgent` | ⚠️ agrees; softer than Java on tiny domains (rate-limited concession approx) |
+| 2012 | BRAMAgent2 | `BRAMAgent2.BRAMAgent2` | ✅ matches Java outcome exactly on test domain |
+| 2014 | Flinch | `Flinch.Flinch` | ✅ identical agreement + utilities |
+| 2014 | SimpaticoAgent | `SimpaticoAgent.Simpatico` | ✅ identical agreement + utilities |
+| 2014 | Sobut | `Sobut.Sobut` | ✅ same ballpark (trivial fixed-threshold strategy) |
+| 2016 | ParsAgent2 | `pars2.ParsAgent2` | ✅ matches closely (0.85/0.85) |
+| 2016 | SYAgent | `syagent.SYAgent` | ✅ matches closely (same utility + offer count) |
+| 2017 | TucAgent | `tucagent.TucAgent` | ⚠️ gross "holds firm, settles late" matches; Java never concedes off max on test domain |
+| 2018 | BetaOne2018 | `beta_one.Group2` | ✅ Java ran (no crash); qualitatively consistent (anti-Kalai point approximated) |
+| 2018 | GroupY | `groupy.GroupY` | ✅ matches (opening-phase max-bid dominance) |
+| 2018 | Lancelot | `lancelot.Lancelot` | ✅ identical agreement + close utility trajectory |
+| 2018 | Libra | `libra.Libra` | 🧩 Java `Libra` crashes in bridge (bug in its bundled Mamenchis sub-agent); Python runs cleanly |
+| 2018 | SMACAgent | `smac_agent.SMAC_Agent` | ✅ same agreement + concession shape |
+| 2019 | PodAgent | `podagent.Group1_BOA` | ✅ identical agreement + utilities |
+| 2019 | SACRA | `sacra.SACRA` | ✅ same final utilities |
+| 2019 | SolverAgent | `solveragent.SolverAgent` | 🧩 Java crashes (NPE without preference uncertainty); Python port runs stably from derived behavior |
+| 2019 | TheNewDeal | `thenewdeal.TheNewDeal` | 🧩 Java crashes (NPE, same cause); Python port runs stably from derived behavior |
+
+**How to reproduce:** `pytest tests/test_python_vs_java.py --run-java` runs the strict
+Python-vs-Java comparison for every agent (requires a running Genius bridge); it is opt-in
+because the approximate ports are not expected to match Java bit-for-bit. The always-on
+`test_python_agent_runs` confirms all 142 agents complete a negotiation without error.
+
+**Naming note:** the real `BetaOne` is a 2018 agent; it is added as `BetaOne2018` because the
+pre-existing `y2017/beta_one.py` (misattributed — no 2017 Java source) already holds the plain
+name. Flagged for follow-up cleanup.

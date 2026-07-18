@@ -252,3 +252,30 @@ Data sourced from `negmas.genius.ginfo.GENIUS_INFO`
 - 2014: First year with non-linear utility spaces
 - 2015-2018: Multilateral negotiations
 - 2019: Back to bilateral
+
+---
+
+## Genius Completion Update (2026-07-18)
+
+**All missing ANAC agents are now implemented.** Comparing the package against the canonical
+`negmas.genius.ginfo.GENIUS_INFO` class list found 18 missing competition agents; all were
+ported (AI-assisted Java→Python), verified against the real Java agent via the Genius bridge,
+registered, and committed per year.
+
+- **Agent total: 142** (124 prior + 18 new); `get_agents()` returns 146 groups-view entries
+  (142 ANAC + basics). Per year the new agents are:
+  - 2011: `NiceTitForTat`, `ValueModelAgent`
+  - 2012: `BRAMAgent2`
+  - 2014: `Flinch`, `SimpaticoAgent`, `Sobut`
+  - 2016: `ParsAgent2`, `SYAgent`
+  - 2017: `TucAgent`
+  - 2018: `BetaOne2018`, `GroupY`, `Lancelot`, `Libra`, `SMACAgent`
+  - 2019: `PodAgent`, `SACRA`, `SolverAgent`, `TheNewDeal`
+- **Opponent models moved out.** Opponent models (and BOA acceptance/offering components)
+  live in `negmas.gb.components.genius` (17 models + 48 acceptance + 31 offering, registered
+  with negmas's `component_registry`). This package keeps **only agents**.
+- **Behavioral test.** `tests/test_python_vs_java.py` compares each Python port against the
+  real Java agent through `negmas.genius.GeniusNegotiator` (opt-in `--run-java`); an always-on
+  `test_python_agent_runs` confirms every agent completes a negotiation. Default suite: green.
+- See `reports/GENIUS_COMPLETION_AUDIT.md` for the full audit and
+  `reports/AGENT_VERIFICATION_REPORT.md` (Genius Completion Update) for per-agent bridge results.

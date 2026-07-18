@@ -174,6 +174,24 @@ from negmas_genius_agents import (
     KAgent,
     MINF,
     WinkyAgent,
+    # newly added missing agents
+    NiceTitForTat,
+    ValueModelAgent,
+    BRAMAgent2,
+    Flinch,
+    SimpaticoAgent,
+    Sobut,
+    ParsAgent2,
+    SYAgent,
+    TucAgent,
+    GroupY,
+    Lancelot,
+    Libra,
+    SMACAgent,
+    PodAgent,
+    SACRA,
+    SolverAgent,
+    TheNewDeal,
 )
 
 
@@ -214,7 +232,7 @@ AGENT_MAPPING = {
     "AgentM": "agents.anac.y2014.AgentM.AgentM",
     "DoNA": "agents.anac.y2014.DoNA.DoNA",
     "Gangster": "agents.anac.y2014.Gangster.Gangster",
-    "WhaleAgent": "agents.anac.y2014.SimpaticoAgent.Simpatico",
+    "WhaleAgent": "agents.anac.y2014.AgentWhale.WhaleAgent",
     "TUDelftGroup2": "agents.anac.y2014.TUDelftGroup2.Group2Agent",
     "E2Agent": "agents.anac.y2014.E2Agent.AnacSampleAgent",
     "KGAgent": "agents.anac.y2014.KGAgent.KGAgent",
@@ -281,7 +299,7 @@ AGENT_MAPPING = {
     "ParsAgent3": "agents.anac.y2017.parsagent3.ShahAgent",
     "Rubick": "agents.anac.y2017.rubick.Rubick",
     "SimpleAgent2017": "agents.anac.y2017.simpleagent.SimpleAgent",
-    "TaxiBox": "agents.anac.y2017.tucagent.TucAgent",
+    "TaxiBox": "agents.anac.y2017.tangxun.taxibox",
     # ANAC 2018
     "AgreeableAgent2018": "agents.anac.y2018.agreeableagent2018.AgreeableAgent2018",
     "MengWan": "agents.anac.y2018.meng_wan.Agent36",
@@ -313,6 +331,24 @@ AGENT_MAPPING = {
     "KAgent": "agents.anac.y2019.kagent.KAgent",
     "MINF": "agents.anac.y2019.minf.MINF",
     "WinkyAgent": "agents.anac.y2019.winkyagent.WinkyAgent",
+    # newly added missing agents
+    "NiceTitForTat": "agents.anac.y2011.Nice_Tit_for_Tat.NiceTitForTat",
+    "ValueModelAgent": "agents.anac.y2011.ValueModelAgent.ValueModelAgent",
+    "BRAMAgent2": "agents.anac.y2012.BRAMAgent2.BRAMAgent2",
+    "Flinch": "agents.anac.y2014.Flinch.Flinch",
+    "SimpaticoAgent": "agents.anac.y2014.SimpaticoAgent.Simpatico",
+    "Sobut": "agents.anac.y2014.Sobut.Sobut",
+    "ParsAgent2": "agents.anac.y2016.pars2.ParsAgent2",
+    "SYAgent": "agents.anac.y2016.syagent.SYAgent",
+    "TucAgent": "agents.anac.y2017.tucagent.TucAgent",
+    "GroupY": "agents.anac.y2018.groupy.GroupY",
+    "Lancelot": "agents.anac.y2018.lancelot.Lancelot",
+    "Libra": "agents.anac.y2018.libra.Libra",
+    "SMACAgent": "agents.anac.y2018.smac_agent.SMAC_Agent",
+    "PodAgent": "agents.anac.y2019.podagent.Group1_BOA",
+    "SACRA": "agents.anac.y2019.sacra.SACRA",
+    "SolverAgent": "agents.anac.y2019.solveragent.SolverAgent",
+    "TheNewDeal": "agents.anac.y2019.thenewdeal.TheNewDeal",
 }
 
 # Python class mapping
@@ -451,6 +487,24 @@ PYTHON_CLASSES = {
     "KAgent": KAgent,
     "MINF": MINF,
     "WinkyAgent": WinkyAgent,
+    # newly added missing agents
+    "NiceTitForTat": NiceTitForTat,
+    "ValueModelAgent": ValueModelAgent,
+    "BRAMAgent2": BRAMAgent2,
+    "Flinch": Flinch,
+    "SimpaticoAgent": SimpaticoAgent,
+    "Sobut": Sobut,
+    "ParsAgent2": ParsAgent2,
+    "SYAgent": SYAgent,
+    "TucAgent": TucAgent,
+    "GroupY": GroupY,
+    "Lancelot": Lancelot,
+    "Libra": Libra,
+    "SMACAgent": SMACAgent,
+    "PodAgent": PodAgent,
+    "SACRA": SACRA,
+    "SolverAgent": SolverAgent,
+    "TheNewDeal": TheNewDeal,
 }
 
 

@@ -1122,51 +1122,95 @@ wheels = [
 
 [[package]]
 name = "negmas"
-version = "0.14.0"
+version = "0.15.5"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "attrs" },
-    { name = "click" },
-    { name = "click-config-file" },
-    { name = "cloudpickle" },
-    { name = "colorlog" },
-    { name = "dill" },
-    { name = "gif" },
-    { name = "inflect" },
-    { name = "kaleido" },
-    { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "pandas" },
-    { name = "pillow" },
-    { name = "plotly" },
-    { name = "psutil" },
-    { name = "py4j" },
-    { name = "pyarrow" },
-    { name = "pyyaml" },
-    { name = "rich" },
-    { name = "scikit-learn", version = "1.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "scikit-learn", version = "1.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "scipy", version = "1.16.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "setuptools" },
-    { name = "stringcase" },
-    { name = "tabulate" },
-    { name = "typer" },
-    { name = "typing-extensions" },
+resolution-markers = [
+    "python_full_version < '3.11'",
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bf/d7/018741957fa6a11fbd36c86ad52aaa189c5ea8c0295d04c2bf8baa824302/negmas-0.14.0.tar.gz", hash = "sha256:b9b052f57d951e7719a1b582912437f0309360cd7592be7a141d61638e1ed297", size = 652898, upload-time = "2026-01-17T05:07:50.729Z" }
+dependencies = [
+    { name = "attrs", marker = "python_full_version < '3.11'" },
+    { name = "click", marker = "python_full_version < '3.11'" },
+    { name = "click-config-file", marker = "python_full_version < '3.11'" },
+    { name = "cloudpickle", marker = "python_full_version < '3.11'" },
+    { name = "colorlog", marker = "python_full_version < '3.11'" },
+    { name = "dill", marker = "python_full_version < '3.11'" },
+    { name = "gif", marker = "python_full_version < '3.11'" },
+    { name = "inflect", marker = "python_full_version < '3.11'" },
+    { name = "kaleido", marker = "python_full_version < '3.11'" },
+    { name = "matplotlib", marker = "python_full_version < '3.11'" },
+    { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pandas", marker = "python_full_version < '3.11'" },
+    { name = "pillow", marker = "python_full_version < '3.11'" },
+    { name = "plotly", marker = "python_full_version < '3.11'" },
+    { name = "psutil", marker = "python_full_version < '3.11'" },
+    { name = "py4j", marker = "python_full_version < '3.11'" },
+    { name = "pyarrow", marker = "python_full_version < '3.11'" },
+    { name = "pyyaml", marker = "python_full_version < '3.11'" },
+    { name = "rich", marker = "python_full_version < '3.11'" },
+    { name = "scikit-learn", version = "1.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "setuptools", marker = "python_full_version < '3.11'" },
+    { name = "stringcase", marker = "python_full_version < '3.11'" },
+    { name = "tabulate", marker = "python_full_version < '3.11'" },
+    { name = "typer", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a4/30/e6bb2e0af31b95f6df1fee0515189769838e546ccd1e8afc7866bfc17216/negmas-0.15.5.tar.gz", hash = "sha256:374883c67734d64778eba5a86833bbbc455d271fb6420da6fb86f25c6c1de6aa", size = 789601, upload-time = "2026-05-14T07:59:27.308Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e7/d6/3fbfe88543ec0b4287a47d64be4a7cb9f5283e7fca45ecc549991e689625/negmas-0.14.0-py3-none-any.whl", hash = "sha256:9a40379d47bb3088c2eb23a30989944412a839c607698484649e125a50982794", size = 731612, upload-time = "2026-01-17T05:07:48.746Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/44/37c3606f91f99b4f3bfefffe017ccfa95a9390a4634fa96f926e74a02fcf/negmas-0.15.5-py3-none-any.whl", hash = "sha256:b86033c92f6d5f07f0a34e6f8819a48e43ae63da6ad25df390d4e10aa3f4bff3", size = 862759, upload-time = "2026-05-14T07:59:25.005Z" },
+]
+
+[[package]]
+name = "negmas"
+version = "0.15.6"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.12'",
+    "python_full_version == '3.11.*'",
+]
+dependencies = [
+    { name = "attrs", marker = "python_full_version >= '3.11'" },
+    { name = "click", marker = "python_full_version >= '3.11'" },
+    { name = "click-config-file", marker = "python_full_version >= '3.11'" },
+    { name = "cloudpickle", marker = "python_full_version >= '3.11'" },
+    { name = "colorlog", marker = "python_full_version >= '3.11'" },
+    { name = "dill", marker = "python_full_version >= '3.11'" },
+    { name = "gif", marker = "python_full_version >= '3.11'" },
+    { name = "inflect", marker = "python_full_version >= '3.11'" },
+    { name = "kaleido", marker = "python_full_version >= '3.11'" },
+    { name = "matplotlib", marker = "python_full_version >= '3.11'" },
+    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "numpy", version = "2.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pandas", marker = "python_full_version >= '3.11'" },
+    { name = "pebble", marker = "python_full_version >= '3.11'" },
+    { name = "pillow", marker = "python_full_version >= '3.11'" },
+    { name = "plotly", marker = "python_full_version >= '3.11'" },
+    { name = "psutil", marker = "python_full_version >= '3.11'" },
+    { name = "py4j", marker = "python_full_version >= '3.11'" },
+    { name = "pyarrow", marker = "python_full_version >= '3.11'" },
+    { name = "pyyaml", marker = "python_full_version >= '3.11'" },
+    { name = "rich", marker = "python_full_version >= '3.11'" },
+    { name = "scikit-learn", version = "1.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "scipy", version = "1.16.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "setuptools", marker = "python_full_version >= '3.11'" },
+    { name = "stringcase", marker = "python_full_version >= '3.11'" },
+    { name = "tabulate", marker = "python_full_version >= '3.11'" },
+    { name = "typer", marker = "python_full_version >= '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version >= '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c3/a2/1272af309bcc73c7da74e94278fcdbda84640f10c56b8a4edc3ee1d2875d/negmas-0.15.6.tar.gz", hash = "sha256:5da861feeda570b7c493b96c357adbe685b8d8970d599abe156e4b6dd55a09bd", size = 803401, upload-time = "2026-06-15T11:35:46.456Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bb/90/b29180f170080408cab074c3568458d1eca41ac13575b92892cb53317078/negmas-0.15.6-py3-none-any.whl", hash = "sha256:d6d4fc47b8f88bcc27f337a210b51e325a2c4b743150e6e16a8431865958a80f", size = 875112, upload-time = "2026-06-15T11:35:45.026Z" },
 ]
 
 [[package]]
 name = "negmas-genius-agents"
-version = "0.2.0"
+version = "0.2.1"
 source = { editable = "." }
 dependencies = [
-    { name = "negmas" },
+    { name = "negmas", version = "0.15.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "negmas", version = "0.15.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
@@ -1186,7 +1230,7 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "negmas", specifier = ">=0.14.0" },
+    { name = "negmas", specifier = ">=0.15.2" },
     { name = "numpy", specifier = ">=1.24.0" },
 ]
 
@@ -1544,6 +1588,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/4c/b2/bb8e495d5262bfec41ab5cb18f522f1012933347fb5d9e62452d446baca2/pathspec-1.0.3.tar.gz", hash = "sha256:bac5cf97ae2c2876e2d25ebb15078eb04d76e4b98921ee31c6f85ade8b59444d", size = 130841, upload-time = "2026-01-09T15:46:46.009Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/32/2b/121e912bd60eebd623f873fd090de0e84f322972ab25a7f9044c056804ed/pathspec-1.0.3-py3-none-any.whl", hash = "sha256:e80767021c1cc524aa3fb14bedda9c34406591343cc42797b386ce7b9354fb6c", size = 55021, upload-time = "2026-01-09T15:46:44.652Z" },
+]
+
+[[package]]
+name = "pebble"
+version = "5.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/66/3b/7debef984e227a70798963cf2e5ea90882f62bca659b33cbd421a453abd1/pebble-5.2.0.tar.gz", hash = "sha256:8e0a5f6a1cfdd0ac1bfc4a789e20d2b4b895de976e547d23b7de23b71ef39b34", size = 39811, upload-time = "2026-01-25T12:05:11.422Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b5/de/1cce5274efcb921484998864820f2ba41679ea472daef748a7bc03fc0bb7/pebble-5.2.0-py3-none-any.whl", hash = "sha256:6237a792a78524648857ec6d2dae069c91a45bdef18daf957078a56e2dd8e0a8", size = 34881, upload-time = "2026-01-25T12:05:09.714Z" },
 ]
 
 [[package]]

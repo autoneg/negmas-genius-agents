@@ -20,29 +20,34 @@ from `GENIUS_INFO`).
 
 | Year | Agent | Java class | Status |
 |------|-------|-----------|--------|
-| 2011 | NiceTitForTat | `agents.anac.y2011.Nice_Tit_for_Tat.NiceTitForTat` | ⬜ |
-| 2011 | ValueModelAgent | `agents.anac.y2011.ValueModelAgent.ValueModelAgent` | ⬜ |
-| 2012 | BRAMAgent2 | `agents.anac.y2012.BRAMAgent2.BRAMAgent2` | ⬜ |
-| 2014 | Flinch | `agents.anac.y2014.Flinch.Flinch` | ⬜ |
-| 2014 | SimpaticoAgent | `agents.anac.y2014.SimpaticoAgent.Simpatico` | ⬜ |
-| 2014 | Sobut | `agents.anac.y2014.Sobut.Sobut` | ⬜ |
-| 2016 | ParsAgent2 | `agents.anac.y2016.pars2.ParsAgent2` | ⬜ |
-| 2016 | SYAgent | `agents.anac.y2016.syagent.SYAgent` | ⬜ |
-| 2017 | TucAgent | `agents.anac.y2017.tucagent.TucAgent` | ⬜ |
-| 2018 | BetaOne | `agents.anac.y2018.beta_one.Group2` | ⬜ (relocate mislabeled 2017 file) |
-| 2018 | GroupY | `agents.anac.y2018.groupy.GroupY` | ⬜ |
-| 2018 | Lancelot | `agents.anac.y2018.lancelot.Lancelot` | ⬜ |
-| 2018 | Libra | `agents.anac.y2018.libra.Libra` | ⬜ |
-| 2018 | SMACAgent | `agents.anac.y2018.smac_agent.SMAC_Agent` | ⬜ |
-| 2019 | PodAgent | `agents.anac.y2019.podagent.Group1_BOA` | ⬜ |
-| 2019 | SACRA | `agents.anac.y2019.sacra.SACRA` | ⬜ |
-| 2019 | SolverAgent | `agents.anac.y2019.solveragent.SolverAgent` | ⬜ |
-| 2019 | TheNewDeal | `agents.anac.y2019.thenewdeal.TheNewDeal` | ⬜ |
+| 2011 | NiceTitForTat | `agents.anac.y2011.Nice_Tit_for_Tat.NiceTitForTat` | ✅ |
+| 2011 | ValueModelAgent | `agents.anac.y2011.ValueModelAgent.ValueModelAgent` | ✅ |
+| 2012 | BRAMAgent2 | `agents.anac.y2012.BRAMAgent2.BRAMAgent2` | ✅ |
+| 2014 | Flinch | `agents.anac.y2014.Flinch.Flinch` | ✅ |
+| 2014 | SimpaticoAgent | `agents.anac.y2014.SimpaticoAgent.Simpatico` | ✅ |
+| 2014 | Sobut | `agents.anac.y2014.Sobut.Sobut` | ✅ |
+| 2016 | ParsAgent2 | `agents.anac.y2016.pars2.ParsAgent2` | ✅ |
+| 2016 | SYAgent | `agents.anac.y2016.syagent.SYAgent` | ✅ |
+| 2017 | TucAgent | `agents.anac.y2017.tucagent.TucAgent` | ✅ |
+| 2018 | BetaOne2018 | `agents.anac.y2018.beta_one.Group2` | 🔄 (year-suffixed; 2017 `beta_one.py` is misattributed — no 2017 Java source) |
+| 2018 | GroupY | `agents.anac.y2018.groupy.GroupY` | ✅ |
+| 2018 | Lancelot | `agents.anac.y2018.lancelot.Lancelot` | ✅ |
+| 2018 | Libra | `agents.anac.y2018.libra.Libra` | ✅ |
+| 2018 | SMACAgent | `agents.anac.y2018.smac_agent.SMAC_Agent` | ✅ |
+| 2019 | PodAgent | `agents.anac.y2019.podagent.Group1_BOA` | ✅ |
+| 2019 | SACRA | `agents.anac.y2019.sacra.SACRA` | ✅ |
+| 2019 | SolverAgent | `agents.anac.y2019.solveragent.SolverAgent` | ✅ |
+| 2019 | TheNewDeal | `agents.anac.y2019.thenewdeal.TheNewDeal` | ✅ |
+
+**Status:** 17 of 18 done and committed (per-year commits, each verified against the real
+Java agent via the bridge). `BetaOne2018` in progress.
 
 **Naming rule:** cross-year name clashes are disambiguated by appending the year to the
-newer agent (matching the existing convention `AgentSmith2016`, `Farma2017`). Relevant
-clashes: 2018 `BetaOne` (note the current `y2017/beta_one.py` is mislabeled — the real
-`BetaOne`/`Group2` is a 2018 agent).
+newer agent (matching the existing convention `AgentSmith2016`, `Farma2017`). The real
+`BetaOne` is a **2018** agent (`agents.anac.y2018.beta_one.Group2`); it is added as
+`BetaOne2018` because the existing `y2017/beta_one.py` already occupies the plain name —
+that 2017 file is **misattributed** (there is no `agents.anac.y2017.*.BetaOne` in Genius /
+`GENIUS_INFO`) and is flagged for follow-up cleanup.
 
 ---
 
@@ -117,5 +122,11 @@ attribute types, and `negmas.models.__init__` now re-exports all four attribute 
 
 The Java Genius bridge is available in this environment
 (`negmas.genius.genius_bridge_is_running()` → `True`). Each port is checked for
-behavioral consistency against the real Java implementation (via `GeniusNegotiator`) using
-the harness in `tests/test_behavioral_comparison.py` before being marked ✅.
+behavioral consistency against the real Java implementation (via `GeniusNegotiator`).
+
+`tests/test_python_vs_java.py` formalizes this: for every agent it runs the Python port
+**and** the real Java agent on the same domain against the same opponent and asserts they
+agree on whether a deal is reached and that achieved utilities are in the same ballpark
+(agents whose Java side crashes in the bridge are skipped, not failed). A bridge-optional
+`test_python_agent_runs` check (all 141 agents) always runs. Fixed two pre-existing wrong
+Java-class mappings while wiring this up (`WhaleAgent`, `TaxiBox`).

@@ -457,6 +457,7 @@ def _register_all() -> bool:
     Lancelot,
     Libra,
     SMACAgent,
+            BetaOne2018,
 )
 
         anac_2018_agents = [
@@ -479,6 +480,7 @@ def _register_all() -> bool:
     Lancelot,
     Libra,
     SMACAgent,
+            BetaOne2018,
 ]
         for cls in anac_2018_agents:
             _register_negotiator(

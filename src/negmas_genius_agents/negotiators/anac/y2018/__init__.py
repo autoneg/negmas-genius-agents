@@ -20,6 +20,7 @@ from negmas_genius_agents.negotiators.anac.y2018.agreeable_agent import (
     AgreeableAgent2018,
 )
 from negmas_genius_agents.negotiators.anac.y2018.ateam_agent import AteamAgent
+from negmas_genius_agents.negotiators.anac.y2018.beta_one_2018 import BetaOne2018
 from negmas_genius_agents.negotiators.anac.y2018.cond_agent import ConDAgent
 from negmas_genius_agents.negotiators.anac.y2018.exp_rubick import ExpRubick
 from negmas_genius_agents.negotiators.anac.y2018.full_agent import FullAgent
@@ -45,6 +46,7 @@ __all__ = [
     "AgentHerb",
     "AgentNP1",
     "AteamAgent",
+    "BetaOne2018",
     "ConDAgent",
     "ExpRubick",
     "FullAgent",

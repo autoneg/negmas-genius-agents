@@ -192,6 +192,7 @@ from negmas_genius_agents import (
     SACRA,
     SolverAgent,
     TheNewDeal,
+    BetaOne2018,
 )
 
 
@@ -349,6 +350,7 @@ AGENT_MAPPING = {
     "SACRA": "agents.anac.y2019.sacra.SACRA",
     "SolverAgent": "agents.anac.y2019.solveragent.SolverAgent",
     "TheNewDeal": "agents.anac.y2019.thenewdeal.TheNewDeal",
+    "BetaOne2018": "agents.anac.y2018.beta_one.Group2",
 }
 
 # Python class mapping
@@ -505,6 +507,7 @@ PYTHON_CLASSES = {
     "SACRA": SACRA,
     "SolverAgent": SolverAgent,
     "TheNewDeal": TheNewDeal,
+    "BetaOne2018": BetaOne2018,
 }
 
 

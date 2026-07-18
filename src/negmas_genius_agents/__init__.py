@@ -202,6 +202,7 @@ from negmas_genius_agents.negotiators.anac.y2018 import (
     Lancelot,
     Libra,
     SMACAgent,
+    BetaOne2018,
 )
 
 # ANAC 2019 agents (14 agents)
@@ -378,6 +379,7 @@ __all__ = [
     "SimpleAgent2017",
     "TaxiBox",
     # ANAC 2018 agents
+    "BetaOne2018",
     "GroupY",
     "Lancelot",
     "Libra",
@@ -616,6 +618,7 @@ _AGENT_REGISTRY: dict[str, dict[str, list[type]]] = {
             Lancelot,
             Libra,
             SMACAgent,
+            BetaOne2018,
 ],
     },
     "anac2019": {

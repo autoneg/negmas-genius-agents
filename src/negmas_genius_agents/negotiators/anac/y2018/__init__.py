@@ -23,11 +23,15 @@ from negmas_genius_agents.negotiators.anac.y2018.ateam_agent import AteamAgent
 from negmas_genius_agents.negotiators.anac.y2018.cond_agent import ConDAgent
 from negmas_genius_agents.negotiators.anac.y2018.exp_rubick import ExpRubick
 from negmas_genius_agents.negotiators.anac.y2018.full_agent import FullAgent
+from negmas_genius_agents.negotiators.anac.y2018.group_y import GroupY
 from negmas_genius_agents.negotiators.anac.y2018.iq_sun import IQSun2018
+from negmas_genius_agents.negotiators.anac.y2018.lancelot import Lancelot
+from negmas_genius_agents.negotiators.anac.y2018.libra import Libra
 from negmas_genius_agents.negotiators.anac.y2018.meng_wan import MengWan
 from negmas_genius_agents.negotiators.anac.y2018.pon_poko_rampage import PonPokoRampage
 from negmas_genius_agents.negotiators.anac.y2018.seto import Seto
 from negmas_genius_agents.negotiators.anac.y2018.shiboy import Shiboy
+from negmas_genius_agents.negotiators.anac.y2018.smac_agent import SMACAgent
 from negmas_genius_agents.negotiators.anac.y2018.sontag import Sontag
 from negmas_genius_agents.negotiators.anac.y2018.yeela import Yeela
 
@@ -44,9 +48,13 @@ __all__ = [
     "ConDAgent",
     "ExpRubick",
     "FullAgent",
+    "GroupY",
     "IQSun2018",
+    "Lancelot",
+    "Libra",
     "PonPokoRampage",
     "Shiboy",
+    "SMACAgent",
     "Sontag",
     "Yeela",
 ]

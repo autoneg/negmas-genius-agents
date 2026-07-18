@@ -138,7 +138,9 @@ def _register_all() -> bool:
             AgentK2,
             BramAgent,
             TheNegotiator,
-        )
+            NiceTitForTat,
+    ValueModelAgent,
+)
 
         anac_2011_agents = [
             HardHeaded,
@@ -147,7 +149,9 @@ def _register_all() -> bool:
             AgentK2,
             BramAgent,
             TheNegotiator,
-        ]
+            NiceTitForTat,
+    ValueModelAgent,
+]
         for cls in anac_2011_agents:
             _register_negotiator(
                 cls,
@@ -167,7 +171,8 @@ def _register_all() -> bool:
             MetaAgent2012,
             IAMhaggler2012,
             AgentMR,
-        )
+            BRAMAgent2,
+)
 
         anac_2012_agents = [
             CUHKAgent,
@@ -177,7 +182,8 @@ def _register_all() -> bool:
             MetaAgent2012,
             IAMhaggler2012,
             AgentMR,
-        ]
+            BRAMAgent2,
+]
         for cls in anac_2012_agents:
             _register_negotiator(
                 cls,
@@ -235,7 +241,10 @@ def _register_all() -> bool:
             ArisawaYaki,
             Aster,
             Atlas,
-        )
+            Flinch,
+    SimpaticoAgent,
+    Sobut,
+)
 
         anac_2014_agents = [
             AgentM,
@@ -253,7 +262,10 @@ def _register_all() -> bool:
             ArisawaYaki,
             Aster,
             Atlas,
-        ]
+            Flinch,
+    SimpaticoAgent,
+    Sobut,
+]
         for cls in anac_2014_agents:
             _register_negotiator(
                 cls,
@@ -340,7 +352,9 @@ def _register_all() -> bool:
             MyAgent,
             Ngent,
             Terra,
-        )
+            ParsAgent2,
+    SYAgent,
+)
 
         anac_2016_agents = [
             Caduceus,
@@ -357,7 +371,9 @@ def _register_all() -> bool:
             MyAgent,
             Ngent,
             Terra,
-        ]
+            ParsAgent2,
+    SYAgent,
+]
         for cls in anac_2016_agents:
             _register_negotiator(
                 cls,
@@ -387,7 +403,8 @@ def _register_all() -> bool:
             Rubick,
             SimpleAgent2017,
             TaxiBox,
-        )
+            TucAgent,
+)
 
         anac_2017_agents = [
             PonPokoAgent,
@@ -407,7 +424,8 @@ def _register_all() -> bool:
             Rubick,
             SimpleAgent2017,
             TaxiBox,
-        ]
+            TucAgent,
+]
         for cls in anac_2017_agents:
             _register_negotiator(
                 cls,
@@ -435,7 +453,11 @@ def _register_all() -> bool:
             Shiboy,
             Sontag,
             Yeela,
-        )
+            GroupY,
+    Lancelot,
+    Libra,
+    SMACAgent,
+)
 
         anac_2018_agents = [
             AgreeableAgent2018,
@@ -453,7 +475,11 @@ def _register_all() -> bool:
             Shiboy,
             Sontag,
             Yeela,
-        ]
+            GroupY,
+    Lancelot,
+    Libra,
+    SMACAgent,
+]
         for cls in anac_2018_agents:
             _register_negotiator(
                 cls,
@@ -480,7 +506,11 @@ def _register_all() -> bool:
             KAgent,
             MINF,
             WinkyAgent,
-        )
+            PodAgent,
+    SACRA,
+    SolverAgent,
+    TheNewDeal,
+)
 
         anac_2019_agents = [
             AgentGG,
@@ -497,7 +527,11 @@ def _register_all() -> bool:
             KAgent,
             MINF,
             WinkyAgent,
-        ]
+            PodAgent,
+    SACRA,
+    SolverAgent,
+    TheNewDeal,
+]
         for cls in anac_2019_agents:
             _register_negotiator(
                 cls,

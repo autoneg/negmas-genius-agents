@@ -64,6 +64,8 @@ from negmas_genius_agents.negotiators.anac.y2011 import (
     AgentK2,
     BramAgent,
     TheNegotiator,
+    NiceTitForTat,
+    ValueModelAgent,
 )
 
 # ANAC 2012 agents (7 agents)
@@ -75,6 +77,7 @@ from negmas_genius_agents.negotiators.anac.y2012 import (
     MetaAgent2012,
     IAMhaggler2012,
     AgentMR,
+    BRAMAgent2,
 )
 
 # ANAC 2013 agents (7 agents)
@@ -105,6 +108,9 @@ from negmas_genius_agents.negotiators.anac.y2014 import (
     ArisawaYaki,
     Aster,
     Atlas,
+    Flinch,
+    SimpaticoAgent,
+    Sobut,
 )
 
 # ANAC 2015 agents (22 agents)
@@ -149,6 +155,8 @@ from negmas_genius_agents.negotiators.anac.y2016 import (
     MyAgent,
     Ngent,
     Terra,
+    ParsAgent2,
+    SYAgent,
 )
 
 # ANAC 2017 agents (17 agents)
@@ -170,6 +178,7 @@ from negmas_genius_agents.negotiators.anac.y2017 import (
     Rubick,
     SimpleAgent2017,
     TaxiBox,
+    TucAgent,
 )
 
 # ANAC 2018 agents (15 agents)
@@ -189,6 +198,10 @@ from negmas_genius_agents.negotiators.anac.y2018 import (
     Shiboy,
     Sontag,
     Yeela,
+    GroupY,
+    Lancelot,
+    Libra,
+    SMACAgent,
 )
 
 # ANAC 2019 agents (14 agents)
@@ -207,6 +220,10 @@ from negmas_genius_agents.negotiators.anac.y2019 import (
     KAgent,
     MINF,
     WinkyAgent,
+    PodAgent,
+    SACRA,
+    SolverAgent,
+    TheNewDeal,
 )
 
 from negmas_genius_agents.utils import (
@@ -257,6 +274,8 @@ __all__ = [
     "AgentSmith",
     "IAMcrazyHaggler",
     # ANAC 2011 agents
+    "NiceTitForTat",
+    "ValueModelAgent",
     "HardHeaded",
     "Gahboninho",
     "IAMhaggler2011",
@@ -264,6 +283,7 @@ __all__ = [
     "BramAgent",
     "TheNegotiator",
     # ANAC 2012 agents
+    "BRAMAgent2",
     "CUHKAgent",
     "AgentLG",
     "OMACAgent",
@@ -280,6 +300,9 @@ __all__ = [
     "InoxAgent",
     "SlavaAgent",
     # ANAC 2014 agents
+    "Flinch",
+    "SimpaticoAgent",
+    "Sobut",
     "AgentM",
     "DoNA",
     "Gangster",
@@ -319,6 +342,8 @@ __all__ = [
     "SENGOKU",
     "XianFaAgent",
     # ANAC 2016 agents
+    "ParsAgent2",
+    "SYAgent",
     "Caduceus",
     "YXAgent",
     "ParsCat",
@@ -334,6 +359,7 @@ __all__ = [
     "Ngent",
     "Terra",
     # ANAC 2017 agents
+    "TucAgent",
     "PonPokoAgent",
     "CaduceusDC16",
     "BetaOne",
@@ -352,6 +378,10 @@ __all__ = [
     "SimpleAgent2017",
     "TaxiBox",
     # ANAC 2018 agents
+    "GroupY",
+    "Lancelot",
+    "Libra",
+    "SMACAgent",
     "AgreeableAgent2018",
     "MengWan",
     "Seto",
@@ -368,6 +398,10 @@ __all__ = [
     "Sontag",
     "Yeela",
     # ANAC 2019 agents
+    "PodAgent",
+    "SACRA",
+    "SolverAgent",
+    "TheNewDeal",
     "AgentGG",
     "KakeSoba",
     "SAGA",
@@ -430,7 +464,9 @@ _AGENT_REGISTRY: dict[str, dict[str, list[type]]] = {
             AgentK2,
             BramAgent,
             TheNegotiator,
-        ],
+                    NiceTitForTat,
+            ValueModelAgent,
+],
     },
     "anac2012": {
         "winners": [CUHKAgent],
@@ -443,7 +479,8 @@ _AGENT_REGISTRY: dict[str, dict[str, list[type]]] = {
             MetaAgent2012,
             IAMhaggler2012,
             AgentMR,
-        ],
+                    BRAMAgent2,
+],
     },
     "anac2013": {
         "winners": [TheFawkes],
@@ -477,7 +514,10 @@ _AGENT_REGISTRY: dict[str, dict[str, list[type]]] = {
             ArisawaYaki,
             Aster,
             Atlas,
-        ],
+                    Flinch,
+            SimpaticoAgent,
+            Sobut,
+],
     },
     "anac2015": {
         "winners": [Atlas3],
@@ -525,7 +565,9 @@ _AGENT_REGISTRY: dict[str, dict[str, list[type]]] = {
             MyAgent,
             Ngent,
             Terra,
-        ],
+                    ParsAgent2,
+            SYAgent,
+],
     },
     "anac2017": {
         "winners": [PonPokoAgent],
@@ -548,7 +590,8 @@ _AGENT_REGISTRY: dict[str, dict[str, list[type]]] = {
             Rubick,
             SimpleAgent2017,
             TaxiBox,
-        ],
+                    TucAgent,
+],
     },
     "anac2018": {
         "winners": [AgreeableAgent2018],
@@ -569,7 +612,11 @@ _AGENT_REGISTRY: dict[str, dict[str, list[type]]] = {
             Shiboy,
             Sontag,
             Yeela,
-        ],
+                    GroupY,
+            Lancelot,
+            Libra,
+            SMACAgent,
+],
     },
     "anac2019": {
         "winners": [AgentGG],
@@ -589,7 +636,11 @@ _AGENT_REGISTRY: dict[str, dict[str, list[type]]] = {
             KAgent,
             MINF,
             WinkyAgent,
-        ],
+                    PodAgent,
+            SACRA,
+            SolverAgent,
+            TheNewDeal,
+],
     },
 }
 

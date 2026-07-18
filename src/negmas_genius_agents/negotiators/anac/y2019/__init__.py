@@ -25,7 +25,11 @@ from negmas_genius_agents.negotiators.anac.y2019.hard_dealer import HardDealer
 from negmas_genius_agents.negotiators.anac.y2019.k_agent import KAgent
 from negmas_genius_agents.negotiators.anac.y2019.kake_soba import KakeSoba
 from negmas_genius_agents.negotiators.anac.y2019.minf import MINF
+from negmas_genius_agents.negotiators.anac.y2019.pod_agent import PodAgent
+from negmas_genius_agents.negotiators.anac.y2019.sacra import SACRA
 from negmas_genius_agents.negotiators.anac.y2019.saga import SAGA
+from negmas_genius_agents.negotiators.anac.y2019.solver_agent import SolverAgent
+from negmas_genius_agents.negotiators.anac.y2019.the_new_deal import TheNewDeal
 from negmas_genius_agents.negotiators.anac.y2019.winky_agent import WinkyAgent
 
 __all__ = [
@@ -44,5 +48,9 @@ __all__ = [
     "HardDealer",
     "KAgent",
     "MINF",
+    "PodAgent",
+    "SACRA",
+    "SolverAgent",
+    "TheNewDeal",
     "WinkyAgent",
 ]

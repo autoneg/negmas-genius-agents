@@ -24,6 +24,8 @@ from negmas_genius_agents.negotiators.anac.y2011.iam_haggler import IAMhaggler20
 from negmas_genius_agents.negotiators.anac.y2011.agent_k2 import AgentK2
 from negmas_genius_agents.negotiators.anac.y2011.bram_agent import BramAgent
 from negmas_genius_agents.negotiators.anac.y2011.the_negotiator import TheNegotiator
+from negmas_genius_agents.negotiators.anac.y2011.nice_tit_for_tat import NiceTitForTat
+from negmas_genius_agents.negotiators.anac.y2011.value_model_agent import ValueModelAgent
 
 __all__ = [
     # Top 3 agents
@@ -34,4 +36,6 @@ __all__ = [
     "AgentK2",
     "BramAgent",
     "TheNegotiator",
+    "NiceTitForTat",
+    "ValueModelAgent",
 ]

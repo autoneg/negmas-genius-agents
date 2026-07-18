@@ -28,6 +28,7 @@ from negmas_genius_agents.negotiators.anac.y2012.the_negotiator_reloaded import 
 from negmas_genius_agents.negotiators.anac.y2012.meta_agent import MetaAgent2012
 from negmas_genius_agents.negotiators.anac.y2012.iam_haggler2012 import IAMhaggler2012
 from negmas_genius_agents.negotiators.anac.y2012.agent_mr import AgentMR
+from negmas_genius_agents.negotiators.anac.y2012.bram_agent2 import BRAMAgent2
 
 __all__ = [
     "CUHKAgent",
@@ -37,4 +38,5 @@ __all__ = [
     "MetaAgent2012",
     "IAMhaggler2012",
     "AgentMR",
+    "BRAMAgent2",
 ]

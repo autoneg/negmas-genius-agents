@@ -1,15 +1,10 @@
 """
-BetaOne2018 - reimplementation of ``agents.anac.y2018.beta_one.Group2``.
+BetaOne - reimplementation of ``agents.anac.y2018.beta_one.Group2``.
 
-This module implements BetaOne2018, a Python port of the Java Genius agent
+This module implements BetaOne, a Python port of the Java Genius agent
 ``agents.anac.y2018.beta_one.Group2`` that competed in the Automated
-Negotiating Agents Competition (ANAC) 2018.
-
-Note:
-    The plain name ``BetaOne`` is used by a mislabeled ANAC-2017 file in this
-    package (``negotiators/anac/y2017/beta_one.py``); the real BetaOne agent
-    (``agents.anac.y2018.beta_one.Group2``) is this 2018 agent, suffixed
-    ``BetaOne2018`` per the cross-year naming rule.
+Negotiating Agents Competition (ANAC) 2018. ``BetaOne`` is the canonical name
+for this agent in ``negmas.genius.ginfo.GENIUS_INFO``.
 
 References:
     - ANAC 2018: https://ii.tudelft.nl/negotiation/node/12
@@ -34,7 +29,7 @@ if TYPE_CHECKING:
     from negmas.situated import Agent
     from negmas.negotiators import Controller
 
-__all__ = ["BetaOne2018"]
+__all__ = ["BetaOne"]
 
 
 def _lerp(a: float, b: float, t: float) -> float:
@@ -84,9 +79,9 @@ class _SimpleRegression:
         return num / den
 
 
-class BetaOne2018(SAONegotiator):
+class BetaOne(SAONegotiator):
     """
-    BetaOne2018, a Python port of the ANAC 2018 Genius agent
+    BetaOne, a Python port of the ANAC 2018 Genius agent
     ``agents.anac.y2018.beta_one.Group2``.
 
     Note:

@@ -269,7 +269,7 @@ registered, and committed per year.
   - 2014: `Flinch`, `SimpaticoAgent`, `Sobut`
   - 2016: `ParsAgent2`, `SYAgent`
   - 2017: `TucAgent`
-  - 2018: `BetaOne2018`, `GroupY`, `Lancelot`, `Libra`, `SMACAgent`
+  - 2018: `BetaOne` (corrected attribution — real 2018 agent; a fabricated 2017 `BetaOne` was removed), `GroupY`, `Lancelot`, `Libra`, `SMACAgent`
   - 2019: `PodAgent`, `SACRA`, `SolverAgent`, `TheNewDeal`
 - **Opponent models moved out.** Opponent models (and BOA acceptance/offering components)
   live in `negmas.gb.components.genius` (17 models + 48 acceptance + 31 offering, registered

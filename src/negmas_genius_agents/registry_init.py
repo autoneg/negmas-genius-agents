@@ -388,7 +388,6 @@ def _register_all() -> bool:
         from negmas_genius_agents.negotiators.anac.y2017 import (
             PonPokoAgent,
             CaduceusDC16,
-            BetaOne,
             AgentF,
             AgentKN,
             Farma2017,
@@ -409,7 +408,6 @@ def _register_all() -> bool:
         anac_2017_agents = [
             PonPokoAgent,
             CaduceusDC16,
-            BetaOne,
             AgentF,
             AgentKN,
             Farma2017,
@@ -457,7 +455,7 @@ def _register_all() -> bool:
     Lancelot,
     Libra,
     SMACAgent,
-            BetaOne2018,
+            BetaOne,
 )
 
         anac_2018_agents = [
@@ -480,7 +478,7 @@ def _register_all() -> bool:
     Lancelot,
     Libra,
     SMACAgent,
-            BetaOne2018,
+            BetaOne,
 ]
         for cls in anac_2018_agents:
             _register_negotiator(

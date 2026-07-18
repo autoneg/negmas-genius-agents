@@ -29,7 +29,7 @@ from `GENIUS_INFO`).
 | 2016 | ParsAgent2 | `agents.anac.y2016.pars2.ParsAgent2` | ✅ |
 | 2016 | SYAgent | `agents.anac.y2016.syagent.SYAgent` | ✅ |
 | 2017 | TucAgent | `agents.anac.y2017.tucagent.TucAgent` | ✅ |
-| 2018 | BetaOne2018 | `agents.anac.y2018.beta_one.Group2` | ✅ |
+| 2018 | BetaOne | `agents.anac.y2018.beta_one.Group2` | ✅ |
 | 2018 | GroupY | `agents.anac.y2018.groupy.GroupY` | ✅ |
 | 2018 | Lancelot | `agents.anac.y2018.lancelot.Lancelot` | ✅ |
 | 2018 | Libra | `agents.anac.y2018.libra.Libra` | ✅ |
@@ -43,11 +43,14 @@ from `GENIUS_INFO`).
 real Java agent via the bridge).
 
 **Naming rule:** cross-year name clashes are disambiguated by appending the year to the
-newer agent (matching the existing convention `AgentSmith2016`, `Farma2017`). The real
-`BetaOne` is a **2018** agent (`agents.anac.y2018.beta_one.Group2`); it is added as
-`BetaOne2018` because the existing `y2017/beta_one.py` already occupies the plain name —
-that 2017 file is **misattributed** (there is no `agents.anac.y2017.*.BetaOne` in Genius /
-`GENIUS_INFO`) and is flagged for follow-up cleanup.
+newer agent (matching the existing convention `AgentSmith2016`, `Farma2017`).
+
+**`BetaOne` attribution — corrected.** `BetaOne` is the canonical `GENIUS_INFO` name for the
+**2018** agent `agents.anac.y2018.beta_one.Group2`, now implemented at
+`negotiators/anac/y2018/beta_one.py`. A pre-existing `negotiators/anac/y2017/beta_one.py`
+falsely labelled "ANAC 2017 3rd place" (no `agents.anac.y2017.*.BetaOne` exists in Genius;
+its test mapping even pointed at the nonexistent `agents.anac.y2017.tangxun.BetaOne`) has
+been **removed** as a fabrication, and the real 2018 agent takes the plain name `BetaOne`.
 
 ---
 

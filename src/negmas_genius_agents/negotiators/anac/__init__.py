@@ -23,7 +23,6 @@ from negmas_genius_agents.negotiators.anac.y2016 import Caduceus, YXAgent, MyAge
 from negmas_genius_agents.negotiators.anac.y2017 import (
     PonPokoAgent,
     CaduceusDC16,
-    BetaOne,
 )
 from negmas_genius_agents.negotiators.anac.y2018 import (
     AgreeableAgent2018,
@@ -64,7 +63,6 @@ __all__ = [
     # ANAC 2017
     "PonPokoAgent",
     "CaduceusDC16",
-    "BetaOne",
     # ANAC 2018
     "AgreeableAgent2018",
     "MengWan",

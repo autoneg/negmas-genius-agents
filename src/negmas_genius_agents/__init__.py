@@ -163,7 +163,6 @@ from negmas_genius_agents.negotiators.anac.y2016 import (
 from negmas_genius_agents.negotiators.anac.y2017 import (
     PonPokoAgent,
     CaduceusDC16,
-    BetaOne,
     AgentF,
     AgentKN,
     Farma2017,
@@ -202,7 +201,7 @@ from negmas_genius_agents.negotiators.anac.y2018 import (
     Lancelot,
     Libra,
     SMACAgent,
-    BetaOne2018,
+    BetaOne,
 )
 
 # ANAC 2019 agents (14 agents)
@@ -336,7 +335,6 @@ __all__ = [
     "TucAgent",
     "PonPokoAgent",
     "CaduceusDC16",
-    "BetaOne",
     "AgentF",
     "AgentKN",
     "Farma2017",
@@ -352,7 +350,7 @@ __all__ = [
     "SimpleAgent2017",
     "TaxiBox",
     # ANAC 2018 agents
-    "BetaOne2018",
+    "BetaOne",
     "GroupY",
     "Lancelot",
     "Libra",
@@ -546,12 +544,11 @@ _AGENT_REGISTRY: dict[str, dict[str, list[type]]] = {
     },
     "anac2017": {
         "winners": [PonPokoAgent],
-        "finalists": [PonPokoAgent, CaduceusDC16, BetaOne],
+        "finalists": [PonPokoAgent, CaduceusDC16],
         "all": [
             PonPokoAgent,
             CaduceusDC16,
-            BetaOne,
-            AgentF,
+                    AgentF,
             AgentKN,
             Farma2017,
             GeneKing,
@@ -591,7 +588,7 @@ _AGENT_REGISTRY: dict[str, dict[str, list[type]]] = {
             Lancelot,
             Libra,
             SMACAgent,
-            BetaOne2018,
+            BetaOne,
 ],
     },
     "anac2019": {

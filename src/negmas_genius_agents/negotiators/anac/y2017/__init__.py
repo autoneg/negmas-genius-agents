@@ -6,7 +6,6 @@ in the Automated Negotiating Agents Competition (ANAC) 2017.
 
 1st Place: PonPokoAgent
 2nd Place: CaduceusDC16
-3rd Place: BetaOne
 
 References:
     - https://ii.tudelft.nl/negotiation/node/12 (ANAC 2017)
@@ -15,7 +14,6 @@ References:
 
 from negmas_genius_agents.negotiators.anac.y2017.agent_f import AgentF
 from negmas_genius_agents.negotiators.anac.y2017.agent_kn import AgentKN
-from negmas_genius_agents.negotiators.anac.y2017.beta_one import BetaOne
 from negmas_genius_agents.negotiators.anac.y2017.caduceus_dc16 import CaduceusDC16
 from negmas_genius_agents.negotiators.anac.y2017.farma2017 import Farma2017
 from negmas_genius_agents.negotiators.anac.y2017.gene_king import GeneKing
@@ -36,7 +34,6 @@ __all__ = [
     # Top 3
     "PonPokoAgent",
     "CaduceusDC16",
-    "BetaOne",
     # Other agents (alphabetical)
     "AgentF",
     "AgentKN",

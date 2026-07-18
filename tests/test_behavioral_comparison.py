@@ -128,7 +128,6 @@ from negmas_genius_agents import (
     # ANAC 2017
     PonPokoAgent,
     CaduceusDC16,
-    BetaOne,
     AgentF,
     AgentKN,
     Farma2017,
@@ -192,7 +191,7 @@ from negmas_genius_agents import (
     SACRA,
     SolverAgent,
     TheNewDeal,
-    BetaOne2018,
+    BetaOne,
 )
 
 
@@ -286,7 +285,6 @@ AGENT_MAPPING = {
     # ANAC 2017
     "PonPokoAgent": "agents.anac.y2017.ponpokoagent.PonPokoAgent",
     "CaduceusDC16": "agents.anac.y2017.caduceusdc16.CaduceusDC16",
-    "BetaOne": "agents.anac.y2017.tangxun.BetaOne",
     "AgentF": "agents.anac.y2017.agentf.AgentF",
     "AgentKN": "agents.anac.y2017.agentkn.AgentKN",
     "Farma2017": "agents.anac.y2017.farma.Farma17",
@@ -350,7 +348,7 @@ AGENT_MAPPING = {
     "SACRA": "agents.anac.y2019.sacra.SACRA",
     "SolverAgent": "agents.anac.y2019.solveragent.SolverAgent",
     "TheNewDeal": "agents.anac.y2019.thenewdeal.TheNewDeal",
-    "BetaOne2018": "agents.anac.y2018.beta_one.Group2",
+    "BetaOne": "agents.anac.y2018.beta_one.Group2",
 }
 
 # Python class mapping
@@ -443,7 +441,6 @@ PYTHON_CLASSES = {
     # ANAC 2017
     "PonPokoAgent": PonPokoAgent,
     "CaduceusDC16": CaduceusDC16,
-    "BetaOne": BetaOne,
     "AgentF": AgentF,
     "AgentKN": AgentKN,
     "Farma2017": Farma2017,
@@ -507,7 +504,7 @@ PYTHON_CLASSES = {
     "SACRA": SACRA,
     "SolverAgent": SolverAgent,
     "TheNewDeal": TheNewDeal,
-    "BetaOne2018": BetaOne2018,
+    "BetaOne": BetaOne,
 }
 
 

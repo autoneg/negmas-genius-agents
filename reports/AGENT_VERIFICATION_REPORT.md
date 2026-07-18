@@ -413,7 +413,7 @@ not our bug) so only the Python side is observable.
 | 2016 | ParsAgent2 | `pars2.ParsAgent2` | ✅ matches closely (0.85/0.85) |
 | 2016 | SYAgent | `syagent.SYAgent` | ✅ matches closely (same utility + offer count) |
 | 2017 | TucAgent | `tucagent.TucAgent` | ⚠️ gross "holds firm, settles late" matches; Java never concedes off max on test domain |
-| 2018 | BetaOne2018 | `beta_one.Group2` | ✅ Java ran (no crash); qualitatively consistent (anti-Kalai point approximated) |
+| 2018 | BetaOne | `beta_one.Group2` | ✅ Java ran (no crash); qualitatively consistent (anti-Kalai point approximated) |
 | 2018 | GroupY | `groupy.GroupY` | ✅ matches (opening-phase max-bid dominance) |
 | 2018 | Lancelot | `lancelot.Lancelot` | ✅ identical agreement + close utility trajectory |
 | 2018 | Libra | `libra.Libra` | 🧩 Java `Libra` crashes in bridge (bug in its bundled Mamenchis sub-agent); Python runs cleanly |
@@ -428,6 +428,7 @@ Python-vs-Java comparison for every agent (requires a running Genius bridge); it
 because the approximate ports are not expected to match Java bit-for-bit. The always-on
 `test_python_agent_runs` confirms all 142 agents complete a negotiation without error.
 
-**Naming note:** the real `BetaOne` is a 2018 agent; it is added as `BetaOne2018` because the
-pre-existing `y2017/beta_one.py` (misattributed — no 2017 Java source) already holds the plain
-name. Flagged for follow-up cleanup.
+**`BetaOne` attribution corrected:** `BetaOne` is the canonical `GENIUS_INFO` name for the
+2018 agent (`agents.anac.y2018.beta_one.Group2`), implemented at `y2018/beta_one.py`. The
+pre-existing `y2017/beta_one.py` (falsely labelled "ANAC 2017 3rd place"; no such Java agent
+exists) was removed as a fabrication.

@@ -17,7 +17,6 @@ from negmas_genius_agents import get_agents
 from negmas_genius_agents.negotiators.anac.y2017 import (
     PonPokoAgent,
     CaduceusDC16,
-    BetaOne,
     AgentF,
     AgentKN,
     Farma2017,
@@ -120,8 +119,7 @@ class TestANAC2017AgentNegotiations:
         "buyer_class,seller_class",
         [
             (PonPokoAgent, CaduceusDC16),
-            (CaduceusDC16, BetaOne),
-            (BetaOne, AgentF),
+            (CaduceusDC16, AgentF),
             (AgentF, AgentKN),
             (AgentKN, Farma2017),
             (Farma2017, GeneKing),

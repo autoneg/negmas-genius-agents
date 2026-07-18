@@ -29,7 +29,7 @@ from `GENIUS_INFO`).
 | 2016 | ParsAgent2 | `agents.anac.y2016.pars2.ParsAgent2` | ✅ |
 | 2016 | SYAgent | `agents.anac.y2016.syagent.SYAgent` | ✅ |
 | 2017 | TucAgent | `agents.anac.y2017.tucagent.TucAgent` | ✅ |
-| 2018 | BetaOne2018 | `agents.anac.y2018.beta_one.Group2` | 🔄 (year-suffixed; 2017 `beta_one.py` is misattributed — no 2017 Java source) |
+| 2018 | BetaOne2018 | `agents.anac.y2018.beta_one.Group2` | ✅ |
 | 2018 | GroupY | `agents.anac.y2018.groupy.GroupY` | ✅ |
 | 2018 | Lancelot | `agents.anac.y2018.lancelot.Lancelot` | ✅ |
 | 2018 | Libra | `agents.anac.y2018.libra.Libra` | ✅ |
@@ -39,8 +39,8 @@ from `GENIUS_INFO`).
 | 2019 | SolverAgent | `agents.anac.y2019.solveragent.SolverAgent` | ✅ |
 | 2019 | TheNewDeal | `agents.anac.y2019.thenewdeal.TheNewDeal` | ✅ |
 
-**Status:** 17 of 18 done and committed (per-year commits, each verified against the real
-Java agent via the bridge). `BetaOne2018` in progress.
+**Status:** ✅ **All 18 done and committed** (per-year commits, each verified against the
+real Java agent via the bridge).
 
 **Naming rule:** cross-year name clashes are disambiguated by appending the year to the
 newer agent (matching the existing convention `AgentSmith2016`, `Farma2017`). The real
@@ -51,51 +51,32 @@ that 2017 file is **misattributed** (there is no `agents.anac.y2017.*.BetaOne` i
 
 ---
 
-## Part 2 — Opponent Models (BOA framework)
+## Part 2 — Opponent Models (BOA framework) — live in **negmas**, not here
 
-Genius BOA opponent models live in
-`negotiator/boaframework/opponentmodel/*.java` (plus `agents/bayesianopponentmodel/`).
-They are being ported as `negmas` `UFunModel` subclasses (`GBComponent` +
-`BaseUtilityFunction`) in a new `negmas_genius_agents/models/` package and registered with
-`negmas.registry.component_registry` (`component_type="model"`).
+Opponent models (and all BOA acceptance/offering components) belong in
+`negmas.gb.components.genius`, which **already transpiles the full Genius BOA set**:
 
-All Genius BOA opponent models estimate the opponent's **preference profile** (Table 2 §5.3
-in the survey). They divide into two families by learning technique:
+- **17 opponent models** (`negmas.gb.components.genius.models`): `GHardHeadedFrequencyModel`,
+  `GSmithFrequencyModel`, `GCUHKFrequencyModel`, `GNashFrequencyModel`,
+  `GAgentXFrequencyModel`, `GAgentLGModel` (frequency, §5.3.4); `GBayesianModel`,
+  `GScalableBayesianModel`, `GFSEGABayesianModel`, `GIAMhagglerBayesianModel` (Bayesian,
+  §5.3.2); `GDefaultModel`, `GUniformModel`, `GOppositeModel`, `GWorstModel`,
+  `GPerfectModel` (baselines/oracles, §6); `GTheFawkesModel`, `GInoxAgentModel`
+  (agent-specific).
+- **48 acceptance policies** (`...genius.acceptance`) and **31 offering policies**
+  (`...genius.offering`), all registered via negmas `component_registry`.
 
-### 2a. Frequency-analysis models (§5.3.4 — heuristics; §5.3.1 — issue preference order)
-| Model | Java class | Notes | Status |
-|-------|-----------|-------|--------|
-| HardHeadedFrequencyModel | `...opponentmodel.HardHeadedFrequencyModel` | Most-used ANAC freq. model (weights from concession + value counts) | ✅ |
-| SmithFrequencyModel | `...opponentmodel.SmithFrequencyModel` | AgentSmith frequency model | ✅ |
-| SmithFrequencyModelV2 | `...opponentmodel.SmithFrequencyModelV2` | | ⬜ |
-| CUHKFrequencyModelV2 | `...opponentmodel.CUHKFrequencyModelV2` | | ✅ |
-| NashFrequencyModel | `...opponentmodel.NashFrequencyModel` | | ✅ |
-| AgentXFrequencyModel | `...opponentmodel.AgentXFrequencyModel` | | ✅ |
-| AgentLGModel | `...opponentmodel.AgentLGModel` | value-statistics based | ⬜ |
+These modules were refactored from three huge single files into folder packages
+(`models/`, `acceptance/`, `offering/`) — a verified-lossless split (class inventory
+17/48/31 preserved exactly, no duplicates, all 199 genius tests pass). Import paths are
+unchanged (`from negmas.gb.components.genius.models import GHardHeadedFrequencyModel`).
 
-### 2b. Bayesian-learning models (§5.3.2 — classifying the negotiation trace)
-| Model | Java class | Notes | Status |
-|-------|-----------|-------|--------|
-| BayesianModel | `...opponentmodel.BayesianModel` | Hindriks–Tykhonov Bayesian | ⬜ |
-| ScalableBayesianModel | `...opponentmodel.ScalableBayesianModel` | scalable variant | ⬜ |
-| IAMhagglerBayesianModel | `...opponentmodel.IAMhagglerBayesianModel` | | ⬜ |
-| FSEGABayesianModel | `...opponentmodel.FSEGABayesianModel` | | ⬜ |
+**This package therefore keeps only agents.** The short-lived
+`negmas_genius_agents/models/` port (HardHeaded/Smith/CUHKv2/Nash/AgentX + baselines) has
+been removed as a duplicate of the negmas set.
 
-### 2c. Oracle / baseline models (perfect or trivial — useful for benchmarking, per survey §6)
-| Model | Java class | Notes | Status |
-|-------|-----------|-------|--------|
-| PerfectModel | `...opponentmodel.PerfectModel` | knows the true opponent ufun (oracle) | ✅ |
-| WorstModel | `...opponentmodel.WorstModel` | negated ufun (≈ `ZeroSumModel` in negmas) | ✅ |
-| OppositeModel | `...opponentmodel.OppositeModel` | | ✅ |
-| UniformModel | `...opponentmodel.UniformModel` | constant utility | ✅ |
-| DefaultModel | `...opponentmodel.DefaultModel` | no-op default | ✅ |
-
-### 2d. Agent-specific models
-| Model | Java class | Status |
-|-------|-----------|--------|
-| TheFawkes_OM | `...opponentmodel.TheFawkes_OM` | ⬜ |
-| InoxAgent_OM | `...opponentmodel.InoxAgent_OM` | ⬜ |
-| SmithModel (agentsmith) | `...opponentmodel.agentsmith.SmithModel` | ⬜ |
+### negmas Table-2 model-type coverage additions
+Two model *types* were missing from `negmas.models` and were added there (see Part 3).
 
 ---
 

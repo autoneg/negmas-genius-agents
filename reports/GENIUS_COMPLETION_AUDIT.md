@@ -61,11 +61,11 @@ in the survey). They divide into two families by learning technique:
 | Model | Java class | Notes | Status |
 |-------|-----------|-------|--------|
 | HardHeadedFrequencyModel | `...opponentmodel.HardHeadedFrequencyModel` | Most-used ANAC freq. model (weights from concession + value counts) | ✅ |
-| SmithFrequencyModel | `...opponentmodel.SmithFrequencyModel` | AgentSmith frequency model | ⬜ |
+| SmithFrequencyModel | `...opponentmodel.SmithFrequencyModel` | AgentSmith frequency model | ✅ |
 | SmithFrequencyModelV2 | `...opponentmodel.SmithFrequencyModelV2` | | ⬜ |
-| CUHKFrequencyModelV2 | `...opponentmodel.CUHKFrequencyModelV2` | | ⬜ |
-| NashFrequencyModel | `...opponentmodel.NashFrequencyModel` | | ⬜ |
-| AgentXFrequencyModel | `...opponentmodel.AgentXFrequencyModel` | | ⬜ |
+| CUHKFrequencyModelV2 | `...opponentmodel.CUHKFrequencyModelV2` | | ✅ |
+| NashFrequencyModel | `...opponentmodel.NashFrequencyModel` | | ✅ |
+| AgentXFrequencyModel | `...opponentmodel.AgentXFrequencyModel` | | ✅ |
 | AgentLGModel | `...opponentmodel.AgentLGModel` | value-statistics based | ⬜ |
 
 ### 2b. Bayesian-learning models (§5.3.2 — classifying the negotiation trace)

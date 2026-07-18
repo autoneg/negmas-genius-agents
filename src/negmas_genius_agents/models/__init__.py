@@ -32,6 +32,12 @@ from __future__ import annotations
 
 from negmas_genius_agents.models.base import GeniusOpponentModel
 from negmas_genius_agents.models.frequency import HardHeadedFrequencyModel
+from negmas_genius_agents.models.frequency_extra import (
+    SmithFrequencyModel,
+    CUHKFrequencyModelV2,
+    NashFrequencyModel,
+    AgentXFrequencyModel,
+)
 from negmas_genius_agents.models.baselines import (
     PerfectModel,
     WorstModel,

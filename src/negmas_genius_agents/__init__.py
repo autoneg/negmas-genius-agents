@@ -218,6 +218,10 @@ from negmas_genius_agents.utils import (
 from negmas_genius_agents.models import (
     GeniusOpponentModel,
     HardHeadedFrequencyModel,
+    SmithFrequencyModel,
+    CUHKFrequencyModelV2,
+    NashFrequencyModel,
+    AgentXFrequencyModel,
     PerfectModel,
     WorstModel,
     OppositeModel,
@@ -229,6 +233,10 @@ __all__ = [
     # Opponent models
     "GeniusOpponentModel",
     "HardHeadedFrequencyModel",
+    "SmithFrequencyModel",
+    "CUHKFrequencyModelV2",
+    "NashFrequencyModel",
+    "AgentXFrequencyModel",
     "PerfectModel",
     "WorstModel",
     "OppositeModel",

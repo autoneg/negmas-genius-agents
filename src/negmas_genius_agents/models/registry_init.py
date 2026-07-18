@@ -31,6 +31,12 @@ def _register_all() -> bool:
         return False
 
     from negmas_genius_agents.models.frequency import HardHeadedFrequencyModel
+    from negmas_genius_agents.models.frequency_extra import (
+        SmithFrequencyModel,
+        CUHKFrequencyModelV2,
+        NashFrequencyModel,
+        AgentXFrequencyModel,
+    )
     from negmas_genius_agents.models.baselines import (
         PerfectModel,
         WorstModel,
@@ -40,8 +46,13 @@ def _register_all() -> bool:
     )
 
     base_tags = {"genius-translated", "ai-generated", "model"}
+    freq_tags = {"preference-profile", "frequency", "learning"}
     models = [
-        (HardHeadedFrequencyModel, {"preference-profile", "frequency", "learning"}),
+        (HardHeadedFrequencyModel, freq_tags),
+        (SmithFrequencyModel, freq_tags),
+        (CUHKFrequencyModelV2, freq_tags),
+        (NashFrequencyModel, freq_tags),
+        (AgentXFrequencyModel, freq_tags),
         (OppositeModel, {"preference-profile", "zero-sum", "baseline"}),
         (UniformModel, {"baseline"}),
         (DefaultModel, {"baseline"}),

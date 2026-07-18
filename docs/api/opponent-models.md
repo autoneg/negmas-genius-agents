@@ -35,6 +35,10 @@ Importing the package registers every model with NegMAS's `component_registry`
 | Model | Technique (survey) | Description |
 |-------|--------------------|-------------|
 | `HardHeadedFrequencyModel` | §5.3.4 frequency analysis | Canonical ANAC frequency model: learns issue weights from which issues the opponent keeps fixed while conceding, and value scores from offer counts. |
+| `SmithFrequencyModel` | §5.3.4 frequency analysis | AgentSmith's frequency model: issue weight from the concentration of per-value counts; value score from offer fraction. |
+| `CUHKFrequencyModelV2` | §5.3.4 frequency analysis | CUHKAgent's frequency model: sum of per-issue value counts normalised by the sum of each issue's max count. |
+| `NashFrequencyModel` | §5.3.4 frequency analysis | Frequency model with per-issue "percentage of highest frequency" weighting; utility clamped to [0, 1]. |
+| `AgentXFrequencyModel` | §5.3.4 frequency analysis | AgentX's model: issue weight ∝ 1/change-count (issues that change more matter less); value score is an offer-driven rank. |
 | `OppositeModel` | baseline (zero-sum) | Assumes `u_opponent = 1 − u_self`; needs no opponent information. |
 | `UniformModel` | baseline | Constant `0.5` for every outcome. |
 | `DefaultModel` | baseline | Constant `0.0` for every outcome. |

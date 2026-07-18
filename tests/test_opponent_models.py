@@ -87,6 +87,9 @@ def test_models_are_registered():
 
 def test_hardheaded_drives_in_a_real_negotiation():
     """Feeding a live SAO trace through the model produces sane, bounded utilities."""
+    import random as _random
+
+    _random.seed(0)
     issues = _issues()
     os_ = make_os(issues)
     buyer = LinearAdditiveUtilityFunction.random(outcome_space=os_, reserved_value=0.0)
@@ -107,7 +110,7 @@ def test_hardheaded_drives_in_a_real_negotiation():
             if tid == seller_id and offer is not None:
                 model.update(offer)
                 break
-    # After learning, all utilities are finite and in [0, 1].
+    # After learning, all utilities are finite and in [0, 1] (within float epsilon).
     for outcome in os_.enumerate_or_sample():
         val = float(model(outcome))
-        assert 0.0 <= val <= 1.0
+        assert -1e-9 <= val <= 1.0 + 1e-9

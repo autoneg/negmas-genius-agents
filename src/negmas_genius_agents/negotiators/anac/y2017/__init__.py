@@ -30,6 +30,7 @@ from negmas_genius_agents.negotiators.anac.y2017.ponpoko_agent import PonPokoAge
 from negmas_genius_agents.negotiators.anac.y2017.rubick import Rubick
 from negmas_genius_agents.negotiators.anac.y2017.simple_agent import SimpleAgent2017
 from negmas_genius_agents.negotiators.anac.y2017.taxi_box import TaxiBox
+from negmas_genius_agents.negotiators.anac.y2017.tuc_agent import TucAgent
 
 __all__ = [
     # Top 3
@@ -51,4 +52,5 @@ __all__ = [
     "Rubick",
     "SimpleAgent2017",
     "TaxiBox",
+    "TucAgent",
 ]

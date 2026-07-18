@@ -24,7 +24,9 @@ from negmas_genius_agents.negotiators.anac.y2016.grandma_agent import GrandmaAge
 from negmas_genius_agents.negotiators.anac.y2016.max_oops import MaxOops
 from negmas_genius_agents.negotiators.anac.y2016.my_agent import MyAgent
 from negmas_genius_agents.negotiators.anac.y2016.ngent import Ngent
+from negmas_genius_agents.negotiators.anac.y2016.pars_agent2 import ParsAgent2
 from negmas_genius_agents.negotiators.anac.y2016.pars_cat import ParsCat
+from negmas_genius_agents.negotiators.anac.y2016.sy_agent import SYAgent
 from negmas_genius_agents.negotiators.anac.y2016.terra import Terra
 from negmas_genius_agents.negotiators.anac.y2016.yx_agent import YXAgent
 
@@ -44,5 +46,7 @@ __all__ = [
     "MaxOops",
     "MyAgent",
     "Ngent",
+    "ParsAgent2",
+    "SYAgent",
     "Terra",
 ]

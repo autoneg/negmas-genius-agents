@@ -60,7 +60,7 @@ in the survey). They divide into two families by learning technique:
 ### 2a. Frequency-analysis models (§5.3.4 — heuristics; §5.3.1 — issue preference order)
 | Model | Java class | Notes | Status |
 |-------|-----------|-------|--------|
-| HardHeadedFrequencyModel | `...opponentmodel.HardHeadedFrequencyModel` | Most-used ANAC freq. model (weights from concession + value counts) | ⬜ |
+| HardHeadedFrequencyModel | `...opponentmodel.HardHeadedFrequencyModel` | Most-used ANAC freq. model (weights from concession + value counts) | ✅ |
 | SmithFrequencyModel | `...opponentmodel.SmithFrequencyModel` | AgentSmith frequency model | ⬜ |
 | SmithFrequencyModelV2 | `...opponentmodel.SmithFrequencyModelV2` | | ⬜ |
 | CUHKFrequencyModelV2 | `...opponentmodel.CUHKFrequencyModelV2` | | ⬜ |
@@ -79,11 +79,11 @@ in the survey). They divide into two families by learning technique:
 ### 2c. Oracle / baseline models (perfect or trivial — useful for benchmarking, per survey §6)
 | Model | Java class | Notes | Status |
 |-------|-----------|-------|--------|
-| PerfectModel | `...opponentmodel.PerfectModel` | knows the true opponent ufun (oracle) | ⬜ |
-| WorstModel | `...opponentmodel.WorstModel` | negated ufun (≈ `ZeroSumModel` in negmas) | ⬜ |
-| OppositeModel | `...opponentmodel.OppositeModel` | | ⬜ |
-| UniformModel | `...opponentmodel.UniformModel` | constant utility | ⬜ |
-| DefaultModel | `...opponentmodel.DefaultModel` | no-op default | ⬜ |
+| PerfectModel | `...opponentmodel.PerfectModel` | knows the true opponent ufun (oracle) | ✅ |
+| WorstModel | `...opponentmodel.WorstModel` | negated ufun (≈ `ZeroSumModel` in negmas) | ✅ |
+| OppositeModel | `...opponentmodel.OppositeModel` | | ✅ |
+| UniformModel | `...opponentmodel.UniformModel` | constant utility | ✅ |
+| DefaultModel | `...opponentmodel.DefaultModel` | no-op default | ✅ |
 
 ### 2d. Agent-specific models
 | Model | Java class | Status |
@@ -102,12 +102,14 @@ opponent attributes of the survey's Table 2. Audit of `negmas/src/negmas/models/
 | Table 2 attribute | negmas support | Action |
 |-------------------|----------------|--------|
 | §5.1 Acceptance strategy | `models/acceptance.py` — `DiscreteAcceptanceModel`, `AdaptiveDiscreteAcceptanceModel` | ✅ present |
-| §5.2 Deadline | — none — | ➕ add base type + simple example to negmas |
+| §5.2 Deadline | `models/deadline.py` — `DeadlineModel`, `ConcessionExtrapolatingDeadlineModel` | ✅ **added to negmas** |
 | §5.3 Preference profile | `models/preferences.py::OpponentUtilityFunction`; `sao/gb components UFunModel` family | ✅ present |
-| §5.4 Bidding strategy | `models/strategy.py` is **empty**; `models/future.py::FutureUtilityRegressor` partial | ➕ add base type + simple example to negmas |
+| §5.4 Bidding/offering strategy | `models/strategy.py` — `OpponentOfferingModel`, `TimeSeriesOfferingModel` | ✅ **added to negmas** |
 
-Deadline and bidding-strategy model base classes (with a simple worked example each) are to
-be added to `negmas` itself (not to this package), per the survey taxonomy.
+Done in negmas (commit `models: add Table-2 deadline (5.2) and offering-strategy (5.4)
+model types`): abstract base + one simple worked example for each of the two missing
+attribute types, and `negmas.models.__init__` now re-exports all four attribute families.
+(Class names use `Offering` rather than `Bidding` to match negmas naming conventions.)
 
 ---
 

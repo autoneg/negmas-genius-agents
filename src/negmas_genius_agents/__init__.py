@@ -214,7 +214,26 @@ from negmas_genius_agents.utils import (
     SortedOutcomeSpace,
 )
 
+# Genius BOA opponent models (as negmas UFunModel subclasses)
+from negmas_genius_agents.models import (
+    GeniusOpponentModel,
+    HardHeadedFrequencyModel,
+    PerfectModel,
+    WorstModel,
+    OppositeModel,
+    UniformModel,
+    DefaultModel,
+)
+
 __all__ = [
+    # Opponent models
+    "GeniusOpponentModel",
+    "HardHeadedFrequencyModel",
+    "PerfectModel",
+    "WorstModel",
+    "OppositeModel",
+    "UniformModel",
+    "DefaultModel",
     # Time-dependent agents (basic)
     "TimeDependentAgent",
     "TimeDependentAgentBoulware",

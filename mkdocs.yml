@@ -67,4 +67,5 @@ nav:
   - API Reference:
     - Agents by Year: api/agents.md
     - Time-Dependent Agents: api/time-dependent.md
+    - Opponent Models: api/opponent-models.md
     - Utilities: api/utilities.md

@@ -78,6 +78,16 @@ class BRAMAgent2(SAONegotiator):
         flex_4: flexibility fraction otherwise (default 0.6).
         n_candidates: number of opponent-modeled candidate bids to sample per
             round (default 10, matching the Java loop bound).
+        best_bid_epsilon: epsilon tolerance used when searching for the
+            maximum-utility bid (default 1e-9).
+        phase_1_cutoff: relative-time cutoff below which ``flex_1`` applies
+            (default 60.0/180.0, i.e. 1/3 of the negotiation).
+        phase_2_cutoff: relative-time cutoff below which ``flex_2`` applies
+            (default 150.0/180.0, i.e. 5/6 of the negotiation).
+        phase_3_cutoff: relative-time cutoff below which ``flex_3`` applies
+            (default 175.0/180.0, i.e. ~0.972 of the negotiation).
+        max_checked: maximum number of outcomes to score when building an
+            opponent-modeled bid (default 200).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -95,6 +105,11 @@ class BRAMAgent2(SAONegotiator):
         flex_3: float = 0.3,
         flex_4: float = 0.6,
         n_candidates: int = 10,
+        best_bid_epsilon: float = 1e-9,
+        phase_1_cutoff: float = 60.0 / 180.0,
+        phase_2_cutoff: float = 150.0 / 180.0,
+        phase_3_cutoff: float = 175.0 / 180.0,
+        max_checked: int = 200,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -118,6 +133,11 @@ class BRAMAgent2(SAONegotiator):
         self._flex_3 = flex_3
         self._flex_4 = flex_4
         self._n_candidates = n_candidates
+        self._best_bid_epsilon = best_bid_epsilon
+        self._phase_1_cutoff = phase_1_cutoff
+        self._phase_2_cutoff = phase_2_cutoff
+        self._phase_3_cutoff = phase_3_cutoff
+        self._max_checked = max_checked
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._max_util: float = 1.0
@@ -139,7 +159,7 @@ class BRAMAgent2(SAONegotiator):
 
         self._outcome_space = SortedOutcomeSpace(ufun=self.ufun)
         self._max_util = self._outcome_space.max_utility
-        best_bids = self._outcome_space.get_bids_above(self._max_util - 1e-9)
+        best_bids = self._outcome_space.get_bids_above(self._max_util - self._best_bid_epsilon)
         self._best_bid = best_bids[0].bid if best_bids else None
 
         if self.nmi is not None:
@@ -173,11 +193,11 @@ class BRAMAgent2(SAONegotiator):
         min_util = self._our_bid_utilities[-1] if self._our_bid_utilities else self._max_util
         max_util = self._max_util
 
-        if t < 60.0 / 180.0:
+        if t < self._phase_1_cutoff:
             flex = self._flex_1
-        elif t < 150.0 / 180.0:
+        elif t < self._phase_2_cutoff:
             flex = self._flex_2
-        elif t < 175.0 / 180.0:
+        elif t < self._phase_3_cutoff:
             flex = self._flex_3
         else:
             flex = self._flex_4
@@ -223,7 +243,7 @@ class BRAMAgent2(SAONegotiator):
                 best_bid = bd.bid
                 best_util = bd.utility
             checked += 1
-            if checked >= 200:  # keep this cheap; small domains only need a few
+            if checked >= self._max_checked:  # keep this cheap; small domains only need a few
                 break
 
         if best_bid is None:

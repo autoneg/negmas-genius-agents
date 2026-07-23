@@ -86,6 +86,20 @@ class GrandmaAgent(SAONegotiator):
         min_utility: Minimum acceptable utility threshold (default 0.65)
         early_time: Time threshold for early phase best-bid offering (default 0.02)
         deadline_time: Time threshold for deadline acceptance (default 0.95)
+        concession_min_samples: Minimum opponent utilities required before
+            detecting opponent concession (default 5)
+        patience_concession_fraction: Fraction of the way toward the reservation
+            value conceded during the patience phase (default 0.1)
+        opponent_conceding_offset: Utility added to the reservation value as the
+            end-game target when the opponent is conceding (default 0.05)
+        opponent_not_conceding_offset: Utility added to the reservation value as
+            the end-game target when the opponent is not conceding (default 0.1)
+        endgame_curve_exponent: Exponent applied to progress in the end-game
+            concession curve (default 2)
+        own_utility_weight: Weight on own utility in bid scoring (default 0.6)
+        opp_utility_weight: Weight on estimated opponent utility in bid scoring
+            (default 0.4)
+        top_n: Number of top-scored candidates to randomly choose from (default 3)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -101,6 +115,14 @@ class GrandmaAgent(SAONegotiator):
         min_utility: float = 0.65,
         early_time: float = 0.02,
         deadline_time: float = 0.95,
+        concession_min_samples: int = 5,
+        patience_concession_fraction: float = 0.1,
+        opponent_conceding_offset: float = 0.05,
+        opponent_not_conceding_offset: float = 0.1,
+        endgame_curve_exponent: float = 2.0,
+        own_utility_weight: float = 0.6,
+        opp_utility_weight: float = 0.4,
+        top_n: int = 3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -122,6 +144,14 @@ class GrandmaAgent(SAONegotiator):
         self._min_utility = min_utility
         self._early_time = early_time
         self._deadline_time = deadline_time
+        self._concession_min_samples = concession_min_samples
+        self._patience_concession_fraction = patience_concession_fraction
+        self._opponent_conceding_offset = opponent_conceding_offset
+        self._opponent_not_conceding_offset = opponent_not_conceding_offset
+        self._endgame_curve_exponent = endgame_curve_exponent
+        self._own_utility_weight = own_utility_weight
+        self._opp_utility_weight = opp_utility_weight
+        self._top_n = top_n
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -194,7 +224,7 @@ class GrandmaAgent(SAONegotiator):
             self._opponent_value_frequencies[i][value_str] += 1
 
         # Detect if opponent is conceding
-        if len(self._opponent_utilities) >= 5:
+        if len(self._opponent_utilities) >= self._concession_min_samples:
             recent = self._opponent_utilities[-3:]
             earlier = (
                 self._opponent_utilities[-6:-3]
@@ -233,23 +263,25 @@ class GrandmaAgent(SAONegotiator):
         if time < self._patience:
             # Minimal concession during patience phase
             progress = time / self._patience
-            target = self._max_utility - 0.1 * progress * (
+            target = self._max_utility - self._patience_concession_fraction * progress * (
                 self._max_utility - self._reservation_value
             )
             return max(target, self._reservation_value)
 
         # End-game phase: accelerated concession
         progress = (time - self._patience) / (1.0 - self._patience)
-        start = self._max_utility - 0.1 * (self._max_utility - self._reservation_value)
+        start = self._max_utility - self._patience_concession_fraction * (
+            self._max_utility - self._reservation_value
+        )
 
         # Faster concession if opponent is also conceding
         if self._opponent_conceding:
-            end = self._reservation_value + 0.05
+            end = self._reservation_value + self._opponent_conceding_offset
         else:
-            end = self._reservation_value + 0.1
+            end = self._reservation_value + self._opponent_not_conceding_offset
 
         # Quadratic concession in end-game
-        f_t = progress**2
+        f_t = progress**self._endgame_curve_exponent
         target = start - (start - end) * f_t
 
         return max(target, self._reservation_value)
@@ -276,13 +308,13 @@ class GrandmaAgent(SAONegotiator):
         for bd in candidates:
             opp_util = self._estimate_opponent_utility(bd.bid)
             # Grandma prefers stable, mutually acceptable outcomes
-            score = 0.6 * bd.utility + 0.4 * opp_util
+            score = self._own_utility_weight * bd.utility + self._opp_utility_weight * opp_util
             scored.append((bd.bid, score))
 
         scored.sort(key=lambda x: x[1], reverse=True)
 
         # Pick from top candidates
-        top_n = min(3, len(scored))
+        top_n = min(self._top_n, len(scored))
         selected = random.choice(scored[:top_n])
         return selected[0]
 

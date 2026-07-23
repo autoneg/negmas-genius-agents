@@ -77,6 +77,7 @@ class HardHeaded(SAONegotiator):
         top_selected_bids: Number of top bids to consider for opponent utility (default 4)
         ignore_discount_threshold: Discount factor threshold for standard concession (default 0.9)
         late_concession_exponent: Concession exponent after step point (default 30.0)
+        best_bid_epsilon: Tolerance below max utility used to fetch the opening best bid (default 0.001)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -97,6 +98,7 @@ class HardHeaded(SAONegotiator):
         top_selected_bids: int = 4,
         ignore_discount_threshold: float = 0.9,
         late_concession_exponent: float = 30.0,
+        best_bid_epsilon: float = 0.001,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -143,6 +145,7 @@ class HardHeaded(SAONegotiator):
         self._top_selected_bids = top_selected_bids
         self._ignore_discount_threshold = ignore_discount_threshold
         self._late_concession_exponent = late_concession_exponent
+        self._best_bid_epsilon = best_bid_epsilon
 
     def _initialize(self) -> None:
         """Initialize the outcome space and utility bounds."""
@@ -389,7 +392,7 @@ class HardHeaded(SAONegotiator):
         # First round: offer best bid
         if state.step == 0:
             if self._outcome_space is not None:
-                best = self._outcome_space.get_bids_above(self._max_util - 0.001)
+                best = self._outcome_space.get_bids_above(self._max_util - self._best_bid_epsilon)
                 if best:
                     bid = best[0].bid
                     self._my_bids.append(BidEntry(utility=self._max_util, bid=bid))

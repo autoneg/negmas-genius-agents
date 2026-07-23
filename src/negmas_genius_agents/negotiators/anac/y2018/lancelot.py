@@ -76,6 +76,26 @@ class Lancelot(SAONegotiator):
         acceptance/offering threshold.
 
     Args:
+        opening_phase_threshold: Relative time before which the opening
+            offering strategy applies (default 0.2).
+        opening_threshold_offset: Utility offset subtracted from ``1 - time``
+            to set the opening-phase minimum utility (default 0.1).
+        late_phase_threshold: Relative time before which the parabolic
+            threshold applies and at/after which the fixed offer threshold
+            applies (default 0.98).
+        sep_point: Separation point between the two parabolic branches of the
+            threshold curve (default 0.7).
+        deadline_phase_threshold: Relative time at/after which the deadline
+            branch of the parabolic threshold applies (default 0.99).
+        deadline_threshold_factor: Factor multiplying ``max_util * time`` in
+            the deadline branch of the threshold curve (default 0.75).
+        offer_threshold: Fixed minimum utility used for offering in the late
+            phase (default 0.90).
+        max_util_backoff: Utility subtracted from the maximum utility when it
+            is the only value available, to widen the candidate search
+            (default 0.1).
+        repair_random_range: Upper bound (inclusive) of the random integer
+            used to decide whether a bid issue is repaired (default 4).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -87,6 +107,15 @@ class Lancelot(SAONegotiator):
 
     def __init__(
         self,
+        opening_phase_threshold: float = 0.2,
+        opening_threshold_offset: float = 0.1,
+        late_phase_threshold: float = 0.98,
+        sep_point: float = 0.7,
+        deadline_phase_threshold: float = 0.99,
+        deadline_threshold_factor: float = 0.75,
+        offer_threshold: float = 0.90,
+        max_util_backoff: float = 0.1,
+        repair_random_range: int = 4,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -104,6 +133,15 @@ class Lancelot(SAONegotiator):
             id=id,
             **kwargs,
         )
+        self._opening_phase_threshold = opening_phase_threshold
+        self._opening_threshold_offset = opening_threshold_offset
+        self._late_phase_threshold = late_phase_threshold
+        self._sep_point = sep_point
+        self._deadline_phase_threshold = deadline_phase_threshold
+        self._deadline_threshold_factor = deadline_threshold_factor
+        self._offer_threshold = offer_threshold
+        self._max_util_backoff = max_util_backoff
+        self._repair_random_range = repair_random_range
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -192,21 +230,21 @@ class Lancelot(SAONegotiator):
     def _get_util_threshold(self, time: float, opponent_value: float) -> float:
         """Parabolic threshold centered near ``opponent_value``."""
         max_util = self._max_utility
-        sep_point = 0.7
+        sep_point = self._sep_point
         if time < sep_point:
             threshold = (max_util - opponent_value) / (sep_point**2) * (
                 time - sep_point
             ) ** 2 + opponent_value
-        elif time < 0.99:
+        elif time < self._deadline_phase_threshold:
             threshold = (opponent_value - max_util) / ((1 - sep_point) ** 2) * (
                 time - 1
             ) ** 2 + max_util
         else:
-            threshold = max_util * 0.75 * time
+            threshold = max_util * self._deadline_threshold_factor * time
         return threshold
 
     def _get_util_threshold_for_offer(self) -> float:
-        return 0.90
+        return self._offer_threshold
 
     # ------------------------------------------------------------------
     # Bidding strategy
@@ -217,7 +255,7 @@ class Lancelot(SAONegotiator):
             return None
         min_util = min(min_util, self._max_utility)
         if min_util == self._max_utility:
-            min_util -= 0.1
+            min_util -= self._max_util_backoff
         candidates = self._outcome_space.get_bids_above(min_util)
         if not candidates:
             return self._max_bid
@@ -231,7 +269,7 @@ class Lancelot(SAONegotiator):
 
         offer_bid = list(offer_bid)
         for i in range(min(self._n_issues, len(offer_bid))):
-            if random.randint(0, 4) % 2 != 0:
+            if random.randint(0, self._repair_random_range) % 2 != 0:
                 continue
             table = self._bid_table[i] if i < len(self._bid_table) else {}
             if not table:
@@ -257,9 +295,9 @@ class Lancelot(SAONegotiator):
             self._initialize()
 
         time = state.relative_time
-        if time < 0.2:
-            return self._get_random_bid_above(1 - time - 0.1)
-        elif time < 0.98:
+        if time < self._opening_phase_threshold:
+            return self._get_random_bid_above(1 - time - self._opening_threshold_offset)
+        elif time < self._late_phase_threshold:
             min_util = self._get_util_threshold(time, self._opponent_eval)
             return self._offer_positive_bid(min_util)
         else:

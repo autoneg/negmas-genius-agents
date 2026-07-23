@@ -71,6 +71,9 @@ class Shiboy(SAONegotiator):
         accelerated_concession_time: Time to start accelerated concession (default 0.85).
         time_pressure_threshold: Time threshold for time pressure acceptance (default 0.9).
         deadline_threshold: Time threshold for deadline acceptance (default 0.99).
+        accelerated_concession_exponent: Exponent of the accelerated concession curve near the deadline (default 2.0).
+        bid_margin: Half-width of the utility window from which candidate bids are drawn (default 0.03).
+        best_received_factor: Fraction of the best received utility accepted near the deadline (default 0.98).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -87,6 +90,9 @@ class Shiboy(SAONegotiator):
         accelerated_concession_time: float = 0.85,
         time_pressure_threshold: float = 0.9,
         deadline_threshold: float = 0.99,
+        accelerated_concession_exponent: float = 2.0,
+        bid_margin: float = 0.03,
+        best_received_factor: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -109,6 +115,9 @@ class Shiboy(SAONegotiator):
         self._accelerated_concession_time = accelerated_concession_time
         self._time_pressure_threshold = time_pressure_threshold
         self._deadline_threshold = deadline_threshold
+        self._accelerated_concession_exponent = accelerated_concession_exponent
+        self._bid_margin = bid_margin
+        self._best_received_factor = best_received_factor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -157,7 +166,7 @@ class Shiboy(SAONegotiator):
             )
             high_val = 1.0 - math.pow(self._accelerated_concession_time, self._e)
             low_val = self._min_utility_param
-            target = high_val - (high_val - low_val) * math.pow(normalized_time, 2)
+            target = high_val - (high_val - low_val) * math.pow(normalized_time, self._accelerated_concession_exponent)
 
         # Scale to utility range
         scaled = self._min_utility + (self._max_utility - self._min_utility) * target
@@ -172,7 +181,7 @@ class Shiboy(SAONegotiator):
         target = self._get_target_utility(time)
 
         # Get candidates
-        candidates = self._outcome_space.get_bids_in_range(target - 0.03, target + 0.03)
+        candidates = self._outcome_space.get_bids_in_range(target - self._bid_margin, target + self._bid_margin)
 
         if not candidates:
             bid_details = self._outcome_space.get_bid_near_utility(target)
@@ -201,7 +210,7 @@ class Shiboy(SAONegotiator):
             if offer_utility >= self._min_utility:
                 return True
             # Accept if at least as good as best received
-            if offer_utility >= self._best_received_utility * 0.98:
+            if offer_utility >= self._best_received_utility * self._best_received_factor:
                 return True
 
         return False

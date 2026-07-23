@@ -74,6 +74,14 @@ class AgentK(SAONegotiator):
         bid_target_decrement: How much to reduce bid target each cycle (default 0.01)
         max_search_iterations: Safety limit for bid search (default 10000)
         min_accept_probability: Threshold below which acceptance is rejected (default 0.1)
+        utility_clamp_ceiling: Upper clamp ceiling for offered utility validation (default 1.05)
+        alpha_mean_coeff: Coefficient of mean in the alpha formula (default 10.0)
+        alpha_tremor_mean_coeff: Coefficient of tremor*mean in the alpha formula (default 2.0)
+        deviation_offset: Additive offset added to deviation in ratio calculation (default 0.1)
+        ratio_ceiling: Ceiling clamping the target-adjustment ratio (default 2.0)
+        m_slope: Slope of the linear m(time) bound used in target adjustment (default -300.0)
+        m_intercept: Intercept of the linear m(time) bound used in target adjustment (default 400.0)
+        accept_prob_divisor: Divisor of time^alpha in the acceptance probability formula (default 5.0)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -90,6 +98,14 @@ class AgentK(SAONegotiator):
         bid_target_decrement: float = 0.01,
         max_search_iterations: int = 10000,
         min_accept_probability: float = 0.1,
+        utility_clamp_ceiling: float = 1.05,
+        alpha_mean_coeff: float = 10.0,
+        alpha_tremor_mean_coeff: float = 2.0,
+        deviation_offset: float = 0.1,
+        ratio_ceiling: float = 2.0,
+        m_slope: float = -300.0,
+        m_intercept: float = 400.0,
+        accept_prob_divisor: float = 5.0,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -112,6 +128,14 @@ class AgentK(SAONegotiator):
         self._bid_target_decrement = bid_target_decrement
         self._max_search_iterations = max_search_iterations
         self._min_accept_probability = min_accept_probability
+        self._utility_clamp_ceiling = utility_clamp_ceiling
+        self._alpha_mean_coeff = alpha_mean_coeff
+        self._alpha_tremor_mean_coeff = alpha_tremor_mean_coeff
+        self._deviation_offset = deviation_offset
+        self._ratio_ceiling = ratio_ceiling
+        self._m_slope = m_slope
+        self._m_intercept = m_intercept
+        self._accept_prob_divisor = accept_prob_divisor
         self._initialized = False
 
         # Statistics tracking
@@ -195,9 +219,9 @@ class AgentK(SAONegotiator):
 
         # Validate utility and time (matches Java validation)
         # Java throws exception for utility < 0 or > 1.05, and time outside [0,1]
-        if offered_utility < 0 or offered_utility > 1.05:
+        if offered_utility < 0 or offered_utility > self._utility_clamp_ceiling:
             # In Java this throws; we clamp instead for robustness
-            offered_utility = max(0.0, min(1.05, offered_utility))
+            offered_utility = max(0.0, min(self._utility_clamp_ceiling, offered_utility))
 
         if t < 0 or t > 1:
             t = max(0.0, min(1.0, t))
@@ -210,7 +234,9 @@ class AgentK(SAONegotiator):
         estimate_max = mean + ((1 - mean) * deviation)
 
         # Calculate alpha and beta (with tremor randomness)
-        alpha = 1 + self._tremor + (10 * mean) - (2 * self._tremor * mean)
+        alpha = 1 + self._tremor + (self._alpha_mean_coeff * mean) - (
+            self._alpha_tremor_mean_coeff * self._tremor * mean
+        )
         beta = alpha + (random.random() * self._tremor) - (self._tremor / 2)
 
         # Calculate pre-target values
@@ -218,22 +244,28 @@ class AgentK(SAONegotiator):
         pre_target2 = 1 - (math.pow(time, beta) * (1 - estimate_max))
 
         # Calculate ratio for target adjustment
-        ratio = (deviation + 0.1) / (1 - pre_target) if (1 - pre_target) != 0 else 2.0
-        if math.isnan(ratio) or ratio > 2.0:
-            ratio = 2.0
+        ratio = (
+            (deviation + self._deviation_offset) / (1 - pre_target)
+            if (1 - pre_target) != 0
+            else self._ratio_ceiling
+        )
+        if math.isnan(ratio) or ratio > self._ratio_ceiling:
+            ratio = self._ratio_ceiling
 
         ratio2 = (
-            (deviation + 0.1) / (1 - pre_target2) if (1 - pre_target2) != 0 else 2.0
+            (deviation + self._deviation_offset) / (1 - pre_target2)
+            if (1 - pre_target2) != 0
+            else self._ratio_ceiling
         )
-        if math.isnan(ratio2) or ratio2 > 2.0:
-            ratio2 = 2.0
+        if math.isnan(ratio2) or ratio2 > self._ratio_ceiling:
+            ratio2 = self._ratio_ceiling
 
         # Update targets
         self._target = ratio * pre_target + 1 - ratio
         self._bid_target = ratio2 * pre_target2 + 1 - ratio2
 
         # Apply target adjustment based on estimate_max
-        m = t * (-300) + 400
+        m = t * self._m_slope + self._m_intercept
 
         if self._target > estimate_max:
             r = self._target - estimate_max
@@ -259,7 +291,7 @@ class AgentK(SAONegotiator):
         utility_evaluation = offered_utility - estimate_max
         satisfy = offered_utility - self._target
 
-        p = (math.pow(time, alpha) / 5) + utility_evaluation + satisfy
+        p = (math.pow(time, alpha) / self._accept_prob_divisor) + utility_evaluation + satisfy
         if p < self._min_accept_probability:
             p = 0.0
 

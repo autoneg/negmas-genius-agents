@@ -117,6 +117,9 @@ class MetaAgent2012(SAONegotiator):
         top_k_candidates: Number of top candidates to select from (default 5).
         acceptance_margin: Margin below opponent best for near-deadline
             acceptance (default 0.02).
+        concession_window: Number of recent opponent bids used to estimate the
+            opponent concession rate; also the minimum number of bids required
+            before estimation begins (default 5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -157,6 +160,7 @@ class MetaAgent2012(SAONegotiator):
         bid_tolerance: float = 0.02,
         top_k_candidates: int = 5,
         acceptance_margin: float = 0.02,
+        concession_window: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -203,6 +207,7 @@ class MetaAgent2012(SAONegotiator):
         self._bid_tolerance = bid_tolerance
         self._top_k_candidates = top_k_candidates
         self._acceptance_margin = acceptance_margin
+        self._concession_window = concession_window
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -345,8 +350,8 @@ class MetaAgent2012(SAONegotiator):
             self._opponent_best_bid = bid
 
         # Estimate opponent concession rate
-        if len(self._opponent_bids) >= 5:
-            recent = [u for _, u in self._opponent_bids[-5:]]
+        if len(self._opponent_bids) >= self._concession_window:
+            recent = [u for _, u in self._opponent_bids[-self._concession_window:]]
             # Positive rate means opponent is improving offers to us
             if len(recent) > 1:
                 diff = recent[-1] - recent[0]

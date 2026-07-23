@@ -55,6 +55,13 @@ class AgentHP(SAONegotiator):
 
     Args:
         e: Concession exponent controlling concession speed (default 0.15)
+        concession_factor: Fraction of utility range conceded over time (default 0.5)
+        min_utility_margin: Margin above min utility used as threshold floor (default 0.05)
+        cache_tolerance: Threshold difference below which cached candidates are reused (default 0.05)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.9)
+        top_candidate_count: Number of top candidates randomly selected from (default 10)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
+        endgame_min_utility_margin: Margin above min utility for end-game acceptance (default 0.1)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -67,6 +74,13 @@ class AgentHP(SAONegotiator):
     def __init__(
         self,
         e: float = 0.15,
+        concession_factor: float = 0.5,
+        min_utility_margin: float = 0.05,
+        cache_tolerance: float = 0.05,
+        fallback_threshold_ratio: float = 0.9,
+        top_candidate_count: int = 10,
+        deadline_time_threshold: float = 0.95,
+        endgame_min_utility_margin: float = 0.1,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -85,6 +99,13 @@ class AgentHP(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._concession_factor = concession_factor
+        self._min_utility_margin = min_utility_margin
+        self._cache_tolerance = cache_tolerance
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._top_candidate_count = top_candidate_count
+        self._deadline_time_threshold = deadline_time_threshold
+        self._endgame_min_utility_margin = endgame_min_utility_margin
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -135,9 +156,10 @@ class AgentHP(SAONegotiator):
         """Efficient threshold computation."""
         f_t = math.pow(time, 1 / self._e) if self._e > 0 else time
         threshold = (
-            self._max_utility - (self._max_utility - self._min_utility) * 0.5 * f_t
+            self._max_utility
+            - (self._max_utility - self._min_utility) * self._concession_factor * f_t
         )
-        return max(threshold, self._min_utility + 0.05)
+        return max(threshold, self._min_utility + self._min_utility_margin)
 
     def _get_candidates(self, threshold: float) -> list:
         """Get candidates with caching."""
@@ -145,7 +167,10 @@ class AgentHP(SAONegotiator):
             return []
 
         # Use cache if threshold is close
-        if abs(threshold - self._last_threshold) < 0.05 and self._cached_candidates:
+        if (
+            abs(threshold - self._last_threshold) < self._cache_tolerance
+            and self._cached_candidates
+        ):
             return self._cached_candidates
 
         candidates = self._outcome_space.get_bids_above(threshold)
@@ -162,13 +187,13 @@ class AgentHP(SAONegotiator):
         candidates = self._get_candidates(threshold)
 
         if not candidates:
-            candidates = self._get_candidates(threshold * 0.9)
+            candidates = self._get_candidates(threshold * self._fallback_threshold_ratio)
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
 
         # Simple selection from top candidates
-        n = min(10, len(candidates))
+        n = min(self._top_candidate_count, len(candidates))
         return random.choice(candidates[:n]).bid
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:
@@ -201,8 +226,11 @@ class AgentHP(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # End-game acceptance
-        if time > 0.95 and offer_utility >= self._best_opponent_utility:
-            if offer_utility >= self._min_utility + 0.1:
+        if (
+            time > self._deadline_time_threshold
+            and offer_utility >= self._best_opponent_utility
+        ):
+            if offer_utility >= self._min_utility + self._endgame_min_utility_margin:
                 return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

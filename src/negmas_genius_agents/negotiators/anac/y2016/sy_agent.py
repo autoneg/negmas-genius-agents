@@ -79,6 +79,18 @@ class SYAgent(SAONegotiator):
     "improvement" step described above.
 
     Args:
+        early_phase_end: Relative time boundary between the early and late
+            threshold phases (default 0.6).
+        early_log_divisor: Divisor applied to the log term in the early phase
+            threshold formula (default 4.7).
+        log_epsilon: Floor substituted for the log argument to avoid log(0)
+            (default 1e-9).
+        late_log_input_offset: Offset used in the late phase log argument
+            ``offset - time`` (default 1.6).
+        late_log_divisor: Divisor applied to the log term in the late phase
+            threshold formula (default 3.0).
+        min_threshold_log_input: Input to ``log`` used to compute the minimum
+            threshold baseline (default 0.4).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -90,6 +102,12 @@ class SYAgent(SAONegotiator):
 
     def __init__(
         self,
+        early_phase_end: float = 0.6,
+        early_log_divisor: float = 4.7,
+        log_epsilon: float = 1e-9,
+        late_log_input_offset: float = 1.6,
+        late_log_divisor: float = 3.0,
+        min_threshold_log_input: float = 0.4,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -110,6 +128,12 @@ class SYAgent(SAONegotiator):
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
         self._max_bid: Outcome | None = None
+        self._early_phase_end = early_phase_end
+        self._early_log_divisor = early_log_divisor
+        self._log_epsilon = log_epsilon
+        self._late_log_input_offset = late_log_input_offset
+        self._late_log_divisor = late_log_divisor
+        self._min_threshold_log_input = min_threshold_log_input
 
         # Opponent frequency model: issue index -> value -> count
         self._value_frequency: dict[int, dict[str, int]] = {}
@@ -133,11 +157,15 @@ class SYAgent(SAONegotiator):
 
     def _get_threshold(self, time: float) -> float:
         """Compute the (purely time-based) threshold."""
-        min_threshold = 1.0 + math.log(0.4) / 4.7
-        if time <= 0.6:
+        min_threshold = 1.0 + math.log(self._min_threshold_log_input) / self._early_log_divisor
+        if time <= self._early_phase_end:
             # Guard against log(0) at t == 1.0 (never reached here since t<=0.6)
-            return 1.0 + math.log(max(1.0 - time, 1e-9)) / 4.7
-        return min_threshold - math.log(max(1.6 - time, 1e-9)) / 3.0
+            return 1.0 + math.log(max(1.0 - time, self._log_epsilon)) / self._early_log_divisor
+        return (
+            min_threshold
+            - math.log(max(self._late_log_input_offset - time, self._log_epsilon))
+            / self._late_log_divisor
+        )
 
     def _update_frequency(self, bid: Outcome) -> None:
         """Update the opponent value-frequency table with a received bid."""

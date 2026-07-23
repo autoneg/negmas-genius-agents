@@ -88,6 +88,9 @@ class CUHKAgent(SAONegotiator):
         deadline_accept_time: Time threshold for deadline acceptance (default 0.99)
         final_deadline_time: Time threshold for final strategic acceptance (default 0.9985)
         final_accept_margin: Margin below opponent best for final acceptance (default 0.01)
+        concession_degree_multiplier: Multiplier applied to the standard
+            deviation of opponent utilities when estimating the opponent
+            concession degree (default 2.0).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -112,6 +115,7 @@ class CUHKAgent(SAONegotiator):
         deadline_accept_time: float = 0.99,
         final_deadline_time: float = 0.9985,
         final_accept_margin: float = 0.01,
+        concession_degree_multiplier: float = 2.0,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -142,6 +146,7 @@ class CUHKAgent(SAONegotiator):
         self._deadline_accept_time = deadline_accept_time
         self._final_deadline_time = final_deadline_time
         self._final_accept_margin = final_accept_margin
+        self._concession_degree_multiplier = concession_degree_multiplier
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -247,7 +252,7 @@ class CUHKAgent(SAONegotiator):
         variance /= self._opponent_count
 
         # Higher variance suggests more concession
-        return min(1.0, math.sqrt(variance) * 2)
+        return min(1.0, math.sqrt(variance) * self._concession_degree_multiplier)
 
     def _update_concede_degree(self) -> None:
         """Update concession degree based on opponent behavior."""

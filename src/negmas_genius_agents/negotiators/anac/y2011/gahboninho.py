@@ -109,6 +109,22 @@ class Gahboninho(SAONegotiator):
         bid_selection_factor: Factor for bid selection threshold (default 0.95)
         early_accept_threshold: Early phase acceptance threshold (default 0.95)
         min_target_utility: Minimum target utility floor (default 0.5)
+        min_util_time_coeff: coefficient of time in the min_util discount formula
+            ``df ** (coeff * time)`` (default 2.0).
+        noise_util_multiplier: multiplier on noise in the max_util formula
+            ``min_util * (1 + mult * noise * df ** exp)`` (default 6.0).
+        noise_discount_exponent: exponent of the discount factor in the
+            max_util noise term (default 5.0).
+        phase1_compromising_factor: compromising factor set during phase 1
+            (default 0.95).
+        phase2_compromising_factor: compromising factor set during phase 2
+            (default 0.94).
+        phase3_compromising_factor: compromising factor set during phase 3
+            (default 0.93).
+        phase4_compromising_factor: compromising factor set during phase 4
+            (default 0.91).
+        panic_compromising_factor: compromising factor set during the panic
+            phase (default 0.90).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -147,6 +163,14 @@ class Gahboninho(SAONegotiator):
         bid_selection_factor: float = 0.95,
         early_accept_threshold: float = 0.95,
         min_target_utility: float = 0.5,
+        min_util_time_coeff: float = 2.0,
+        noise_util_multiplier: float = 6.0,
+        noise_discount_exponent: float = 5.0,
+        phase1_compromising_factor: float = 0.95,
+        phase2_compromising_factor: float = 0.94,
+        phase3_compromising_factor: float = 0.93,
+        phase4_compromising_factor: float = 0.91,
+        panic_compromising_factor: float = 0.90,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -191,6 +215,14 @@ class Gahboninho(SAONegotiator):
         self._bid_selection_factor = bid_selection_factor
         self._early_accept_threshold = early_accept_threshold
         self._min_target_utility = min_target_utility
+        self._min_util_time_coeff = min_util_time_coeff
+        self._noise_util_multiplier = noise_util_multiplier
+        self._noise_discount_exponent = noise_discount_exponent
+        self._phase1_compromising_factor = phase1_compromising_factor
+        self._phase2_compromising_factor = phase2_compromising_factor
+        self._phase3_compromising_factor = phase3_compromising_factor
+        self._phase4_compromising_factor = phase4_compromising_factor
+        self._panic_compromising_factor = panic_compromising_factor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -299,26 +331,26 @@ class Gahboninho(SAONegotiator):
             )
 
         # Main phase calculation
-        min_util = math.pow(df, 2 * time)
-        max_util = min_util * (1 + 6 * self._noise * math.pow(df, 5))
+        min_util = math.pow(df, self._min_util_time_coeff * time)
+        max_util = min_util * (1 + self._noise_util_multiplier * self._noise * math.pow(df, self._noise_discount_exponent))
 
         # Phase-dependent adjustments
         if time < self._phase1_time * df:
             min_util *= max(self._best_opponent_utility, self._phase1_min_util)
-            self._compromising_factor = 0.95
+            self._compromising_factor = self._phase1_compromising_factor
         elif time <= self._phase2_time * df:
             min_util *= max(self._best_opponent_utility, self._phase2_min_util)
-            self._compromising_factor = 0.94
+            self._compromising_factor = self._phase2_compromising_factor
         elif time <= self._phase3_time * df:
             min_util *= max(self._best_opponent_utility, self._phase3_min_util)
-            self._compromising_factor = 0.93
+            self._compromising_factor = self._phase3_compromising_factor
         elif time <= self._phase4_time:
             min_util *= max(self._best_opponent_utility, self._phase4_min_util)
-            self._compromising_factor = 0.91
+            self._compromising_factor = self._phase4_compromising_factor
         elif time <= self._panic_time:
             # Rapid concession allowed
             min_util *= max(self._best_opponent_utility, self._panic_min_util)
-            self._compromising_factor = 0.90
+            self._compromising_factor = self._panic_compromising_factor
         else:
             # Frenzy mode
             self._in_frenzy = True

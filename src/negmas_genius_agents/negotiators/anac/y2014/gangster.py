@@ -91,6 +91,23 @@ class Gangster(SAONegotiator):
         risk_strategy_time_factor: Time factor for risk strategy (default 0.25).
         vote_threshold: Threshold for weighted vote acceptance (default 0.5).
         top_candidate_divisor: Divisor for selecting top candidates (default 3).
+        threshold_floor: Lower bound for the computed acceptance threshold (default 0.5).
+        threshold_ceiling: Upper bound for the computed acceptance threshold (default 0.99).
+        early_time_strategy_weight: Weight of the time strategy in early voting (default 0.15).
+        early_threshold_strategy_weight: Weight of the threshold strategy in early voting (default 0.35).
+        early_relative_strategy_weight: Weight of the relative strategy in early voting (default 0.15).
+        early_pressure_strategy_weight: Weight of the pressure strategy in early voting (default 0.20).
+        early_risk_strategy_weight: Weight of the risk strategy in early voting (default 0.15).
+        mid_time_strategy_weight: Weight of the time strategy in mid voting (default 0.20).
+        mid_threshold_strategy_weight: Weight of the threshold strategy in mid voting (default 0.25).
+        mid_relative_strategy_weight: Weight of the relative strategy in mid voting (default 0.20).
+        mid_pressure_strategy_weight: Weight of the pressure strategy in mid voting (default 0.20).
+        mid_risk_strategy_weight: Weight of the risk strategy in mid voting (default 0.15).
+        late_time_strategy_weight: Weight of the time strategy in late voting (default 0.25).
+        late_threshold_strategy_weight: Weight of the threshold strategy in late voting (default 0.15).
+        late_relative_strategy_weight: Weight of the relative strategy in late voting (default 0.15).
+        late_pressure_strategy_weight: Weight of the pressure strategy in late voting (default 0.15).
+        late_risk_strategy_weight: Weight of the risk strategy in late voting (default 0.30).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -122,6 +139,23 @@ class Gangster(SAONegotiator):
         risk_strategy_time_factor: float = 0.25,
         vote_threshold: float = 0.5,
         top_candidate_divisor: int = 3,
+        threshold_floor: float = 0.5,
+        threshold_ceiling: float = 0.99,
+        early_time_strategy_weight: float = 0.15,
+        early_threshold_strategy_weight: float = 0.35,
+        early_relative_strategy_weight: float = 0.15,
+        early_pressure_strategy_weight: float = 0.20,
+        early_risk_strategy_weight: float = 0.15,
+        mid_time_strategy_weight: float = 0.20,
+        mid_threshold_strategy_weight: float = 0.25,
+        mid_relative_strategy_weight: float = 0.20,
+        mid_pressure_strategy_weight: float = 0.20,
+        mid_risk_strategy_weight: float = 0.15,
+        late_time_strategy_weight: float = 0.25,
+        late_threshold_strategy_weight: float = 0.15,
+        late_relative_strategy_weight: float = 0.15,
+        late_pressure_strategy_weight: float = 0.15,
+        late_risk_strategy_weight: float = 0.30,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -159,6 +193,23 @@ class Gangster(SAONegotiator):
         self._risk_strategy_time_factor = risk_strategy_time_factor
         self._vote_threshold = vote_threshold
         self._top_candidate_divisor = top_candidate_divisor
+        self._threshold_floor = threshold_floor
+        self._threshold_ceiling = threshold_ceiling
+        self._early_time_strategy_weight = early_time_strategy_weight
+        self._early_threshold_strategy_weight = early_threshold_strategy_weight
+        self._early_relative_strategy_weight = early_relative_strategy_weight
+        self._early_pressure_strategy_weight = early_pressure_strategy_weight
+        self._early_risk_strategy_weight = early_risk_strategy_weight
+        self._mid_time_strategy_weight = mid_time_strategy_weight
+        self._mid_threshold_strategy_weight = mid_threshold_strategy_weight
+        self._mid_relative_strategy_weight = mid_relative_strategy_weight
+        self._mid_pressure_strategy_weight = mid_pressure_strategy_weight
+        self._mid_risk_strategy_weight = mid_risk_strategy_weight
+        self._late_time_strategy_weight = late_time_strategy_weight
+        self._late_threshold_strategy_weight = late_threshold_strategy_weight
+        self._late_relative_strategy_weight = late_relative_strategy_weight
+        self._late_pressure_strategy_weight = late_pressure_strategy_weight
+        self._late_risk_strategy_weight = late_risk_strategy_weight
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -306,7 +357,7 @@ class Gangster(SAONegotiator):
         threshold = self._initial_threshold - pressure_adjusted
 
         # Ensure reasonable bounds
-        return max(0.5, min(0.99, threshold))
+        return max(self._threshold_floor, min(self._threshold_ceiling, threshold))
 
     def _update_pressure_factor(self) -> None:
         """Update pressure factor based on opponent behavior."""
@@ -391,29 +442,29 @@ class Gangster(SAONegotiator):
         if time < self._early_vote_end:
             # Early: favor threshold and conservative strategies
             weights = {
-                "time_strategy": 0.15,
-                "threshold_strategy": 0.35,
-                "relative_strategy": 0.15,
-                "pressure_strategy": 0.20,
-                "risk_strategy": 0.15,
+                "time_strategy": self._early_time_strategy_weight,
+                "threshold_strategy": self._early_threshold_strategy_weight,
+                "relative_strategy": self._early_relative_strategy_weight,
+                "pressure_strategy": self._early_pressure_strategy_weight,
+                "risk_strategy": self._early_risk_strategy_weight,
             }
         elif time < self._late_vote_start:
             # Middle: balanced approach
             weights = {
-                "time_strategy": 0.20,
-                "threshold_strategy": 0.25,
-                "relative_strategy": 0.20,
-                "pressure_strategy": 0.20,
-                "risk_strategy": 0.15,
+                "time_strategy": self._mid_time_strategy_weight,
+                "threshold_strategy": self._mid_threshold_strategy_weight,
+                "relative_strategy": self._mid_relative_strategy_weight,
+                "pressure_strategy": self._mid_pressure_strategy_weight,
+                "risk_strategy": self._mid_risk_strategy_weight,
             }
         else:
             # Late: favor risk-aware and time strategies
             weights = {
-                "time_strategy": 0.25,
-                "threshold_strategy": 0.15,
-                "relative_strategy": 0.15,
-                "pressure_strategy": 0.15,
-                "risk_strategy": 0.30,
+                "time_strategy": self._late_time_strategy_weight,
+                "threshold_strategy": self._late_threshold_strategy_weight,
+                "relative_strategy": self._late_relative_strategy_weight,
+                "pressure_strategy": self._late_pressure_strategy_weight,
+                "risk_strategy": self._late_risk_strategy_weight,
             }
 
         weighted_sum = sum(votes[k] * weights[k] for k in votes)

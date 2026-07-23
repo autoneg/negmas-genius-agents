@@ -300,6 +300,11 @@ class SMACAgent(SAONegotiator):
         utility derived from the ``OMS`` sigmoid curve.
 
     Args:
+        max_search_iterations: Maximum iterations of the candidate-search widening loop (default 2000).
+        search_step: Utility increment/decrement applied to the search window each iteration (default 0.001).
+        search_lower_bound_offset: Offset subtracted from the minimum utility when testing the search break condition (default 1.0).
+        search_upper_bound: Upper bound compared against the search window's upper edge when testing the search break condition (default 2.0).
+        phase3_curve_scaling: Scaling factor applied to the time delta in the phase-3 acceptance threshold curve (default 10.0).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -311,6 +316,11 @@ class SMACAgent(SAONegotiator):
 
     def __init__(
         self,
+        max_search_iterations: int = 2000,
+        search_step: float = 0.001,
+        search_lower_bound_offset: float = 1.0,
+        search_upper_bound: float = 2.0,
+        phase3_curve_scaling: float = 10.0,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -328,6 +338,11 @@ class SMACAgent(SAONegotiator):
             id=id,
             **kwargs,
         )
+        self._max_search_iterations = max_search_iterations
+        self._search_step = search_step
+        self._search_lower_bound_offset = search_lower_bound_offset
+        self._search_upper_bound = search_upper_bound
+        self._phase3_curve_scaling = phase3_curve_scaling
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -453,15 +468,15 @@ class SMACAgent(SAONegotiator):
         else:
             lower, upper = util, 1.0
 
-        max_iterations = 2000
+        max_iterations = self._max_search_iterations
         for _ in range(max_iterations):
             candidates = self._outcome_space.get_bids_in_range(lower, upper)
             bid = self._oms(candidates, time)
             if bid is not None:
                 return bid
-            lower -= 0.001
-            upper += 0.001
-            if lower < self._outcome_space.min_utility - 1.0 and upper > 2.0:
+            lower -= self._search_step
+            upper += self._search_step
+            if lower < self._outcome_space.min_utility - self._search_lower_bound_offset and upper > self._search_upper_bound:
                 break
 
         return self._max_bid
@@ -520,7 +535,7 @@ class SMACAgent(SAONegotiator):
             threshold = (
                 self._as_threshold1
                 - (self._as_tt2 - self._as_tt1) * self._as_rate1 / 2
-                - math.pow(10 * (time - self._as_tt2), 2) / 10 * self._as_rate2
+                - math.pow(self._phase3_curve_scaling * (time - self._as_tt2), 2) / self._phase3_curve_scaling * self._as_rate2
                 - (1 - discount) * (time - self._as_tt2) * self._as_dr2
             )
             return last_opponent_util > threshold

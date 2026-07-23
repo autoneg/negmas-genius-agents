@@ -62,6 +62,18 @@ class AgentNeo(SAONegotiator):
         early_time_threshold: Time threshold for early phase (default 0.2)
         main_time_threshold: Time threshold for main/end phase transition (default 0.8)
         deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
+        concession_detection_min_bids: Minimum opponent bids to detect concession (default 3)
+        recent_window: Number of recent opponent bids checked for concession (default 5)
+        firm_multiplier: Multiplier applied to e when opponent is conceding (default 0.8)
+        max_utility_ratio: Ratio of max utility used as firm starting threshold (default 0.95)
+        main_phase_target: Utility target at end of main phase / base of end phase (default 0.6)
+        end_phase_min_margin: Margin above min utility in end phase (default 0.1)
+        end_phase_concession_factor: Fraction of concession applied in end phase (default 0.5)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.9)
+        nash_time_threshold: Time after which Nash-seeking bid selection applies (default 0.3)
+        nash_search_count: Number of top candidates searched for Nash-like bid (default 50)
+        own_utility_weight: Weight of own utility in Nash-like scoring (default 0.7)
+        opponent_utility_weight: Weight of opponent utility in Nash-like scoring (default 0.3)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -77,6 +89,18 @@ class AgentNeo(SAONegotiator):
         early_time_threshold: float = 0.2,
         main_time_threshold: float = 0.8,
         deadline_time_threshold: float = 0.95,
+        concession_detection_min_bids: int = 3,
+        recent_window: int = 5,
+        firm_multiplier: float = 0.8,
+        max_utility_ratio: float = 0.95,
+        main_phase_target: float = 0.6,
+        end_phase_min_margin: float = 0.1,
+        end_phase_concession_factor: float = 0.5,
+        fallback_threshold_ratio: float = 0.9,
+        nash_time_threshold: float = 0.3,
+        nash_search_count: int = 50,
+        own_utility_weight: float = 0.7,
+        opponent_utility_weight: float = 0.3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -98,6 +122,18 @@ class AgentNeo(SAONegotiator):
         self._early_time_threshold = early_time_threshold
         self._main_time_threshold = main_time_threshold
         self._deadline_time_threshold = deadline_time_threshold
+        self._concession_detection_min_bids = concession_detection_min_bids
+        self._recent_window = recent_window
+        self._firm_multiplier = firm_multiplier
+        self._max_utility_ratio = max_utility_ratio
+        self._main_phase_target = main_phase_target
+        self._end_phase_min_margin = end_phase_min_margin
+        self._end_phase_concession_factor = end_phase_concession_factor
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._nash_time_threshold = nash_time_threshold
+        self._nash_search_count = nash_search_count
+        self._own_utility_weight = own_utility_weight
+        self._opponent_utility_weight = opponent_utility_weight
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -145,9 +181,12 @@ class AgentNeo(SAONegotiator):
             self._best_opponent_utility = utility
 
         # Check for opponent concession
-        if len(self._opponent_bids) >= 3:
-            recent = [u for _, u in self._opponent_bids[-5:]]
-            if len(recent) >= 3 and recent[-1] > recent[0]:
+        if len(self._opponent_bids) >= self._concession_detection_min_bids:
+            recent = [u for _, u in self._opponent_bids[-self._recent_window :]]
+            if (
+                len(recent) >= self._concession_detection_min_bids
+                and recent[-1] > recent[0]
+            ):
                 self._opponent_concession_detected = True
 
         # Track value frequencies
@@ -179,26 +218,35 @@ class AgentNeo(SAONegotiator):
 
         # Adjust based on opponent behavior
         if self._opponent_concession_detected:
-            e *= 0.8  # Be more aggressive if opponent is conceding
+            e *= self._firm_multiplier  # Be more aggressive if opponent is conceding
 
         if time < self._early_time_threshold:
             # Early phase: very firm
-            return self._max_utility * 0.95
+            return self._max_utility * self._max_utility_ratio
         elif time < self._main_time_threshold:
             # Main phase: gradual concession
             progress = (time - self._early_time_threshold) / (
                 self._main_time_threshold - self._early_time_threshold
             )
             f_t = math.pow(progress, 1 / e)
-            target = self._max_utility * 0.95 - (self._max_utility * 0.95 - 0.6) * f_t
+            target = (
+                self._max_utility * self._max_utility_ratio
+                - (self._max_utility * self._max_utility_ratio - self._main_phase_target)
+                * f_t
+            )
             return max(target, self._reservation_value)
         else:
             # End phase: accelerated concession
             progress = (time - self._main_time_threshold) / (
                 1.0 - self._main_time_threshold
             )
-            base = 0.6
-            target = base - (base - self._min_utility - 0.1) * progress * 0.5
+            base = self._main_phase_target
+            target = (
+                base
+                - (base - self._min_utility - self._end_phase_min_margin)
+                * progress
+                * self._end_phase_concession_factor
+            )
             return max(target, self._reservation_value)
 
     def _select_bid(self, time: float) -> Outcome | None:
@@ -210,20 +258,25 @@ class AgentNeo(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
 
         # If we have opponent model, try to find mutually beneficial bid
-        if self._value_frequencies and time > 0.3:
+        if self._value_frequencies and time > self._nash_time_threshold:
             best_bid = None
             best_score = -1.0
 
-            for bd in candidates[:50]:
+            for bd in candidates[: self._nash_search_count]:
                 opp_util = self._estimate_opponent_utility(bd.bid)
                 # Score combines our utility with opponent's estimated utility
-                score = bd.utility * 0.7 + opp_util * 0.3
+                score = (
+                    bd.utility * self._own_utility_weight
+                    + opp_util * self._opponent_utility_weight
+                )
                 if score > best_score:
                     best_score = score
                     best_bid = bd.bid

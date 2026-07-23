@@ -91,6 +91,27 @@ class MyAgent(SAONegotiator):
         phase2_end: End time for phase 2 (default 0.8)
         deadline_time: Time threshold for deadline acceptance (default 0.95)
         critical_time: Time threshold for critical deadline acceptance (default 0.99)
+        reservation_bias: Bias toward the mean when computing the reservation value
+            from the domain utility distribution (default 0.7)
+        concession_detection_samples: Minimum opponent utilities required before
+            detecting opponent concession (default 3)
+        nash_reestimate_period: Number of opponent bids between Nash point
+            re-estimations (default 5)
+        issue_weight_learning_rate: Learning rate applied to opponent issue weights
+            on value consistency (default 0.1)
+        phase1_concession_fraction: Fraction of max utility conceded linearly during
+            phase 1 (default 0.05)
+        phase1_end_utility_factor: Fraction of max utility at the end of phase 1
+            (default 0.95)
+        phase2_beta: Concession shape parameter for the phase 2 Boulware curve
+            (default 0.3)
+        opponent_conceding_factor: Floor factor applied to the phase 2 end target
+            when the opponent is conceding (default 0.95)
+        own_weight_slope: Rate at which bid-scoring weight shifts from own utility
+            to opponent utility over time (default 0.3)
+        top_n: Number of top-scored candidates to randomly choose from (default 3)
+        early_steps: Number of initial steps during which the best bid is offered
+            (default 3)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -108,6 +129,17 @@ class MyAgent(SAONegotiator):
         phase2_end: float = 0.8,
         deadline_time: float = 0.95,
         critical_time: float = 0.99,
+        reservation_bias: float = 0.7,
+        concession_detection_samples: int = 3,
+        nash_reestimate_period: int = 5,
+        issue_weight_learning_rate: float = 0.1,
+        phase1_concession_fraction: float = 0.05,
+        phase1_end_utility_factor: float = 0.95,
+        phase2_beta: float = 0.3,
+        opponent_conceding_factor: float = 0.95,
+        own_weight_slope: float = 0.3,
+        top_n: int = 3,
+        early_steps: int = 3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -131,6 +163,17 @@ class MyAgent(SAONegotiator):
         self._phase2_end = phase2_end
         self._deadline_time = deadline_time
         self._critical_time = critical_time
+        self._reservation_bias = reservation_bias
+        self._concession_detection_samples = concession_detection_samples
+        self._nash_reestimate_period = nash_reestimate_period
+        self._issue_weight_learning_rate = issue_weight_learning_rate
+        self._phase1_concession_fraction = phase1_concession_fraction
+        self._phase1_end_utility_factor = phase1_end_utility_factor
+        self._phase2_beta = phase2_beta
+        self._opponent_conceding_factor = opponent_conceding_factor
+        self._own_weight_slope = own_weight_slope
+        self._top_n = top_n
+        self._early_steps = early_steps
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -199,7 +242,8 @@ class MyAgent(SAONegotiator):
 
         # Reservation value: between mean and min, biased toward mean
         self._reservation_value = max(
-            self._min_utility, min_util + 0.7 * (mean_util - min_util)
+            self._min_utility,
+            min_util + self._reservation_bias * (mean_util - min_util),
         )
 
     def on_negotiation_start(self, state: SAOState) -> None:
@@ -238,13 +282,13 @@ class MyAgent(SAONegotiator):
             self._update_issue_weights()
 
         # Detect opponent concession
-        if len(self._opponent_utilities) >= 3:
-            recent = self._opponent_utilities[-3:]
+        if len(self._opponent_utilities) >= self._concession_detection_samples:
+            recent = self._opponent_utilities[-self._concession_detection_samples:]
             if recent[-1] > recent[0]:  # Opponent giving us better utility
                 self._opponent_concession_detected = True
 
         # Re-estimate Nash point periodically
-        if len(self._opponent_bids) % 5 == 0:
+        if len(self._opponent_bids) % self._nash_reestimate_period == 0:
             self._estimate_nash_point()
 
     def _update_issue_weights(self) -> None:
@@ -268,7 +312,7 @@ class MyAgent(SAONegotiator):
             return
 
         # Increase weight of unchanged issues
-        learning_rate = 0.1
+        learning_rate = self._issue_weight_learning_rate
         for i in unchanged_issues:
             self._opponent_issue_weights[i] += learning_rate
 
@@ -344,7 +388,7 @@ class MyAgent(SAONegotiator):
             # Phase 1: Conservative
             # Linear concession from max to 0.95 * max
             phase_progress = time / self._phase1_end
-            target = self._max_utility - phase_progress * 0.05 * self._max_utility
+            target = self._max_utility - phase_progress * self._phase1_concession_fraction * self._max_utility
         elif time < self._phase2_end:
             # Phase 2: Gradual concession toward Nash point
             phase_progress = (time - self._phase1_end) / (
@@ -352,13 +396,13 @@ class MyAgent(SAONegotiator):
             )
 
             # Start from end of phase 1
-            phase1_end = self._max_utility * 0.95
+            phase1_end = self._max_utility * self._phase1_end_utility_factor
 
             # Target Nash utility or reservation value (whichever is higher)
             nash_target = max(self._nash_utility, self._reservation_value)
 
             # Boulware-like concession (slow at first, faster later)
-            beta = 0.3  # Concession shape parameter
+            beta = self._phase2_beta  # Concession shape parameter
             concession = phase_progress ** (1.0 / beta)
 
             target = phase1_end - concession * (phase1_end - nash_target)
@@ -376,7 +420,7 @@ class MyAgent(SAONegotiator):
 
             # If opponent is conceding, be less aggressive
             if self._opponent_concession_detected:
-                target = max(target, phase2_end * 0.95)
+                target = max(target, phase2_end * self._opponent_conceding_factor)
 
         return max(target, self._reservation_value)
 
@@ -409,8 +453,8 @@ class MyAgent(SAONegotiator):
 
             # Combined score: weighted sum
             # Early: favor own utility; later: balance more
-            own_weight = 1.0 - 0.3 * time
-            opp_weight = 0.3 * time
+            own_weight = 1.0 - self._own_weight_slope * time
+            opp_weight = self._own_weight_slope * time
 
             score = own_weight * own_util + opp_weight * opp_util
             scored_bids.append((bd.bid, score))
@@ -419,7 +463,7 @@ class MyAgent(SAONegotiator):
         scored_bids.sort(key=lambda x: x[1], reverse=True)
 
         # Pick from top candidates with some randomness
-        top_n = min(3, len(scored_bids))
+        top_n = min(self._top_n, len(scored_bids))
         selected = random.choice(scored_bids[:top_n])
 
         return selected[0]
@@ -432,7 +476,7 @@ class MyAgent(SAONegotiator):
         time = state.relative_time
 
         # First few rounds: offer best bid
-        if state.step < 3:
+        if state.step < self._early_steps:
             self._last_offered_utility = self._max_utility
             return self._best_bid
 

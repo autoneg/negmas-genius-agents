@@ -66,6 +66,16 @@ class PokerFace(SAONegotiator):
         acceptance_transition_time: Time when acceptance becomes more lenient (default 0.7)
         acceptance_reveal_time: Time when acceptance threshold starts decreasing (default 0.9)
         deadline_time_threshold: Time after which end-game acceptance triggers (default 0.98)
+        true_threshold: Hidden true acceptance threshold (default 0.7)
+        bluff_base_ratio: Ratio of max utility displayed during bluffing (default 0.98)
+        bluff_noise: Magnitude of random noise added during bluffing (default 0.05)
+        transition_bluff_ratio: Ratio of max utility at start of transition (default 0.95)
+        displayed_true_target_margin: Margin above true threshold targeted in displayed threshold (default 0.1)
+        acceptance_margin: Margin above true threshold used for early acceptance (default 0.15)
+        endgame_true_threshold_margin: Margin below true threshold for end-game acceptance (default 0.1)
+        bluff_variance: Magnitude of random variance applied to displayed threshold (default 0.1)
+        fallback_threshold_offset: Offset subtracted from threshold when no candidates (default 0.1)
+        bluff_disable_offset: Time offset after bluff phase when bluff mode disables (default 0.1)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -83,6 +93,16 @@ class PokerFace(SAONegotiator):
         acceptance_transition_time: float = 0.7,
         acceptance_reveal_time: float = 0.9,
         deadline_time_threshold: float = 0.98,
+        true_threshold: float = 0.7,
+        bluff_base_ratio: float = 0.98,
+        bluff_noise: float = 0.05,
+        transition_bluff_ratio: float = 0.95,
+        displayed_true_target_margin: float = 0.1,
+        acceptance_margin: float = 0.15,
+        endgame_true_threshold_margin: float = 0.1,
+        bluff_variance: float = 0.1,
+        fallback_threshold_offset: float = 0.1,
+        bluff_disable_offset: float = 0.1,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -106,13 +126,22 @@ class PokerFace(SAONegotiator):
         self._acceptance_transition_time = acceptance_transition_time
         self._acceptance_reveal_time = acceptance_reveal_time
         self._deadline_time_threshold = deadline_time_threshold
+        self._true_threshold = true_threshold
+        self._bluff_base_ratio = bluff_base_ratio
+        self._bluff_noise = bluff_noise
+        self._transition_bluff_ratio = transition_bluff_ratio
+        self._displayed_true_target_margin = displayed_true_target_margin
+        self._acceptance_margin = acceptance_margin
+        self._endgame_true_threshold_margin = endgame_true_threshold_margin
+        self._bluff_variance = bluff_variance
+        self._fallback_threshold_offset = fallback_threshold_offset
+        self._bluff_disable_offset = bluff_disable_offset
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
         # State
         self._max_utility: float = 1.0
         self._min_utility: float = 0.0
-        self._true_threshold: float = 0.7  # Hidden true threshold
 
         # Tracking
         self._opponent_bids: list[tuple[Outcome, float]] = []
@@ -149,39 +178,39 @@ class PokerFace(SAONegotiator):
         """Compute the threshold we display through offers (may include bluff)."""
         if time < self._bluff_time_threshold and self._bluff_mode:
             # Bluffing phase: display higher demands
-            base = self._max_utility * 0.98
-            noise = random.uniform(-0.05, 0.05)
+            base = self._max_utility * self._bluff_base_ratio
+            noise = random.uniform(-self._bluff_noise, self._bluff_noise)
             return min(self._max_utility, base + noise)
         elif time < self._transition_time_threshold:
             # Transition phase
             progress = (time - self._bluff_time_threshold) / (
                 self._transition_time_threshold - self._bluff_time_threshold
             )
-            bluff_threshold = self._max_utility * 0.95
-            true_target = self._true_threshold + 0.1
+            bluff_threshold = self._max_utility * self._transition_bluff_ratio
+            true_target = self._true_threshold + self._displayed_true_target_margin
             return bluff_threshold - (bluff_threshold - true_target) * progress
         else:
             # Reveal phase
             progress = (time - self._transition_time_threshold) / (
                 1.0 - self._transition_time_threshold
             )
-            return self._true_threshold + 0.1 * (1 - progress)
+            return self._true_threshold + self._displayed_true_target_margin * (1 - progress)
 
     def _compute_acceptance_threshold(self, time: float) -> float:
         """Compute actual acceptance threshold (the true one)."""
         # True threshold is more lenient than displayed
         if time < self._acceptance_transition_time:
-            return self._true_threshold + 0.15
+            return self._true_threshold + self._acceptance_margin
         elif time < self._acceptance_reveal_time:
             progress = (time - self._acceptance_transition_time) / (
                 self._acceptance_reveal_time - self._acceptance_transition_time
             )
-            return self._true_threshold + 0.15 * (1 - progress)
+            return self._true_threshold + self._acceptance_margin * (1 - progress)
         else:
             progress = (time - self._acceptance_reveal_time) / (
                 1.0 - self._acceptance_reveal_time
             )
-            return self._true_threshold - 0.1 * progress
+            return self._true_threshold - self._endgame_true_threshold_margin * progress
 
     def _select_bid(self, time: float) -> Outcome | None:
         """Select bid with poker-style variation."""
@@ -193,7 +222,7 @@ class PokerFace(SAONegotiator):
         # Add unpredictability
         if self._bluff_mode and time < self._bluff_time_threshold:
             # Vary bids to confuse opponent modeling
-            variance = random.uniform(-0.1, 0.1)
+            variance = random.uniform(-self._bluff_variance, self._bluff_variance)
             threshold = max(
                 self._true_threshold, min(self._max_utility, threshold + variance)
             )
@@ -201,7 +230,9 @@ class PokerFace(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold - 0.1)
+            candidates = self._outcome_space.get_bids_above(
+                threshold - self._fallback_threshold_offset
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
@@ -217,7 +248,7 @@ class PokerFace(SAONegotiator):
         time = state.relative_time
 
         # Decide whether to continue bluffing
-        if time > self._bluff_time_threshold + 0.1:  # 0.6 by default
+        if time > self._bluff_time_threshold + self._bluff_disable_offset:  # 0.6 by default
             self._bluff_mode = False
 
         return self._select_bid(time)
@@ -248,7 +279,7 @@ class PokerFace(SAONegotiator):
         # Near deadline, accept reasonable offers
         if (
             time > self._deadline_time_threshold
-            and offer_utility >= self._true_threshold - 0.1
+            and offer_utility >= self._true_threshold - self._endgame_true_threshold_margin
         ):
             return ResponseType.ACCEPT_OFFER
 

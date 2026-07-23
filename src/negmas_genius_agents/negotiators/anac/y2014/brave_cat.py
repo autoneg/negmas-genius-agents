@@ -73,6 +73,9 @@ class BraveCat(SAONegotiator):
         late_phase_exponent: Exponent for late phase concession (default 0.5).
         late_phase_concession_factor: Concession factor for late phase (default 0.5).
         top_candidates_divisor: Divisor for selecting top candidates (default 3).
+        min_utility_floor: Floor value for minimum acceptable utility (default 0.5).
+        time_weight_multiplier: Multiplier for time-based frequency weighting (default 2.0).
+        acceptance_vote_threshold: Threshold for weighted-vote acceptance (default 0.5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -93,6 +96,9 @@ class BraveCat(SAONegotiator):
         late_phase_exponent: float = 0.5,
         late_phase_concession_factor: float = 0.5,
         top_candidates_divisor: int = 3,
+        min_utility_floor: float = 0.5,
+        time_weight_multiplier: float = 2.0,
+        acceptance_vote_threshold: float = 0.5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -119,6 +125,9 @@ class BraveCat(SAONegotiator):
         self._late_phase_exponent = late_phase_exponent
         self._late_phase_concession_factor = late_phase_concession_factor
         self._top_candidates_divisor = top_candidates_divisor
+        self._min_utility_floor = min_utility_floor
+        self._time_weight_multiplier = time_weight_multiplier
+        self._acceptance_vote_threshold = acceptance_vote_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -130,7 +139,7 @@ class BraveCat(SAONegotiator):
         self._total_weight: float = 0.0
 
         # State
-        self._min_utility: float = 0.5
+        self._min_utility: float = min_utility_floor
         self._max_utility: float = 1.0
         self._last_bid: Outcome | None = None
 
@@ -145,7 +154,9 @@ class BraveCat(SAONegotiator):
         self._outcome_space = SortedOutcomeSpace(ufun=self.ufun)
         if self._outcome_space.outcomes:
             self._max_utility = self._outcome_space.max_utility
-            self._min_utility = max(0.5, self._outcome_space.min_utility)
+            self._min_utility = max(
+                self._min_utility_floor, self._outcome_space.min_utility
+            )
         self._initialized = True
 
     def on_negotiation_start(self, state: SAOState) -> None:
@@ -173,7 +184,7 @@ class BraveCat(SAONegotiator):
             self._best_opponent_bid = bid
 
         # Time-weighted frequency update
-        weight = 1.0 + time * 2.0
+        weight = 1.0 + time * self._time_weight_multiplier
         self._total_weight += weight
 
         for i, value in enumerate(bid):
@@ -314,7 +325,7 @@ class BraveCat(SAONegotiator):
             # Use alpha to decide
             score = self._acceptance_alpha if ac_combi_result else 0.0
             score += (1 - self._acceptance_alpha) if ac_next_result else 0.0
-            if score >= 0.5:
+            if score >= self._acceptance_vote_threshold:
                 return ResponseType.ACCEPT_OFFER
 
         # Emergency acceptance near deadline

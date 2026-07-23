@@ -73,6 +73,9 @@ class GAgent(SAONegotiator):
         time_pressure_multiplier: Multiplier for time pressure adjustment (default 0.3)
         early_game_offers: Number of opponent offers before using Nash scoring (default 10)
         top_k_divisor: Divisor for selecting top candidates (default 4)
+        concession_exponent: Exponent applied to time in the base concession term (default 2)
+        concession_window: Number of recent/early opponent offers compared when estimating concession (default 5)
+        default_opponent_utility: Utility assumed for the opponent when no data is available (default 0.5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -96,6 +99,9 @@ class GAgent(SAONegotiator):
         time_pressure_multiplier: float = 0.3,
         early_game_offers: int = 10,
         top_k_divisor: int = 4,
+        concession_exponent: float = 2,
+        concession_window: int = 5,
+        default_opponent_utility: float = 0.5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -125,6 +131,9 @@ class GAgent(SAONegotiator):
         self._time_pressure_multiplier = time_pressure_multiplier
         self._early_game_offers = early_game_offers
         self._top_k_divisor = top_k_divisor
+        self._concession_exponent = concession_exponent
+        self._concession_window = concession_window
+        self._default_opponent_utility = default_opponent_utility
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -191,9 +200,9 @@ class GAgent(SAONegotiator):
             self._issue_value_counts[issue_key][value_key] += 1
 
         # Estimate opponent concession rate
-        if len(self._opponent_offers) >= 5:
-            recent_utils = [u for _, u in self._opponent_offers[-5:]]
-            early_utils = [u for _, u in self._opponent_offers[:5]]
+        if len(self._opponent_offers) >= self._concession_window:
+            recent_utils = [u for _, u in self._opponent_offers[-self._concession_window :]]
+            early_utils = [u for _, u in self._opponent_offers[: self._concession_window]]
             if early_utils and recent_utils:
                 self._opponent_concession_estimate = sum(recent_utils) / len(
                     recent_utils
@@ -202,7 +211,7 @@ class GAgent(SAONegotiator):
     def _estimate_opponent_utility(self, bid: Outcome) -> float:
         """Estimate opponent's utility for a bid based on frequency model."""
         if self._total_opponent_offers == 0 or bid is None:
-            return 0.5
+            return self._default_opponent_utility
 
         total_score = 0.0
         num_issues = len(bid)
@@ -217,12 +226,12 @@ class GAgent(SAONegotiator):
                     max_count = max(counts.values()) if counts else 1
                     total_score += counts[value_key] / max_count
 
-        return total_score / num_issues if num_issues > 0 else 0.5
+        return total_score / num_issues if num_issues > 0 else self._default_opponent_utility
 
     def _compute_threshold(self, time: float) -> float:
         """Compute utility threshold with adaptive concession."""
         # Base time-dependent concession
-        base_concession = self._concession_rate * math.pow(time, 2)
+        base_concession = self._concession_rate * math.pow(time, self._concession_exponent)
 
         # Adjust based on opponent behavior
         if self._opponent_concession_estimate > self._opponent_conceding_threshold:

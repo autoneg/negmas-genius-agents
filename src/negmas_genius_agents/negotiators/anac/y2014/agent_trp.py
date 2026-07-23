@@ -80,6 +80,8 @@ class AgentTRP(SAONegotiator):
         high_opponent_util_threshold: Threshold for high opponent utility (default 0.6).
         risk_bonus_factor: Bonus factor for well-understood preferences (default 0.1).
         risk_adjustment_factor: Factor for risk adjustment in acceptance (default 0.1).
+        low_risk_adjustment_factor: Multiplier applied to risk adjustment when
+            perceived risk is low (default 0.5).
         top_candidates_divisor: Divisor to select top candidates (default 3).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
@@ -110,6 +112,7 @@ class AgentTRP(SAONegotiator):
         high_opponent_util_threshold: float = 0.6,
         risk_bonus_factor: float = 0.1,
         risk_adjustment_factor: float = 0.1,
+        low_risk_adjustment_factor: float = 0.5,
         top_candidates_divisor: int = 3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
@@ -146,6 +149,7 @@ class AgentTRP(SAONegotiator):
         self._high_opponent_util_threshold = high_opponent_util_threshold
         self._risk_bonus_factor = risk_bonus_factor
         self._risk_adjustment_factor = risk_adjustment_factor
+        self._low_risk_adjustment_factor = low_risk_adjustment_factor
         self._top_candidates_divisor = top_candidates_divisor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
@@ -274,7 +278,7 @@ class AgentTRP(SAONegotiator):
             base_target -= risk_adjustment
         else:
             # Low risk, can be tougher
-            base_target += risk_adjustment * 0.5
+            base_target += risk_adjustment * self._low_risk_adjustment_factor
 
         return max(self._min_utility, min(self._max_utility, base_target))
 

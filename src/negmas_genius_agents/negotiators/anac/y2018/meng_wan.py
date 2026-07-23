@@ -69,6 +69,8 @@ class MengWan(SAONegotiator):
         late_time_threshold: Time threshold for late acceptance (default 0.98).
         time_pressure_threshold: Time threshold for time pressure acceptance (default 0.9).
         deadline_threshold: Time threshold for deadline acceptance (default 0.99).
+        bid_margin: Half-width of the utility window from which candidate bids are drawn (default 0.05).
+        opponent_data_threshold: Minimum opponent offers before using the opponent model for selection (default 5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -89,6 +91,8 @@ class MengWan(SAONegotiator):
         late_time_threshold: float = 0.98,
         time_pressure_threshold: float = 0.9,
         deadline_threshold: float = 0.99,
+        bid_margin: float = 0.05,
+        opponent_data_threshold: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -115,6 +119,8 @@ class MengWan(SAONegotiator):
         self._late_time_threshold = late_time_threshold
         self._time_pressure_threshold = time_pressure_threshold
         self._deadline_threshold = deadline_threshold
+        self._bid_margin = bid_margin
+        self._opponent_data_threshold = opponent_data_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -213,7 +219,7 @@ class MengWan(SAONegotiator):
         target = self._get_target_utility(time)
 
         # Get candidates near target
-        candidates = self._outcome_space.get_bids_in_range(target - 0.05, target + 0.05)
+        candidates = self._outcome_space.get_bids_in_range(target - self._bid_margin, target + self._bid_margin)
 
         if not candidates:
             bid_details = self._outcome_space.get_bid_near_utility(target)
@@ -223,7 +229,7 @@ class MengWan(SAONegotiator):
             return candidates[0].bid
 
         # Select bid with highest estimated opponent utility
-        if self._total_opponent_offers > 5:
+        if self._total_opponent_offers > self._opponent_data_threshold:
             best_opp_util = -1.0
             best_bid = candidates[0].bid
             for bd in candidates:

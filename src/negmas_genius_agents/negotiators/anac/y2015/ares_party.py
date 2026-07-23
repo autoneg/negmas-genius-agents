@@ -64,6 +64,17 @@ class AresParty(SAONegotiator):
         first_half_time_threshold: Time threshold for first half phase (default 0.5)
         second_half_time_threshold: Time threshold for second half/final phase transition (default 0.9)
         deadline_time_threshold: Time after which end-game acceptance triggers (default 0.98)
+        min_acceptable: Minimum acceptable utility target (default 0.6)
+        weakening_multiplier: Multiplier applied to e when opponent is weakening (default 0.5)
+        weakness_detection_min_bids: Minimum opponent bids to detect weakening (default 5)
+        weakness_recent_window: Number of recent opponent bids for weakness detection (default 5)
+        high_target: High utility target maintained in early phases (default 0.85)
+        first_half_concession_factor: Fraction of concession applied in first half (default 0.3)
+        second_half_concession_factor: Fraction of concession applied in second half (default 0.5)
+        final_phase_min_margin: Margin above min utility in final phase (default 0.1)
+        final_phase_concession_factor: Fraction of concession applied in final phase (default 0.6)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.9)
+        top_fraction: Divisor for selecting top candidates (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -79,6 +90,17 @@ class AresParty(SAONegotiator):
         first_half_time_threshold: float = 0.5,
         second_half_time_threshold: float = 0.9,
         deadline_time_threshold: float = 0.98,
+        min_acceptable: float = 0.6,
+        weakening_multiplier: float = 0.5,
+        weakness_detection_min_bids: int = 5,
+        weakness_recent_window: int = 5,
+        high_target: float = 0.85,
+        first_half_concession_factor: float = 0.3,
+        second_half_concession_factor: float = 0.5,
+        final_phase_min_margin: float = 0.1,
+        final_phase_concession_factor: float = 0.6,
+        fallback_threshold_ratio: float = 0.9,
+        top_fraction: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -100,6 +122,17 @@ class AresParty(SAONegotiator):
         self._first_half_time_threshold = first_half_time_threshold
         self._second_half_time_threshold = second_half_time_threshold
         self._deadline_time_threshold = deadline_time_threshold
+        self._min_acceptable = min_acceptable
+        self._weakening_multiplier = weakening_multiplier
+        self._weakness_detection_min_bids = weakness_detection_min_bids
+        self._weakness_recent_window = weakness_recent_window
+        self._high_target = high_target
+        self._first_half_concession_factor = first_half_concession_factor
+        self._second_half_concession_factor = second_half_concession_factor
+        self._final_phase_min_margin = final_phase_min_margin
+        self._final_phase_concession_factor = final_phase_concession_factor
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._top_fraction = top_fraction
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -107,7 +140,6 @@ class AresParty(SAONegotiator):
         self._max_utility: float = 1.0
         self._min_utility: float = 0.0
         self._reservation_value: float = 0.0
-        self._min_acceptable: float = 0.6
 
         # Opponent tracking
         self._opponent_bids: list[tuple[Outcome, float]] = []
@@ -146,9 +178,9 @@ class AresParty(SAONegotiator):
             self._best_opponent_utility = utility
 
         # Detect opponent weakening (offering better deals over time)
-        if len(self._opponent_bids) >= 5:
-            recent = [u for _, u in self._opponent_bids[-5:]]
-            earlier = [u for _, u in self._opponent_bids[:-5]]
+        if len(self._opponent_bids) >= self._weakness_detection_min_bids:
+            recent = [u for _, u in self._opponent_bids[-self._weakness_recent_window :]]
+            earlier = [u for _, u in self._opponent_bids[: -self._weakness_recent_window]]
             if earlier and sum(recent) / len(recent) > sum(earlier) / len(earlier):
                 self._opponent_weakening = True
 
@@ -158,19 +190,19 @@ class AresParty(SAONegotiator):
 
         # If opponent is weakening, stay very firm
         if self._opponent_weakening:
-            e *= 0.5
+            e *= self._weakening_multiplier
 
         if time < self._first_half_time_threshold:
             # First half: very aggressive, barely concede
             f_t = math.pow(time / self._first_half_time_threshold, 1 / e)
-            return self._max_utility - (self._max_utility - 0.85) * f_t * 0.3
+            return self._max_utility - (self._max_utility - self._high_target) * f_t * self._first_half_concession_factor
         elif time < self._second_half_time_threshold:
             # Second half: moderate concession
             progress = (time - self._first_half_time_threshold) / (
                 self._second_half_time_threshold - self._first_half_time_threshold
             )
             f_t = math.pow(progress, 1 / e)
-            return 0.85 - (0.85 - self._min_acceptable) * f_t * 0.5
+            return self._high_target - (self._high_target - self._min_acceptable) * f_t * self._second_half_concession_factor
         else:
             # Final phase: tactical retreat
             progress = (time - self._second_half_time_threshold) / (
@@ -178,7 +210,9 @@ class AresParty(SAONegotiator):
             )
             return (
                 self._min_acceptable
-                - (self._min_acceptable - self._min_utility - 0.1) * progress * 0.6
+                - (self._min_acceptable - self._min_utility - self._final_phase_min_margin)
+                * progress
+                * self._final_phase_concession_factor
             )
 
     def _select_bid(self, time: float) -> Outcome | None:
@@ -190,13 +224,15 @@ class AresParty(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
 
         # Ares prefers higher utility bids
-        top_n = max(1, len(candidates) // 5)
+        top_n = max(1, len(candidates) // self._top_fraction)
         return random.choice(candidates[:top_n]).bid
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:

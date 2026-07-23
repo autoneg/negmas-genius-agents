@@ -71,6 +71,10 @@ class SlavaAgent(SAONegotiator):
         early_game_offers: Number of opponent offers before using opponent model (default 5)
         top_k_divisor: Divisor for selecting top candidates (default 3)
         opponent_best_acceptance_multiplier: Multiplier for opponent's best utility in acceptance (default 0.99)
+        concession_window: Number of recent/early opponent offers compared when detecting concession (default 5)
+        concession_early_window: Offer count above which the early slice equals the first window (default 10)
+        tough_opponent_threshold: Offer count above which a non-conceding opponent is treated as tough (default 10)
+        default_opponent_utility: Utility assumed for the opponent when no data is available (default 0.5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -96,6 +100,10 @@ class SlavaAgent(SAONegotiator):
         early_game_offers: int = 5,
         top_k_divisor: int = 3,
         opponent_best_acceptance_multiplier: float = 0.99,
+        concession_window: int = 5,
+        concession_early_window: int = 10,
+        tough_opponent_threshold: int = 10,
+        default_opponent_utility: float = 0.5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -127,6 +135,10 @@ class SlavaAgent(SAONegotiator):
         self._early_game_offers = early_game_offers
         self._top_k_divisor = top_k_divisor
         self._opponent_best_acceptance_multiplier = opponent_best_acceptance_multiplier
+        self._concession_window = concession_window
+        self._concession_early_window = concession_early_window
+        self._tough_opponent_threshold = tough_opponent_threshold
+        self._default_opponent_utility = default_opponent_utility
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -196,11 +208,11 @@ class SlavaAgent(SAONegotiator):
             self._issue_value_counts[issue_key][value_key] += 1
 
         # Detect if opponent is conceding
-        if len(self._opponent_utilities) >= 5:
-            recent = self._opponent_utilities[-5:]
+        if len(self._opponent_utilities) >= self._concession_window:
+            recent = self._opponent_utilities[-self._concession_window :]
             early = (
-                self._opponent_utilities[:5]
-                if len(self._opponent_utilities) >= 10
+                self._opponent_utilities[: self._concession_window]
+                if len(self._opponent_utilities) >= self._concession_early_window
                 else self._opponent_utilities[: len(self._opponent_utilities) // 2]
             )
             if early and recent:
@@ -212,7 +224,7 @@ class SlavaAgent(SAONegotiator):
     def _estimate_opponent_utility(self, bid: Outcome) -> float:
         """Estimate opponent's utility based on frequency model."""
         if self._total_opponent_offers == 0 or bid is None:
-            return 0.5
+            return self._default_opponent_utility
 
         total_score = 0.0
         num_issues = len(bid)
@@ -227,7 +239,7 @@ class SlavaAgent(SAONegotiator):
                     max_count = max(counts.values()) if counts else 1
                     total_score += counts[value_key] / max_count
 
-        return total_score / num_issues if num_issues > 0 else 0.5
+        return total_score / num_issues if num_issues > 0 else self._default_opponent_utility
 
     def _compute_target(self, time: float) -> float:
         """Compute target utility with adaptive concession."""
@@ -241,7 +253,7 @@ class SlavaAgent(SAONegotiator):
         if self._opponent_conceding:
             # Opponent is conceding - slow down our concession
             f_t *= self._concession_slow_factor
-        elif self._total_opponent_offers > 10 and not self._opponent_conceding:
+        elif self._total_opponent_offers > self._tough_opponent_threshold and not self._opponent_conceding:
             # Opponent is tough - speed up slightly
             f_t *= self._concession_fast_factor
             f_t = min(f_t, 1.0)

@@ -81,6 +81,12 @@ class YXAgent(SAONegotiator):
         min_threshold: Minimum acceptable utility threshold (default 0.7)
         early_time: Time threshold for early phase best-bid offering (default 0.1)
         deadline_time: Time threshold for deadline acceptance (default 0.98)
+        per_opponent_concession: Utility subtracted from the initial threshold per
+            detected opponent (default 0.1)
+        hardness_adjustment_factor: Maximum fraction of the hardest opponent's
+            hardness used to relax the acceptance threshold (default 0.05)
+        time_concession_rate: Per-unit-time concession rate applied to the base
+            threshold (default 0.1)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -95,6 +101,9 @@ class YXAgent(SAONegotiator):
         min_threshold: float = 0.7,
         early_time: float = 0.1,
         deadline_time: float = 0.98,
+        per_opponent_concession: float = 0.1,
+        hardness_adjustment_factor: float = 0.05,
+        time_concession_rate: float = 0.1,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -115,6 +124,9 @@ class YXAgent(SAONegotiator):
         self._min_threshold = min_threshold
         self._early_time = early_time
         self._deadline_time = deadline_time
+        self._per_opponent_concession = per_opponent_concession
+        self._hardness_adjustment_factor = hardness_adjustment_factor
+        self._time_concession_rate = time_concession_rate
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -156,7 +168,9 @@ class YXAgent(SAONegotiator):
             self._num_opponents = 1
 
         # Calculate initial threshold
-        self._threshold = max(self._min_threshold, 1.0 - (self._num_opponents * 0.1))
+        self._threshold = max(
+            self._min_threshold, 1.0 - (self._num_opponents * self._per_opponent_concession)
+        )
 
         # Reset state
         self._opponent_value_frequencies = {}
@@ -226,12 +240,12 @@ class YXAgent(SAONegotiator):
         # Find hardest opponent (highest hardness value)
         max_hardness = max(self._opponent_hardness.values())
         # Harder opponents mean we should be slightly more flexible
-        return max_hardness * 0.05
+        return max_hardness * self._hardness_adjustment_factor
 
     def _get_adjusted_threshold(self, time: float) -> float:
         """Get threshold adjusted by time and opponent hardness."""
         # Base threshold with slight time concession
-        base = self._threshold * (1 - 0.1 * time)
+        base = self._threshold * (1 - self._time_concession_rate * time)
 
         # Adjust based on hardest opponent
         hardness_adjustment = self._get_hardest_opponent_factor()

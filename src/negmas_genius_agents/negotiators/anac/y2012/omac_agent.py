@@ -109,6 +109,16 @@ class OMACAgent(SAONegotiator):
         bid_tolerance: Tolerance for bid selection range (default 0.02).
         acceptance_margin: Margin below opponent best for near-deadline acceptance
             (default 0.02).
+        min_bids_for_reservation: Minimum opponent bids required before
+            estimating the opponent reservation value (default 3).
+        concession_window: Number of recent opponent utilities used when
+            estimating the opponent concession rate (default 10).
+        regression_epsilon: Epsilon tolerance used to detect a degenerate
+            linear-regression denominator (default 1e-10).
+        max_target_margin: Margin below ``max_utility`` used to clamp the
+            minimum target so it never equals the maximum utility (default 0.05).
+        top_k_candidates: Number of top candidate bids to randomly select from
+            when proposing (default 5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -142,6 +152,11 @@ class OMACAgent(SAONegotiator):
         min_beta_discount: float = 0.3,
         bid_tolerance: float = 0.02,
         acceptance_margin: float = 0.02,
+        min_bids_for_reservation: int = 3,
+        concession_window: int = 10,
+        regression_epsilon: float = 1e-10,
+        max_target_margin: float = 0.05,
+        top_k_candidates: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -182,6 +197,11 @@ class OMACAgent(SAONegotiator):
         self._min_beta_discount = min_beta_discount
         self._bid_tolerance = bid_tolerance
         self._acceptance_margin = acceptance_margin
+        self._min_bids_for_reservation = min_bids_for_reservation
+        self._concession_window = concession_window
+        self._regression_epsilon = regression_epsilon
+        self._max_target_margin = max_target_margin
+        self._top_k_candidates = top_k_candidates
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -275,11 +295,11 @@ class OMACAgent(SAONegotiator):
         Uses the trend in opponent's offers to estimate what minimum
         utility they might accept from us.
         """
-        if len(self._opponent_utilities) < 3:
+        if len(self._opponent_utilities) < self._min_bids_for_reservation:
             return
 
         # Calculate trend in opponent's concessions
-        recent_utilities = self._opponent_utilities[-10:]
+        recent_utilities = self._opponent_utilities[-self._concession_window:]
         if len(recent_utilities) < 2:
             return
 
@@ -291,7 +311,7 @@ class OMACAgent(SAONegotiator):
         sum_x2 = sum(i * i for i in range(n))
 
         denominator = n * sum_x2 - sum_x * sum_x
-        if abs(denominator) < 1e-10:
+        if abs(denominator) < self._regression_epsilon:
             return
 
         slope = (n * sum_xy - sum_x * sum_y) / denominator
@@ -361,7 +381,7 @@ class OMACAgent(SAONegotiator):
         )
 
         # Ensure min_target doesn't exceed max_utility
-        min_target = min(min_target, self._max_utility - 0.05)
+        min_target = min(min_target, self._max_utility - self._max_target_margin)
 
         # Boulware concession curve
         concession = math.pow(time, self._beta)
@@ -411,7 +431,7 @@ class OMACAgent(SAONegotiator):
 
         # Select randomly from candidates to add variety
         if len(candidates) > 1:
-            selected = random.choice(candidates[: min(5, len(candidates))])
+            selected = random.choice(candidates[: min(self._top_k_candidates, len(candidates))])
         else:
             selected = candidates[0]
 

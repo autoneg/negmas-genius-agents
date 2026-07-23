@@ -65,6 +65,14 @@ class AgentKN(SAONegotiator):
         min_utility: Minimum acceptable utility (default 0.55).
         concession_rate: Controls steepness of sigmoid concession (default 5.0).
         late_game_threshold: Time threshold for late game pressure (default 0.95).
+        cooperative_opponent_threshold: Opponent average utility above which the
+            opponent is considered cooperative (default 0.6).
+        aggressive_opponent_threshold: Opponent average utility below which the
+            opponent is considered aggressive (default 0.3).
+        opponent_adaptation: Magnitude of the threshold adjustment applied based
+            on opponent cooperativeness (default 0.03).
+        bid_range_width: Width of the utility range sampled around the threshold
+            when selecting a bid (default 0.1).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -79,6 +87,10 @@ class AgentKN(SAONegotiator):
         min_utility: float = 0.55,
         concession_rate: float = 5.0,
         late_game_threshold: float = 0.95,
+        cooperative_opponent_threshold: float = 0.6,
+        aggressive_opponent_threshold: float = 0.3,
+        opponent_adaptation: float = 0.03,
+        bid_range_width: float = 0.1,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -99,6 +111,10 @@ class AgentKN(SAONegotiator):
         self._min_utility = min_utility
         self._concession_rate = concession_rate
         self._late_game_threshold = late_game_threshold
+        self._cooperative_opponent_threshold = cooperative_opponent_threshold
+        self._aggressive_opponent_threshold = aggressive_opponent_threshold
+        self._opponent_adaptation = opponent_adaptation
+        self._bid_range_width = bid_range_width
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -165,12 +181,12 @@ class AgentKN(SAONegotiator):
 
         # Adjust based on opponent behavior
         opponent_avg = self._get_opponent_avg_utility()
-        if opponent_avg > 0.6:
+        if opponent_avg > self._cooperative_opponent_threshold:
             # Opponent is cooperative, we can be slightly more patient
-            threshold = min(threshold + 0.03, self._max_utility)
-        elif opponent_avg < 0.3:
+            threshold = min(threshold + self._opponent_adaptation, self._max_utility)
+        elif opponent_avg < self._aggressive_opponent_threshold:
             # Opponent is aggressive, need to concede more
-            threshold = max(threshold - 0.03, self._min_utility)
+            threshold = max(threshold - self._opponent_adaptation, self._min_utility)
 
         # Late game pressure
         if time > self._late_game_threshold:
@@ -186,7 +202,9 @@ class AgentKN(SAONegotiator):
             return None
 
         # Get bids in a range around the threshold
-        candidates = self._outcome_space.get_bids_in_range(threshold, threshold + 0.1)
+        candidates = self._outcome_space.get_bids_in_range(
+            threshold, threshold + self._bid_range_width
+        )
 
         if not candidates:
             candidates = self._outcome_space.get_bids_above(threshold)

@@ -89,6 +89,15 @@ class AgentLG(SAONegotiator):
         near_deadline_accept_ratio: Acceptance ratio near deadline (default 0.9).
         fallback_utility_ratio: Fallback utility ratio when no opponent offer
             received (default 0.7).
+        filter_decay_factor: Multiplicative decay applied to the filter fraction
+            when the candidate pool exceeds ``max_bids`` (default 0.85).
+        initial_pool_divisor: Divisor for the initial bid-pool size, i.e. start
+            with the top ``1/initial_pool_divisor`` of filtered bids
+            (default 4, matching the original top-25% start).
+        early_expansion_divisor: Divisor controlling how many bids are added per
+            expansion step during the early phase (default 10).
+        middle_expansion_divisor: Divisor controlling how many bids are added per
+            expansion step during the middle phase (default 20).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -113,6 +122,10 @@ class AgentLG(SAONegotiator):
         near_deadline_time: float = 0.999,
         near_deadline_accept_ratio: float = 0.9,
         fallback_utility_ratio: float = 0.7,
+        filter_decay_factor: float = 0.85,
+        initial_pool_divisor: int = 4,
+        early_expansion_divisor: int = 10,
+        middle_expansion_divisor: int = 20,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -143,6 +156,10 @@ class AgentLG(SAONegotiator):
         self._near_deadline_time = near_deadline_time
         self._near_deadline_accept_ratio = near_deadline_accept_ratio
         self._fallback_utility_ratio = fallback_utility_ratio
+        self._filter_decay_factor = filter_decay_factor
+        self._initial_pool_divisor = initial_pool_divisor
+        self._early_expansion_divisor = early_expansion_divisor
+        self._middle_expansion_divisor = middle_expansion_divisor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -199,7 +216,7 @@ class AgentLG(SAONegotiator):
 
         # Limit to reasonable size
         while len(self._all_bids) > self._max_bids:
-            self._filter_fraction *= 0.85
+            self._filter_fraction *= self._filter_decay_factor
             down_bond = (
                 self._my_best_utility
                 - (self._my_best_utility - opp_best) * self._filter_fraction
@@ -208,7 +225,7 @@ class AgentLG(SAONegotiator):
                 bd for bd in self._outcome_space.outcomes if bd.utility >= down_bond
             ]
 
-        self._num_possible_bids = max(1, len(self._all_bids) // 4)  # Start with top 25%
+        self._num_possible_bids = max(1, len(self._all_bids) // self._initial_pool_divisor)  # Start with top 25%
         self._bid_index = 0
 
     def on_negotiation_start(self, state: SAOState) -> None:
@@ -264,7 +281,7 @@ class AgentLG(SAONegotiator):
             if time - self._last_concession_time > self._early_expansion_interval:
                 self._num_possible_bids = min(
                     len(self._all_bids),
-                    self._num_possible_bids + len(self._all_bids) // 10,
+                    self._num_possible_bids + len(self._all_bids) // self._early_expansion_divisor,
                 )
                 self._last_concession_time = time
         elif time < self._panic_phase_time:
@@ -275,7 +292,7 @@ class AgentLG(SAONegotiator):
             ):
                 self._num_possible_bids = min(
                     len(self._all_bids),
-                    self._num_possible_bids + len(self._all_bids) // 20,
+                    self._num_possible_bids + len(self._all_bids) // self._middle_expansion_divisor,
                 )
                 self._last_concession_time = time
         else:

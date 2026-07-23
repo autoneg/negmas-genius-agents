@@ -60,6 +60,18 @@ class Group3(SAONegotiator):
     Args:
         min_utility: Minimum acceptable utility (default 0.55).
         phase1_threshold: Threshold during phase 1 (default 0.95).
+        phase1_end: Relative time at which phase 1 ends (default 0.4).
+        phase2_end: Relative time at which phase 2 ends (default 0.8).
+        phase_end_offset: Utility offset above ``min_utility`` used as the
+            phase 2 end / phase 3 start target (default 0.2).
+        phase3_exponent: Exponent applied to phase 3 progress for accelerated
+            concession (default 1.5).
+        opponent_best_offset: Offset above the opponent's best utility used as
+            a phase 3 threshold cap (default 0.05).
+        bid_range_width: Width of the utility range sampled around the threshold
+            when selecting a bid (default 0.1).
+        deadline_threshold: Relative time after which any offer above
+            ``min_utility`` is accepted (default 0.95).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -73,6 +85,13 @@ class Group3(SAONegotiator):
         self,
         min_utility: float = 0.55,
         phase1_threshold: float = 0.95,
+        phase1_end: float = 0.4,
+        phase2_end: float = 0.8,
+        phase_end_offset: float = 0.2,
+        phase3_exponent: float = 1.5,
+        opponent_best_offset: float = 0.05,
+        bid_range_width: float = 0.1,
+        deadline_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -92,16 +111,19 @@ class Group3(SAONegotiator):
         )
         self._min_utility = min_utility
         self._phase1_threshold = phase1_threshold
+        self._phase1_end = phase1_end
+        self._phase2_end = phase2_end
+        self._phase_end_offset = phase_end_offset
+        self._phase3_exponent = phase3_exponent
+        self._opponent_best_offset = opponent_best_offset
+        self._bid_range_width = bid_range_width
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
         # State
         self._best_bid: Outcome | None = None
         self._max_utility: float = 1.0
-
-        # Phase boundaries
-        self._phase1_end = 0.4
-        self._phase2_end = 0.8
 
         # Opponent tracking
         self._best_opponent_utility: float = 0.0
@@ -149,7 +171,7 @@ class Group3(SAONegotiator):
             phase_progress = (time - self._phase1_end) / (
                 self._phase2_end - self._phase1_end
             )
-            phase2_end_threshold = self._min_utility + 0.2
+            phase2_end_threshold = self._min_utility + self._phase_end_offset
             threshold = self._phase1_threshold - phase_progress * (
                 self._phase1_threshold - phase2_end_threshold
             )
@@ -158,16 +180,18 @@ class Group3(SAONegotiator):
         else:
             # Phase 3: Agreement seeking - faster concession
             phase_progress = (time - self._phase2_end) / (1.0 - self._phase2_end)
-            phase3_start = self._min_utility + 0.2
+            phase3_start = self._min_utility + self._phase_end_offset
 
             # Use quadratic decay for faster concession
-            threshold = phase3_start - math.pow(phase_progress, 1.5) * (
+            threshold = phase3_start - math.pow(phase_progress, self._phase3_exponent) * (
                 phase3_start - self._min_utility
             )
 
             # Consider best opponent offer
             if self._best_opponent_utility > self._min_utility:
-                threshold = min(threshold, self._best_opponent_utility + 0.05)
+                threshold = min(
+                    threshold, self._best_opponent_utility + self._opponent_best_offset
+                )
 
             return max(threshold, self._min_utility)
 
@@ -176,7 +200,9 @@ class Group3(SAONegotiator):
         if self._outcome_space is None or not self._outcome_space.outcomes:
             return None
 
-        candidates = self._outcome_space.get_bids_in_range(threshold, threshold + 0.1)
+        candidates = self._outcome_space.get_bids_in_range(
+            threshold, threshold + self._bid_range_width
+        )
 
         if not candidates:
             candidates = self._outcome_space.get_bids_above(threshold)
@@ -218,7 +244,7 @@ class Group3(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # In final phase, accept if above minimum
-        if time > 0.95 and offer_utility >= self._min_utility:
+        if time > self._deadline_threshold and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

@@ -47,6 +47,16 @@ class Sontag(SAONegotiator):
         time_pressure_start: Time when time pressure begins (default 0.9).
         time_pressure_threshold: Time threshold for time pressure acceptance (default 0.95).
         deadline_threshold: Time threshold for deadline acceptance (default 0.99).
+        initial_concession_rate: Starting value of the adaptive concession rate (default 0.1).
+        min_offers_to_adapt: Minimum opponent offers before adapting the concession rate (default 3).
+        concession_change_threshold: Average utility change above which the opponent is considered conceding (default 0.02).
+        hardening_change_threshold: Average utility change below which the opponent is considered hardening (default -0.01).
+        min_concession_rate: Lower bound for the adaptive concession rate (default 0.05).
+        max_concession_rate: Upper bound for the adaptive concession rate (default 0.3).
+        concession_rate_step: Amount added to/subtracted from the concession rate when adapting (default 0.02).
+        time_pressure_factor: Utility subtracted from the target per unit of pressure near the deadline (default 0.2).
+        bid_margin: Half-width of the utility window from which candidate bids are drawn (default 0.05).
+        opponent_data_threshold: Minimum opponent offers before using the opponent model for selection (default 5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -64,6 +74,16 @@ class Sontag(SAONegotiator):
         time_pressure_start: float = 0.9,
         time_pressure_threshold: float = 0.95,
         deadline_threshold: float = 0.99,
+        initial_concession_rate: float = 0.1,
+        min_offers_to_adapt: int = 3,
+        concession_change_threshold: float = 0.02,
+        hardening_change_threshold: float = -0.01,
+        min_concession_rate: float = 0.05,
+        max_concession_rate: float = 0.3,
+        concession_rate_step: float = 0.02,
+        time_pressure_factor: float = 0.2,
+        bid_margin: float = 0.05,
+        opponent_data_threshold: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -87,6 +107,16 @@ class Sontag(SAONegotiator):
         self._time_pressure_start = time_pressure_start
         self._time_pressure_threshold = time_pressure_threshold
         self._deadline_threshold = deadline_threshold
+        self._initial_concession_rate = initial_concession_rate
+        self._min_offers_to_adapt = min_offers_to_adapt
+        self._concession_change_threshold = concession_change_threshold
+        self._hardening_change_threshold = hardening_change_threshold
+        self._min_concession_rate = min_concession_rate
+        self._max_concession_rate = max_concession_rate
+        self._concession_rate_step = concession_rate_step
+        self._time_pressure_factor = time_pressure_factor
+        self._bid_margin = bid_margin
+        self._opponent_data_threshold = opponent_data_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -100,7 +130,7 @@ class Sontag(SAONegotiator):
         self._max_utility: float = 1.0
         self._min_utility: float = 0.0
         self._last_received_offer: Outcome | None = None
-        self._concession_rate: float = 0.1  # Initial concession rate
+        self._concession_rate: float = self._initial_concession_rate  # Initial concession rate
 
     def _initialize(self) -> None:
         """Initialize the outcome space."""
@@ -126,7 +156,7 @@ class Sontag(SAONegotiator):
         self._total_opponent_offers = 0
         self._opponent_utilities = []
         self._last_received_offer = None
-        self._concession_rate = 0.1
+        self._concession_rate = self._initial_concession_rate
 
     def _update_opponent_model(self, bid: Outcome, utility: float) -> None:
         """Update opponent model with frequency analysis."""
@@ -150,7 +180,7 @@ class Sontag(SAONegotiator):
 
     def _update_concession_rate(self) -> None:
         """Adjust concession rate based on opponent's behavior."""
-        if len(self._opponent_utilities) < 3:
+        if len(self._opponent_utilities) < self._min_offers_to_adapt:
             return
 
         # Analyze recent window
@@ -162,12 +192,12 @@ class Sontag(SAONegotiator):
         avg_change = (window[-1] - window[0]) / len(window)
 
         # Tit-for-tat: if opponent concedes, we concede less; if hardball, concede more
-        if avg_change > 0.02:
+        if avg_change > self._concession_change_threshold:
             # Opponent conceding - slow down our concession
-            self._concession_rate = max(0.05, self._concession_rate - 0.02)
-        elif avg_change < -0.01:
+            self._concession_rate = max(self._min_concession_rate, self._concession_rate - self._concession_rate_step)
+        elif avg_change < self._hardening_change_threshold:
             # Opponent hardening - speed up concession to find agreement
-            self._concession_rate = min(0.3, self._concession_rate + 0.02)
+            self._concession_rate = min(self._max_concession_rate, self._concession_rate + self._concession_rate_step)
 
     def _estimate_opponent_utility(self, bid: Outcome) -> float:
         """Estimate opponent utility based on frequency model."""
@@ -201,7 +231,7 @@ class Sontag(SAONegotiator):
             pressure = (time - self._time_pressure_start) / (
                 1.0 - self._time_pressure_start
             )
-            target = target - 0.2 * pressure
+            target = target - self._time_pressure_factor * pressure
 
         # Scale to utility range
         scaled = self._min_utility + (self._max_utility - self._min_utility) * target
@@ -216,7 +246,7 @@ class Sontag(SAONegotiator):
         target = self._get_target_utility(time)
 
         # Get candidates near target
-        candidates = self._outcome_space.get_bids_in_range(target - 0.05, target + 0.05)
+        candidates = self._outcome_space.get_bids_in_range(target - self._bid_margin, target + self._bid_margin)
 
         if not candidates:
             bid_details = self._outcome_space.get_bid_near_utility(target)
@@ -226,7 +256,7 @@ class Sontag(SAONegotiator):
             return candidates[0].bid
 
         # Use Nash product for selection
-        if self._total_opponent_offers > 5:
+        if self._total_opponent_offers > self._opponent_data_threshold:
             best_score = -1.0
             best_bid = candidates[0].bid
             for bd in candidates:

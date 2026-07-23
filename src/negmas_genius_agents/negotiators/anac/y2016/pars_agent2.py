@@ -89,6 +89,12 @@ class ParsAgent2(SAONegotiator):
         constant_utility: Utility floor never conceded below (default 0.8).
         deadline_time: Time threshold triggering last-round behavior
             (default 0.95).
+        e_epsilon: Floor substituted for the exponent when it is non-positive
+            (default 1e-6).
+        top_n: Number of top above-threshold candidates to randomly choose a
+            fallback bid from (default 5).
+        max_rejected_bids: Maximum number of recently rejected bids retained for
+            fallback avoidance (default 10).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -103,6 +109,9 @@ class ParsAgent2(SAONegotiator):
         e: float = 0.15,
         constant_utility: float = 0.8,
         deadline_time: float = 0.95,
+        e_epsilon: float = 1e-6,
+        top_n: int = 5,
+        max_rejected_bids: int = 10,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -123,6 +132,9 @@ class ParsAgent2(SAONegotiator):
         self._e = e
         self._constant_utility = constant_utility
         self._deadline_time = deadline_time
+        self._e_epsilon = e_epsilon
+        self._top_n = top_n
+        self._max_rejected_bids = max_rejected_bids
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
@@ -151,7 +163,7 @@ class ParsAgent2(SAONegotiator):
 
     def _boulware_target(self, time: float) -> float:
         """Compute the Boulware-style time-dependent target utility."""
-        e = self._e if self._e > 0 else 1e-6
+        e = self._e if self._e > 0 else self._e_epsilon
         f_t = math.pow(time, 1.0 / e)
         return 1.0 - f_t
 
@@ -223,7 +235,7 @@ class ParsAgent2(SAONegotiator):
                     bd for bd in candidates if bd.bid not in self._rejected_bids
                 ]
                 pool = non_rejected if non_rejected else candidates
-                top_n = min(5, len(pool))
+                top_n = min(self._top_n, len(pool))
                 result = random.choice(pool[:top_n]).bid
             else:
                 result = self._max_bid
@@ -264,7 +276,7 @@ class ParsAgent2(SAONegotiator):
         if offer_utility >= my_utility:
             return ResponseType.ACCEPT_OFFER
 
-        if len(self._rejected_bids) >= 10:
+        if len(self._rejected_bids) >= self._max_rejected_bids:
             self._rejected_bids.pop(0)
         self._rejected_bids.append(offer)
 

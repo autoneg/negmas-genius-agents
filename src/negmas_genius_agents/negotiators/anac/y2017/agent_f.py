@@ -55,6 +55,10 @@ class AgentF(SAONegotiator):
 
     Args:
         min_utility: Minimum acceptable utility (default 0.6).
+        bid_randomness_range: Half-width of the utility window used to pick
+            similar-value bids randomly (default 0.02).
+        deadline_threshold: Relative time after which any offer above
+            ``min_utility`` is accepted (default 0.98).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -67,6 +71,8 @@ class AgentF(SAONegotiator):
     def __init__(
         self,
         min_utility: float = 0.6,
+        bid_randomness_range: float = 0.02,
+        deadline_threshold: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -85,6 +91,8 @@ class AgentF(SAONegotiator):
             **kwargs,
         )
         self._min_utility = min_utility
+        self._bid_randomness_range = bid_randomness_range
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -133,7 +141,8 @@ class AgentF(SAONegotiator):
         if bid_details is not None:
             # Add some randomness among similar bids
             candidates = self._outcome_space.get_bids_in_range(
-                bid_details.utility - 0.02, bid_details.utility + 0.02
+                bid_details.utility - self._bid_randomness_range,
+                bid_details.utility + self._bid_randomness_range,
             )
             if candidates:
                 return random.choice(candidates).bid
@@ -174,7 +183,7 @@ class AgentF(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline, accept if above minimum
-        if time > 0.98 and offer_utility >= self._min_utility:
+        if time > self._deadline_threshold and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

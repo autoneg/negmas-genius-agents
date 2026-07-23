@@ -81,6 +81,27 @@ class GroupY(SAONegotiator):
     Args:
         reservation_value: Minimum acceptable utility (default 0.0; uses
             ``ufun.reserved_value`` if available at negotiation start).
+        opening_phase_actions: Number of opening actions during which the
+            maximum-utility bid is offered and only maximum-matching offers are
+            accepted (default 4).
+        deadline_phase_threshold: Relative time at or after which the deadline
+            phase begins (default 0.99).
+        deadline_target_utility: Utility targeted by the bid offered in the
+            deadline phase (default 0.7).
+        max_utility_epsilon: Tolerance used when comparing an offer to the
+            maximum utility during the opening phase (default 1e-9).
+        deadline_acceptance_utility: Minimum utility accepted during the
+            deadline phase (default 0.65).
+        high_phase_remaining_ratio: Remaining-time ratio above which the high
+            phase of ``_time_deal`` applies (default 0.5).
+        mid_phase_remaining_ratio: Remaining-time ratio above which the mid
+            phase of ``_time_deal`` applies (default 0.2).
+        high_phase_utility_offset: Utility offset added to the minimum utility
+            during the high phase of ``_time_deal`` (default 0.85).
+        mid_phase_utility_offset: Utility offset added to the minimum utility
+            during the mid phase of ``_time_deal`` (default 0.65).
+        low_phase_utility_offset: Utility offset added to the minimum utility
+            during the low phase of ``_time_deal`` (default 0.45).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -93,6 +114,16 @@ class GroupY(SAONegotiator):
     def __init__(
         self,
         reservation_value: float = 0.0,
+        opening_phase_actions: int = 4,
+        deadline_phase_threshold: float = 0.99,
+        deadline_target_utility: float = 0.7,
+        max_utility_epsilon: float = 1e-9,
+        deadline_acceptance_utility: float = 0.65,
+        high_phase_remaining_ratio: float = 0.5,
+        mid_phase_remaining_ratio: float = 0.2,
+        high_phase_utility_offset: float = 0.85,
+        mid_phase_utility_offset: float = 0.65,
+        low_phase_utility_offset: float = 0.45,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -111,6 +142,16 @@ class GroupY(SAONegotiator):
             **kwargs,
         )
         self._reservation_value_arg = reservation_value
+        self._opening_phase_actions = opening_phase_actions
+        self._deadline_phase_threshold = deadline_phase_threshold
+        self._deadline_target_utility = deadline_target_utility
+        self._max_utility_epsilon = max_utility_epsilon
+        self._deadline_acceptance_utility = deadline_acceptance_utility
+        self._high_phase_remaining_ratio = high_phase_remaining_ratio
+        self._mid_phase_remaining_ratio = mid_phase_remaining_ratio
+        self._high_phase_utility_offset = high_phase_utility_offset
+        self._mid_phase_utility_offset = mid_phase_utility_offset
+        self._low_phase_utility_offset = low_phase_utility_offset
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -185,12 +226,12 @@ class GroupY(SAONegotiator):
 
     def _time_deal(self, time: float) -> float:
         rem_time_ratio = 1 - time
-        if rem_time_ratio > 0.5:
-            min_utility = 0.85 + self._min_utility
-        elif rem_time_ratio > 0.2:
-            min_utility = 0.65 + self._min_utility
+        if rem_time_ratio > self._high_phase_remaining_ratio:
+            min_utility = self._high_phase_utility_offset + self._min_utility
+        elif rem_time_ratio > self._mid_phase_remaining_ratio:
+            min_utility = self._mid_phase_utility_offset + self._min_utility
         else:
-            min_utility = 0.45 + self._min_utility
+            min_utility = self._low_phase_utility_offset + self._min_utility
 
         return min_utility + (self._max_utility - min_utility) * math.pow(
             max(rem_time_ratio, 0.0), 1 / math.e
@@ -228,14 +269,14 @@ class GroupY(SAONegotiator):
         self._n_actions += 1
         time = state.relative_time
 
-        if self._n_actions < 4:
+        if self._n_actions < self._opening_phase_actions:
             return self._max_bid
 
-        if time < 0.99:
+        if time < self._deadline_phase_threshold:
             return self._get_super_offer(time)
 
         if self._outcome_space is not None and self._outcome_space.outcomes:
-            near = self._outcome_space.get_bid_near_utility(0.7)
+            near = self._outcome_space.get_bid_near_utility(self._deadline_target_utility)
             return near.bid if near else self._max_bid
         return self._max_bid
 
@@ -256,12 +297,12 @@ class GroupY(SAONegotiator):
         time = state.relative_time
         self._update_model(src, offer, time, normalize=1.0)
 
-        if self._n_actions < 4:
-            if self._last_received_utility >= self._max_utility - 1e-9:
+        if self._n_actions < self._opening_phase_actions:
+            if self._last_received_utility >= self._max_utility - self._max_utility_epsilon:
                 return ResponseType.ACCEPT_OFFER
             return ResponseType.REJECT_OFFER
 
-        if time < 0.99:
+        if time < self._deadline_phase_threshold:
             target_bid = self._get_super_offer(time)
             target_util = float(self.ufun(target_bid)) if target_bid is not None else 1.0
             if (
@@ -271,6 +312,6 @@ class GroupY(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
             return ResponseType.REJECT_OFFER
 
-        if self._last_received_utility >= 0.65:
+        if self._last_received_utility >= self._deadline_acceptance_utility:
             return ResponseType.ACCEPT_OFFER
         return ResponseType.REJECT_OFFER

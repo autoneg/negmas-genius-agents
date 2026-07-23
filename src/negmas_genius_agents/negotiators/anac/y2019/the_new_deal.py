@@ -81,6 +81,8 @@ class TheNewDeal(SAONegotiator):
           space.
 
     Args:
+        deadline_round_offset: Number of rounds before the deadline that
+            trigger the final-round acceptance/offer behavior (default 2).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -92,6 +94,7 @@ class TheNewDeal(SAONegotiator):
 
     def __init__(
         self,
+        deadline_round_offset: int = 2,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -111,6 +114,7 @@ class TheNewDeal(SAONegotiator):
         )
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
+        self._deadline_round_offset = deadline_round_offset
 
         self._best_bid: Outcome | None = None
         self._n_outcomes: int = 0
@@ -172,7 +176,7 @@ class TheNewDeal(SAONegotiator):
     def _near_deadline(self, state: SAOState) -> bool:
         if self._n_steps is None or state.step is None:
             return False
-        return state.step >= self._n_steps - 2
+        return state.step >= self._n_steps - self._deadline_round_offset
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:
         if not self._initialized:

@@ -60,6 +60,18 @@ class PNegotiator(SAONegotiator):
         e: Concession exponent (default 0.18)
         probabilistic_accept_time_threshold: Time after which probabilistic acceptance starts (default 0.7)
         deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
+        min_acceptable: Minimum acceptable utility (default 0.5)
+        opponent_model_min_bids: Minimum opponent bids before estimating opponent threshold (default 3)
+        opponent_threshold_floor: Floor for estimated opponent threshold (default 0.3)
+        time_exponent: Exponent applied to time in acceptance probability (default 2)
+        base_acceptance_prob: Base acceptance probability component (default 0.2)
+        utility_weight: Weight of utility factor in acceptance probability (default 0.6)
+        time_weight: Weight of time factor in acceptance probability (default 0.2)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.85)
+        expected_utility_min_candidates: Minimum candidates to use expected utility selection (default 5)
+        expected_utility_search_count: Number of top candidates searched for expected utility (default 30)
+        acceptance_epsilon: Epsilon added to threshold-min denominator (default 0.01)
+        acceptance_probability_scale: Scale applied to acceptance probability (default 0.3)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -74,6 +86,18 @@ class PNegotiator(SAONegotiator):
         e: float = 0.18,
         probabilistic_accept_time_threshold: float = 0.7,
         deadline_time_threshold: float = 0.95,
+        min_acceptable: float = 0.5,
+        opponent_model_min_bids: int = 3,
+        opponent_threshold_floor: float = 0.3,
+        time_exponent: float = 2,
+        base_acceptance_prob: float = 0.2,
+        utility_weight: float = 0.6,
+        time_weight: float = 0.2,
+        fallback_threshold_ratio: float = 0.85,
+        expected_utility_min_candidates: int = 5,
+        expected_utility_search_count: int = 30,
+        acceptance_epsilon: float = 0.01,
+        acceptance_probability_scale: float = 0.3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -94,13 +118,24 @@ class PNegotiator(SAONegotiator):
         self._e = e
         self._probabilistic_accept_time_threshold = probabilistic_accept_time_threshold
         self._deadline_time_threshold = deadline_time_threshold
+        self._min_acceptable = min_acceptable
+        self._opponent_model_min_bids = opponent_model_min_bids
+        self._opponent_threshold_floor = opponent_threshold_floor
+        self._time_exponent = time_exponent
+        self._base_acceptance_prob = base_acceptance_prob
+        self._utility_weight = utility_weight
+        self._time_weight = time_weight
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._expected_utility_min_candidates = expected_utility_min_candidates
+        self._expected_utility_search_count = expected_utility_search_count
+        self._acceptance_epsilon = acceptance_epsilon
+        self._acceptance_probability_scale = acceptance_probability_scale
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
         # State
         self._max_utility: float = 1.0
         self._min_utility: float = 0.0
-        self._min_acceptable: float = 0.5
 
         # Opponent model for probability estimation
         self._opponent_utilities: list[float] = []
@@ -139,11 +174,11 @@ class PNegotiator(SAONegotiator):
             self._best_opponent_utility = utility
 
         # Estimate opponent's minimum acceptable utility
-        if len(self._opponent_utilities) >= 3:
+        if len(self._opponent_utilities) >= self._opponent_model_min_bids:
             # Opponent probably won't accept below their worst offer to us
             min_offer = min(self._opponent_utilities)
             self._estimated_opponent_threshold = max(
-                0.3,
+                self._opponent_threshold_floor,
                 1.0 - self._best_opponent_utility,  # Rough inverse estimate
             )
 
@@ -154,10 +189,14 @@ class PNegotiator(SAONegotiator):
         # Higher our utility = lower probability they accept
         # As time increases, they're more likely to accept
 
-        time_factor = math.pow(time, 2)  # Increases acceptance probability over time
+        time_factor = math.pow(time, self._time_exponent)  # Increases acceptance probability over time
         utility_factor = 1.0 - our_utility  # Lower our utility = higher acceptance
 
-        prob = 0.2 + 0.6 * utility_factor + 0.2 * time_factor
+        prob = (
+            self._base_acceptance_prob
+            + self._utility_weight * utility_factor
+            + self._time_weight * time_factor
+        )
         return max(0.0, min(1.0, prob))
 
     def _compute_threshold(self, time: float) -> float:
@@ -176,17 +215,19 @@ class PNegotiator(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.85)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
 
         # Select based on expected utility
-        if len(candidates) > 5:
+        if len(candidates) > self._expected_utility_min_candidates:
             best_bid = None
             best_expected = -1.0
 
-            for bd in candidates[:30]:
+            for bd in candidates[: self._expected_utility_search_count]:
                 prob = self._estimate_acceptance_probability(bd.utility, time)
                 expected = bd.utility * prob
                 if expected > best_expected:
@@ -230,10 +271,10 @@ class PNegotiator(SAONegotiator):
         # Probabilistic acceptance: sometimes accept sub-threshold offers
         if time > self._probabilistic_accept_time_threshold:
             accept_prob = (offer_utility - self._min_acceptable) / (
-                threshold - self._min_acceptable + 0.01
+                threshold - self._min_acceptable + self._acceptance_epsilon
             )
             accept_prob *= time  # Higher probability as deadline approaches
-            if random.random() < accept_prob * 0.3:
+            if random.random() < accept_prob * self._acceptance_probability_scale:
                 if offer_utility >= self._min_acceptable:
                     return ResponseType.ACCEPT_OFFER
 

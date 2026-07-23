@@ -75,6 +75,9 @@ class AgentLight(SAONegotiator):
         min_utility: Minimum acceptable utility threshold (default 0.55)
         early_time: Time threshold for early phase best-bid offering (default 0.02)
         deadline_time: Time threshold for deadline acceptance (default 0.95)
+        threshold_relax_factor: Multiplier applied to the threshold when relaxing
+            it to find candidates (default 0.9)
+        top_n: Number of top candidates to randomly choose a bid from (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -90,6 +93,8 @@ class AgentLight(SAONegotiator):
         min_utility: float = 0.55,
         early_time: float = 0.02,
         deadline_time: float = 0.95,
+        threshold_relax_factor: float = 0.9,
+        top_n: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -111,6 +116,8 @@ class AgentLight(SAONegotiator):
         self._min_utility = min_utility
         self._early_time = early_time
         self._deadline_time = deadline_time
+        self._threshold_relax_factor = threshold_relax_factor
+        self._top_n = top_n
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -165,13 +172,13 @@ class AgentLight(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(threshold * self._threshold_relax_factor)
 
         if not candidates:
             return self._best_bid
 
         # Simple random selection from top
-        n = min(5, len(candidates))
+        n = min(self._top_n, len(candidates))
         return random.choice(candidates[:n]).bid
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:

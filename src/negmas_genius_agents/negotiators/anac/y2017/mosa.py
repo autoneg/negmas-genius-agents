@@ -62,6 +62,27 @@ class Mosa(SAONegotiator):
         initial_temperature: Starting temperature (default 1.0).
         cooling_rate: Exponential decay rate (default 0.95).
         late_game_threshold: Time threshold for late game acceleration (default 0.9).
+        cooling_time_scale: Multiplier on relative time in the exponential cooling
+            schedule (default 100.0).
+        min_temperature: Lower bound on the cooling temperature (default 0.01).
+        opponent_best_offset: Tolerance below the opponent's best utility used as
+            a threshold floor (default 0.05).
+        base_range_width: Base width of the bid search range when temperature is
+            zero (default 0.05).
+        temperature_range_scale: Additional bid search range width per unit of
+            temperature (default 0.1).
+        high_temperature_threshold: Temperature above which bid selection is
+            fully random among candidates (default 0.5).
+        top_candidates_divisor: Divisor of the candidate list used to pick the
+            top-scoring bids to randomize among at low temperature (default 3).
+        exploration_temperature_threshold: Temperature above which exploratory
+            acceptance of lower offers may occur (default 0.3).
+        exploration_probability_scale: Multiplier on temperature giving the
+            probability of exploratory acceptance (default 0.1).
+        exploration_acceptance_tolerance: Tolerance below the threshold still
+            accepted during exploratory acceptance (default 0.1).
+        deadline_threshold: Relative time after which any offer above
+            ``min_utility`` is accepted (default 0.98).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -77,6 +98,17 @@ class Mosa(SAONegotiator):
         initial_temperature: float = 1.0,
         cooling_rate: float = 0.95,
         late_game_threshold: float = 0.9,
+        cooling_time_scale: float = 100.0,
+        min_temperature: float = 0.01,
+        opponent_best_offset: float = 0.05,
+        base_range_width: float = 0.05,
+        temperature_range_scale: float = 0.1,
+        high_temperature_threshold: float = 0.5,
+        top_candidates_divisor: int = 3,
+        exploration_temperature_threshold: float = 0.3,
+        exploration_probability_scale: float = 0.1,
+        exploration_acceptance_tolerance: float = 0.1,
+        deadline_threshold: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -98,6 +130,17 @@ class Mosa(SAONegotiator):
         self._initial_temperature = initial_temperature
         self._cooling_rate = cooling_rate
         self._late_game_threshold = late_game_threshold
+        self._cooling_time_scale = cooling_time_scale
+        self._min_temperature = min_temperature
+        self._opponent_best_offset = opponent_best_offset
+        self._base_range_width = base_range_width
+        self._temperature_range_scale = temperature_range_scale
+        self._high_temperature_threshold = high_temperature_threshold
+        self._top_candidates_divisor = top_candidates_divisor
+        self._exploration_temperature_threshold = exploration_temperature_threshold
+        self._exploration_probability_scale = exploration_probability_scale
+        self._exploration_acceptance_tolerance = exploration_acceptance_tolerance
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -146,11 +189,11 @@ class Mosa(SAONegotiator):
         """Update temperature based on time using cooling schedule."""
         # Exponential cooling
         self._temperature = self._initial_temperature * math.pow(
-            self._cooling_rate, time * 100
+            self._cooling_rate, time * self._cooling_time_scale
         )
 
         # Ensure minimum temperature
-        self._temperature = max(self._temperature, 0.01)
+        self._temperature = max(self._temperature, self._min_temperature)
 
     def _calculate_threshold(self, time: float) -> float:
         """Calculate threshold based on current temperature."""
@@ -163,7 +206,7 @@ class Mosa(SAONegotiator):
         # Adjust based on opponent's best offer
         if self._best_opponent_utility > self._min_utility:
             # Don't accept less than what opponent has offered
-            threshold = max(threshold, self._best_opponent_utility - 0.05)
+            threshold = max(threshold, self._best_opponent_utility - self._opponent_best_offset)
 
         # Late game acceleration
         if time > self._late_game_threshold:
@@ -182,7 +225,7 @@ class Mosa(SAONegotiator):
             return None
 
         # Width of search range depends on temperature
-        range_width = 0.05 + self._temperature * 0.1
+        range_width = self._base_range_width + self._temperature * self._temperature_range_scale
 
         candidates = self._outcome_space.get_bids_in_range(
             threshold, threshold + range_width
@@ -194,11 +237,11 @@ class Mosa(SAONegotiator):
         if candidates:
             # At high temperature, more random selection
             # At low temperature, prefer higher utility
-            if self._temperature > 0.5 and len(candidates) > 1:
+            if self._temperature > self._high_temperature_threshold and len(candidates) > 1:
                 return random.choice(candidates).bid
             else:
                 # Prefer higher utility bids
-                top_count = max(1, len(candidates) // 3)
+                top_count = max(1, len(candidates) // self._top_candidates_divisor)
                 return random.choice(candidates[:top_count]).bid
 
         return self._best_bid
@@ -236,12 +279,18 @@ class Mosa(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # At high temperature, occasionally accept lower offers (exploration)
-        if self._temperature > 0.3 and random.random() < self._temperature * 0.1:
-            if offer_utility >= threshold - 0.1 and offer_utility >= self._min_utility:
+        if (
+            self._temperature > self._exploration_temperature_threshold
+            and random.random() < self._temperature * self._exploration_probability_scale
+        ):
+            if (
+                offer_utility >= threshold - self._exploration_acceptance_tolerance
+                and offer_utility >= self._min_utility
+            ):
                 return ResponseType.ACCEPT_OFFER
 
         # Near deadline
-        if time > 0.98 and offer_utility >= self._min_utility:
+        if time > self._deadline_threshold and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

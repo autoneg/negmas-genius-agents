@@ -81,6 +81,13 @@ class Terra(SAONegotiator):
         phase2_end: End time for phase 2 Boulware phase (default 0.85)
         early_time: Time threshold for early phase best-bid offering (default 0.03)
         deadline_time: Time threshold for deadline acceptance (default 0.95)
+        issue_weight_increment: Increment applied to opponent issue weights on
+            value consistency between consecutive bids (default 0.08)
+        phase1_utility_factor: Fraction of max utility targeted during phase 1
+            (default 0.95)
+        phase2_end_utility_factor: Fraction of max utility targeted at the end of
+            phase 2 (default 0.75)
+        top_n: Number of top-scored candidates to randomly choose from (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -98,6 +105,10 @@ class Terra(SAONegotiator):
         phase2_end: float = 0.85,
         early_time: float = 0.03,
         deadline_time: float = 0.95,
+        issue_weight_increment: float = 0.08,
+        phase1_utility_factor: float = 0.95,
+        phase2_end_utility_factor: float = 0.75,
+        top_n: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -121,6 +132,10 @@ class Terra(SAONegotiator):
         self._phase2_end = phase2_end
         self._early_time = early_time
         self._deadline_time = deadline_time
+        self._issue_weight_increment = issue_weight_increment
+        self._phase1_utility_factor = phase1_utility_factor
+        self._phase2_end_utility_factor = phase2_end_utility_factor
+        self._top_n = top_n
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -219,7 +234,7 @@ class Terra(SAONegotiator):
         # Issues that stay consistent are more important to opponent
         for i in range(len(last_bid)):
             if last_bid[i] == prev_bid[i]:
-                self._opponent_issue_weights[i] += 0.08
+                self._opponent_issue_weights[i] += self._issue_weight_increment
 
         # Normalize
         total = sum(self._opponent_issue_weights.values())
@@ -252,7 +267,7 @@ class Terra(SAONegotiator):
         """Calculate target utility - firm early, flexible late."""
         if time < self._phase1_end:
             # Very firm in early phase
-            return self._max_utility * 0.95
+            return self._max_utility * self._phase1_utility_factor
         elif time < self._phase2_end:
             # Gradual Boulware concession
             phase_time = (time - self._phase1_end) / (
@@ -263,13 +278,13 @@ class Terra(SAONegotiator):
                 if self._firmness > 0
                 else phase_time
             )
-            start = self._max_utility * 0.95
-            end = self._max_utility * 0.75
+            start = self._max_utility * self._phase1_utility_factor
+            end = self._max_utility * self._phase2_end_utility_factor
             return start - (start - end) * f_t
         else:
             # End-game: accelerated concession
             phase_time = (time - self._phase2_end) / (1.0 - self._phase2_end)
-            start = self._max_utility * 0.75
+            start = self._max_utility * self._phase2_end_utility_factor
             end = self._reservation_value
             return max(start - (start - end) * phase_time, self._reservation_value)
 
@@ -301,7 +316,7 @@ class Terra(SAONegotiator):
         scored.sort(key=lambda x: x[1], reverse=True)
 
         # Select from top with randomness
-        top_n = min(5, len(scored))
+        top_n = min(self._top_n, len(scored))
         return random.choice(scored[:top_n])[0]
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:

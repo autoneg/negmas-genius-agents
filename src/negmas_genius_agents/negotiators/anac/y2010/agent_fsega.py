@@ -73,6 +73,8 @@ class AgentFSEGA(SAONegotiator):
         late_phase_time: Time threshold for late acceptance phase (default 0.95).
         late_acceptance_bonus: Bonus factor for late acceptance (default 1.05).
         deadline_time: Time threshold for deadline acceptance (default 0.99).
+        opponent_model_min_samples: Minimum opponent offers before estimating reservation (default 3).
+        pmin_floor: Absolute floor for the adjusted minimum acceptable utility (default 0.5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -93,6 +95,8 @@ class AgentFSEGA(SAONegotiator):
         late_phase_time: float = 0.95,
         late_acceptance_bonus: float = 1.05,
         deadline_time: float = 0.99,
+        opponent_model_min_samples: int = 3,
+        pmin_floor: float = 0.5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -119,6 +123,8 @@ class AgentFSEGA(SAONegotiator):
         self._late_phase_time = late_phase_time
         self._late_acceptance_bonus = late_acceptance_bonus
         self._deadline_time = deadline_time
+        self._opponent_model_min_samples = opponent_model_min_samples
+        self._pmin_floor = pmin_floor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -184,7 +190,7 @@ class AgentFSEGA(SAONegotiator):
 
         # Estimate opponent's reservation based on their offer pattern
         # If opponent is offering us low utility, they likely have high reservation
-        if len(self._opponent_offers) >= 3:
+        if len(self._opponent_offers) >= self._opponent_model_min_samples:
             # Calculate average utility they're offering us
             avg_utility = sum(u for _, u in self._opponent_offers) / len(
                 self._opponent_offers
@@ -195,7 +201,7 @@ class AgentFSEGA(SAONegotiator):
             # Adjust our minimum based on opponent behavior
             # If opponent seems very competitive, we may need to lower our minimum
             if avg_utility < self._opponent_low_threshold:
-                self._pmin = max(self._reservation * self._pmin_reduction_factor, 0.5)
+                self._pmin = max(self._reservation * self._pmin_reduction_factor, self._pmin_floor)
             else:
                 self._pmin = self._reservation
 

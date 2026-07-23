@@ -66,6 +66,14 @@ class ExpRubick(SAONegotiator):
         learning_rate: Rate of strategy adaptation (default 0.1).
         time_pressure_threshold: Time threshold for time pressure acceptance (default 0.9).
         deadline_threshold: Time threshold for deadline acceptance (default 0.98).
+        initial_concession_factor: Starting value of the adaptive concession factor (default 0.2).
+        recent_window: Number of recent opponent offers used to adapt concession (default 5).
+        concession_change_threshold: Utility change above which the opponent is considered conceding (default 0.05).
+        hardening_change_threshold: Utility change below which the opponent is considered hardening (default -0.02).
+        min_concession_factor: Lower bound for the adaptive concession factor (default 0.1).
+        max_concession_factor: Upper bound for the adaptive concession factor (default 0.5).
+        bid_margin: Half-width of the utility window from which candidate bids are drawn (default 0.05).
+        opponent_data_threshold: Minimum opponent offers before using the opponent model for selection (default 5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -81,6 +89,14 @@ class ExpRubick(SAONegotiator):
         learning_rate: float = 0.1,
         time_pressure_threshold: float = 0.9,
         deadline_threshold: float = 0.98,
+        initial_concession_factor: float = 0.2,
+        recent_window: int = 5,
+        concession_change_threshold: float = 0.05,
+        hardening_change_threshold: float = -0.02,
+        min_concession_factor: float = 0.1,
+        max_concession_factor: float = 0.5,
+        bid_margin: float = 0.05,
+        opponent_data_threshold: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -102,6 +118,14 @@ class ExpRubick(SAONegotiator):
         self._learning_rate = learning_rate
         self._time_pressure_threshold = time_pressure_threshold
         self._deadline_threshold = deadline_threshold
+        self._initial_concession_factor = initial_concession_factor
+        self._recent_window = recent_window
+        self._concession_change_threshold = concession_change_threshold
+        self._hardening_change_threshold = hardening_change_threshold
+        self._min_concession_factor = min_concession_factor
+        self._max_concession_factor = max_concession_factor
+        self._bid_margin = bid_margin
+        self._opponent_data_threshold = opponent_data_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -116,7 +140,7 @@ class ExpRubick(SAONegotiator):
         self._max_utility: float = 1.0
         self._min_utility: float = 0.0
         self._last_received_offer: Outcome | None = None
-        self._concession_factor: float = 0.2  # Adaptive
+        self._concession_factor: float = self._initial_concession_factor  # Adaptive
 
     def _initialize(self) -> None:
         """Initialize the outcome space."""
@@ -143,7 +167,7 @@ class ExpRubick(SAONegotiator):
         self._total_opponent_offers = 0
         self._opponent_utilities = []
         self._last_received_offer = None
-        self._concession_factor = 0.2
+        self._concession_factor = self._initial_concession_factor
 
     def _update_opponent_model(self, bid: Outcome, utility: float) -> None:
         """Update opponent model with weight estimation."""
@@ -190,21 +214,21 @@ class ExpRubick(SAONegotiator):
 
     def _adapt_concession(self) -> None:
         """Adapt concession factor based on opponent behavior."""
-        if len(self._opponent_utilities) < 5:
+        if len(self._opponent_utilities) < self._recent_window:
             return
 
-        recent = self._opponent_utilities[-5:]
+        recent = self._opponent_utilities[-self._recent_window :]
         change = recent[-1] - recent[0]
 
         # If opponent conceding (our utility increasing), slow down
-        if change > 0.05:
+        if change > self._concession_change_threshold:
             self._concession_factor = max(
-                0.1, self._concession_factor - self._learning_rate
+                self._min_concession_factor, self._concession_factor - self._learning_rate
             )
         # If opponent hardening, speed up
-        elif change < -0.02:
+        elif change < self._hardening_change_threshold:
             self._concession_factor = min(
-                0.5, self._concession_factor + self._learning_rate
+                self._max_concession_factor, self._concession_factor + self._learning_rate
             )
 
     def _estimate_opponent_utility(self, bid: Outcome) -> float:
@@ -246,7 +270,7 @@ class ExpRubick(SAONegotiator):
         target = self._get_target_utility(time)
 
         # Get candidates
-        candidates = self._outcome_space.get_bids_in_range(target - 0.05, target + 0.05)
+        candidates = self._outcome_space.get_bids_in_range(target - self._bid_margin, target + self._bid_margin)
 
         if not candidates:
             bid_details = self._outcome_space.get_bid_near_utility(target)
@@ -256,7 +280,7 @@ class ExpRubick(SAONegotiator):
             return candidates[0].bid
 
         # Nash product selection
-        if self._total_opponent_offers > 5:
+        if self._total_opponent_offers > self._opponent_data_threshold:
             best_nash = -1.0
             best_bid = candidates[0].bid
             for bd in candidates:

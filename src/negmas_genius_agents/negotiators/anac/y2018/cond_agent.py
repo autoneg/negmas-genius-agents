@@ -64,6 +64,13 @@ class ConDAgent(SAONegotiator):
         conditional_acceptance_time: Time threshold for conditional acceptance (default 0.85).
         time_pressure_threshold: Time threshold for time pressure acceptance (default 0.95).
         deadline_threshold: Time threshold for deadline acceptance (default 0.99).
+        recent_window: Number of recent opponent offers used to estimate cooperation (default 5).
+        cooperation_threshold: Average utility change above which the opponent is considered cooperative (default 0.02).
+        cooperative_rate_multiplier: Multiplier applied to the base rate when the opponent is cooperative (default 1.5).
+        competitive_rate_multiplier: Multiplier applied to the base rate when the opponent is competitive (default 0.7).
+        bid_margin: Half-width of the utility window from which candidate bids are drawn (default 0.04).
+        cooperative_acceptance_factor: Fraction of the target accepted from a cooperative opponent near the deadline (default 0.9).
+        competitive_acceptance_factor: Fraction of the target accepted from a competitive opponent near the deadline (default 0.95).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -80,6 +87,13 @@ class ConDAgent(SAONegotiator):
         conditional_acceptance_time: float = 0.85,
         time_pressure_threshold: float = 0.95,
         deadline_threshold: float = 0.99,
+        recent_window: int = 5,
+        cooperation_threshold: float = 0.02,
+        cooperative_rate_multiplier: float = 1.5,
+        competitive_rate_multiplier: float = 0.7,
+        bid_margin: float = 0.04,
+        cooperative_acceptance_factor: float = 0.9,
+        competitive_acceptance_factor: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -102,13 +116,19 @@ class ConDAgent(SAONegotiator):
         self._conditional_acceptance_time = conditional_acceptance_time
         self._time_pressure_threshold = time_pressure_threshold
         self._deadline_threshold = deadline_threshold
+        self._recent_window = recent_window
+        self._cooperation_threshold = cooperation_threshold
+        self._cooperative_rate_multiplier = cooperative_rate_multiplier
+        self._competitive_rate_multiplier = competitive_rate_multiplier
+        self._bid_margin = bid_margin
+        self._cooperative_acceptance_factor = cooperative_acceptance_factor
+        self._competitive_acceptance_factor = competitive_acceptance_factor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
         # Opponent tracking
         self._opponent_utilities: list[float] = []
         self._is_cooperative: bool = False
-        self._cooperation_threshold: float = 0.02
 
         # State
         self._best_bid: Outcome | None = None
@@ -142,12 +162,12 @@ class ConDAgent(SAONegotiator):
 
     def _update_cooperation_status(self) -> None:
         """Determine if opponent is being cooperative."""
-        if len(self._opponent_utilities) < 5:
+        if len(self._opponent_utilities) < self._recent_window:
             self._is_cooperative = False
             return
 
         # Check if opponent utilities (to us) are increasing
-        recent = self._opponent_utilities[-5:]
+        recent = self._opponent_utilities[-self._recent_window :]
         avg_change = (recent[-1] - recent[0]) / len(recent)
 
         self._is_cooperative = avg_change > self._cooperation_threshold
@@ -156,10 +176,10 @@ class ConDAgent(SAONegotiator):
         """Get current concession rate based on cooperation."""
         if self._is_cooperative:
             # Opponent is cooperative, concede faster
-            return self._base_rate * 1.5
+            return self._base_rate * self._cooperative_rate_multiplier
         else:
             # Opponent is competitive, concede slower
-            return self._base_rate * 0.7
+            return self._base_rate * self._competitive_rate_multiplier
 
     def _get_target_utility(self, time: float) -> float:
         """Get target utility with conditional concession."""
@@ -181,7 +201,7 @@ class ConDAgent(SAONegotiator):
         target = self._get_target_utility(time)
 
         # Get candidates
-        margin = 0.04
+        margin = self._bid_margin
         candidates = self._outcome_space.get_bids_in_range(
             target - margin, target + margin
         )
@@ -204,11 +224,11 @@ class ConDAgent(SAONegotiator):
         if time >= self._conditional_acceptance_time:
             if self._is_cooperative:
                 # Be more lenient with cooperative opponent
-                if offer_utility >= target * 0.9:
+                if offer_utility >= target * self._cooperative_acceptance_factor:
                     return True
             else:
                 # Be stricter with competitive opponent
-                if offer_utility >= target * 0.95:
+                if offer_utility >= target * self._competitive_acceptance_factor:
                     return True
 
         # Time pressure

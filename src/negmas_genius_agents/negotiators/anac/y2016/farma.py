@@ -83,6 +83,26 @@ class Farma(SAONegotiator):
         early_phase_end: End time for early conservative phase (default 0.1)
         early_time: Time threshold for early phase best-bid offering (default 0.05)
         deadline_time: Time threshold for deadline acceptance (default 0.95)
+        issue_weight_increment: Increment applied to opponent issue weights on
+            value consistency between consecutive bids (default 0.05)
+        concession_rate_min_samples: Minimum opponent utilities required before
+            estimating the concession rate (default 5)
+        early_phase_utility_factor: Fraction of max utility targeted during the
+            early conservative phase (default 0.95)
+        concession_rate_epsilon: Magnitude around zero used to detect opponent
+            conceding vs hardening trends (default 0.01)
+        conceding_e_cap: Upper cap on the adjusted exponent when the opponent is
+            conceding (default 0.3)
+        conceding_e_multiplier: Multiplier applied to the base exponent when the
+            opponent is conceding (default 1.5)
+        hardening_e_floor: Lower floor on the adjusted exponent when the opponent
+            is hardening (default 0.05)
+        hardening_e_multiplier: Multiplier applied to the base exponent when the
+            opponent is hardening (default 0.7)
+        own_weight_start: Initial weight on own utility in bid scoring (default 0.8)
+        own_weight_slope: Rate at which the own-utility weight decreases with time
+            (default 0.3)
+        top_n: Number of top-scored candidates to randomly choose from (default 3)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -99,6 +119,17 @@ class Farma(SAONegotiator):
         early_phase_end: float = 0.1,
         early_time: float = 0.05,
         deadline_time: float = 0.95,
+        issue_weight_increment: float = 0.05,
+        concession_rate_min_samples: int = 5,
+        early_phase_utility_factor: float = 0.95,
+        concession_rate_epsilon: float = 0.01,
+        conceding_e_cap: float = 0.3,
+        conceding_e_multiplier: float = 1.5,
+        hardening_e_floor: float = 0.05,
+        hardening_e_multiplier: float = 0.7,
+        own_weight_start: float = 0.8,
+        own_weight_slope: float = 0.3,
+        top_n: int = 3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -121,6 +152,17 @@ class Farma(SAONegotiator):
         self._early_phase_end = early_phase_end
         self._early_time = early_time
         self._deadline_time = deadline_time
+        self._issue_weight_increment = issue_weight_increment
+        self._concession_rate_min_samples = concession_rate_min_samples
+        self._early_phase_utility_factor = early_phase_utility_factor
+        self._concession_rate_epsilon = concession_rate_epsilon
+        self._conceding_e_cap = conceding_e_cap
+        self._conceding_e_multiplier = conceding_e_multiplier
+        self._hardening_e_floor = hardening_e_floor
+        self._hardening_e_multiplier = hardening_e_multiplier
+        self._own_weight_start = own_weight_start
+        self._own_weight_slope = own_weight_slope
+        self._top_n = top_n
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -211,7 +253,7 @@ class Farma(SAONegotiator):
 
         for i in range(len(last_bid)):
             if last_bid[i] == prev_bid[i]:
-                self._opponent_issue_weights[i] += 0.05
+                self._opponent_issue_weights[i] += self._issue_weight_increment
 
         total = sum(self._opponent_issue_weights.values())
         if total > 0:
@@ -220,7 +262,7 @@ class Farma(SAONegotiator):
 
     def _update_concession_rate(self) -> None:
         """Estimate opponent's concession rate."""
-        if len(self._opponent_utilities) < 5:
+        if len(self._opponent_utilities) < self._concession_rate_min_samples:
             return
 
         # Compare recent utilities to earlier ones
@@ -264,16 +306,16 @@ class Farma(SAONegotiator):
     def _get_target_utility(self, time: float) -> float:
         """Calculate target utility with adaptive concession."""
         if time < self._early_phase_end:
-            return self._max_utility * 0.95
+            return self._max_utility * self._early_phase_utility_factor
 
         # Adjust e based on opponent concession
         adjusted_e = self._e
-        if self._opponent_concession_rate > 0.01:
+        if self._opponent_concession_rate > self._concession_rate_epsilon:
             # Opponent is conceding, we can be more flexible
-            adjusted_e = min(0.3, self._e * 1.5)
-        elif self._opponent_concession_rate < -0.01:
+            adjusted_e = min(self._conceding_e_cap, self._e * self._conceding_e_multiplier)
+        elif self._opponent_concession_rate < -self._concession_rate_epsilon:
             # Opponent is hardening, we should be tougher
-            adjusted_e = max(0.05, self._e * 0.7)
+            adjusted_e = max(self._hardening_e_floor, self._e * self._hardening_e_multiplier)
 
         # Boulware formula
         f_t = math.pow(time, 1 / adjusted_e) if adjusted_e > 0 else time
@@ -306,13 +348,13 @@ class Farma(SAONegotiator):
             opp_util = self._estimate_opponent_utility(bd.bid)
 
             # Weight own utility more heavily early, balance later
-            own_weight = 0.8 - 0.3 * time
+            own_weight = self._own_weight_start - self._own_weight_slope * time
             score = own_weight * own_util + (1 - own_weight) * opp_util
             scored_bids.append((bd.bid, score))
 
         scored_bids.sort(key=lambda x: x[1], reverse=True)
 
-        top_n = min(3, len(scored_bids))
+        top_n = min(self._top_n, len(scored_bids))
         selected = random.choice(scored_bids[:top_n])
         return selected[0]
 

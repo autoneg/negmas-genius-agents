@@ -103,6 +103,20 @@ class IAMhaggler2012(SAONegotiator):
             (default 0.995).
         final_accept_multiplier: Multiplier for best opponent utility at final
             deadline (default 0.95).
+        min_bids_for_issue_weights: Minimum opponent bids required before
+            updating issue weights from value consistency (default 3).
+        min_bids_for_concession_est: Minimum opponent bids required before
+            estimating the opponent concession rate (default 5).
+        concession_estimation_window: Number of recent opponent utilities used
+            to estimate the opponent concession rate (default 10).
+        opponent_reservation_margin: Subtracted from the minimum received
+            utility when estimating the opponent reservation value (default 0.1).
+        default_opponent_utility: Opponent utility estimate returned when no
+            opponent preference data is available yet (default 0.5).
+        unknown_value_preference: Preference assumed for opponent values never
+            observed when estimating opponent utility (default 0.2).
+        best_bid_epsilon: Epsilon tolerance used when searching for the
+            maximum-utility bid on the opening round (default 0.001).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -131,6 +145,13 @@ class IAMhaggler2012(SAONegotiator):
         near_deadline_time: float = 0.97,
         final_deadline_time: float = 0.995,
         final_accept_multiplier: float = 0.95,
+        min_bids_for_issue_weights: int = 3,
+        min_bids_for_concession_est: int = 5,
+        concession_estimation_window: int = 10,
+        opponent_reservation_margin: float = 0.1,
+        default_opponent_utility: float = 0.5,
+        unknown_value_preference: float = 0.2,
+        best_bid_epsilon: float = 0.001,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -166,6 +187,13 @@ class IAMhaggler2012(SAONegotiator):
         self._near_deadline_time = near_deadline_time
         self._final_deadline_time = final_deadline_time
         self._final_accept_multiplier = final_accept_multiplier
+        self._min_bids_for_issue_weights = min_bids_for_issue_weights
+        self._min_bids_for_concession_est = min_bids_for_concession_est
+        self._concession_estimation_window = concession_estimation_window
+        self._opponent_reservation_margin = opponent_reservation_margin
+        self._default_opponent_utility = default_opponent_utility
+        self._unknown_value_preference = unknown_value_preference
+        self._best_bid_epsilon = best_bid_epsilon
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -290,7 +318,7 @@ class IAMhaggler2012(SAONegotiator):
 
         Issues with more consistent value selections are assumed more important.
         """
-        if self.nmi is None or len(self._opponent_bids) < 3:
+        if self.nmi is None or len(self._opponent_bids) < self._min_bids_for_issue_weights:
             return
 
         issues = self.nmi.issues
@@ -320,11 +348,11 @@ class IAMhaggler2012(SAONegotiator):
         """
         Estimate opponent's concession rate from their bid history.
         """
-        if len(self._opponent_utilities) < 5:
+        if len(self._opponent_utilities) < self._min_bids_for_concession_est:
             return
 
         # Look at recent trend in utilities we receive
-        recent = self._opponent_utilities[-10:]
+        recent = self._opponent_utilities[-self._concession_estimation_window:]
         if len(recent) < 2:
             return
 
@@ -343,14 +371,14 @@ class IAMhaggler2012(SAONegotiator):
 
         # Estimate opponent reservation value
         min_received = min(self._opponent_utilities) if self._opponent_utilities else 0
-        self._estimated_opponent_reservation = max(0, min_received - 0.1)
+        self._estimated_opponent_reservation = max(0, min_received - self._opponent_reservation_margin)
 
     def _get_opponent_utility(self, bid: Outcome) -> float:
         """
         Estimate opponent's utility for a bid based on learned preferences.
         """
         if self.nmi is None or not self._opponent_value_freq:
-            return 0.5
+            return self._default_opponent_utility
 
         issues = self.nmi.issues
         total_utility = 0.0
@@ -371,7 +399,7 @@ class IAMhaggler2012(SAONegotiator):
                     )
                 else:
                     # Unknown value - assume low preference
-                    value_preference = 0.2
+                    value_preference = self._unknown_value_preference
 
                 total_utility += weight * value_preference
 
@@ -519,7 +547,7 @@ class IAMhaggler2012(SAONegotiator):
         if state.step == 0:
             if self._outcome_space is not None:
                 best_bids = self._outcome_space.get_bids_above(
-                    self._max_utility_target - 0.001
+                    self._max_utility_target - self._best_bid_epsilon
                 )
                 if best_bids:
                     bid = best_bids[0].bid

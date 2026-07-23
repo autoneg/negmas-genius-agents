@@ -79,6 +79,15 @@ class ParsCat(SAONegotiator):
         early_phase_end: End time for early conservative phase (default 0.1)
         early_time: Time threshold for early phase best-bid offering (default 0.05)
         deadline_time: Time threshold for deadline acceptance (default 0.95)
+        reservation_mean_weight: Weight on the mean utility when computing the
+            reservation value (default 0.4)
+        reservation_min_weight: Weight on the minimum utility threshold when
+            computing the reservation value (default 0.6)
+        issue_weight_increment: Increment applied to opponent issue weights on
+            value consistency between consecutive bids (default 0.1)
+        early_phase_utility_factor: Fraction of max utility targeted during the
+            early conservative phase (default 0.98)
+        top_n: Number of top-scored candidates to randomly choose from (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -95,6 +104,11 @@ class ParsCat(SAONegotiator):
         early_phase_end: float = 0.1,
         early_time: float = 0.05,
         deadline_time: float = 0.95,
+        reservation_mean_weight: float = 0.4,
+        reservation_min_weight: float = 0.6,
+        issue_weight_increment: float = 0.1,
+        early_phase_utility_factor: float = 0.98,
+        top_n: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -117,6 +131,11 @@ class ParsCat(SAONegotiator):
         self._early_phase_end = early_phase_end
         self._early_time = early_time
         self._deadline_time = deadline_time
+        self._reservation_mean_weight = reservation_mean_weight
+        self._reservation_min_weight = reservation_min_weight
+        self._issue_weight_increment = issue_weight_increment
+        self._early_phase_utility_factor = early_phase_utility_factor
+        self._top_n = top_n
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -174,7 +193,9 @@ class ParsCat(SAONegotiator):
         mean_util = sum(utilities) / len(utilities)
         # Reservation: weighted average between mean and min_utility
         self._reservation_value = max(
-            self._min_utility, 0.4 * mean_util + 0.6 * self._min_utility
+            self._min_utility,
+            self._reservation_mean_weight * mean_util
+            + self._reservation_min_weight * self._min_utility,
         )
 
     def on_negotiation_start(self, state: SAOState) -> None:
@@ -219,7 +240,7 @@ class ParsCat(SAONegotiator):
         # Issues that don't change are more important to opponent
         for i in range(len(last_bid)):
             if last_bid[i] == prev_bid[i]:
-                self._opponent_issue_weights[i] += 0.1
+                self._opponent_issue_weights[i] += self._issue_weight_increment
 
         # Normalize
         total = sum(self._opponent_issue_weights.values())
@@ -254,7 +275,7 @@ class ParsCat(SAONegotiator):
     def _get_target_utility(self, time: float) -> float:
         """Calculate target utility using Boulware concession."""
         if time < self._early_phase_end:
-            return self._max_utility * 0.98
+            return self._max_utility * self._early_phase_utility_factor
 
         # Boulware concession formula
         f_t = math.pow(time, 1 / self._e) if self._e > 0 else time
@@ -293,7 +314,7 @@ class ParsCat(SAONegotiator):
         scored_bids.sort(key=lambda x: x[1], reverse=True)
 
         # Pick from top candidates with randomness
-        top_n = min(5, len(scored_bids))
+        top_n = min(self._top_n, len(scored_bids))
         return random.choice(scored_bids[:top_n])[0]
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:

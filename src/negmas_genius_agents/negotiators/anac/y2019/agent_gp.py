@@ -76,6 +76,7 @@ class AgentGP(SAONegotiator):
         final_deadline_time: Time threshold for final deadline (default 0.99)
         near_deadline_ratio: Ratio of target for near deadline acceptance (default 0.9)
         final_best_ratio: Ratio of best received utility for final deadline acceptance (default 0.95)
+        concession_exponent: Exponent of the polynomial concession curve (default 1.5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -94,6 +95,7 @@ class AgentGP(SAONegotiator):
         final_deadline_time: float = 0.99,
         near_deadline_ratio: float = 0.9,
         final_best_ratio: float = 0.95,
+        concession_exponent: float = 1.5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -118,6 +120,7 @@ class AgentGP(SAONegotiator):
         self._final_deadline_time = final_deadline_time
         self._near_deadline_ratio = near_deadline_ratio
         self._final_best_ratio = final_best_ratio
+        self._concession_exponent = concession_exponent
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
@@ -243,7 +246,7 @@ class AgentGP(SAONegotiator):
         """Get target utility based on time."""
         # Polynomial concession
         target = self._initial_target - (self._initial_target - self._min_target) * (
-            time**1.5
+            time**self._concession_exponent
         )
 
         return max(target, self._min_target)

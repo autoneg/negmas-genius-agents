@@ -56,6 +56,16 @@ class AgentH(SAONegotiator):
 
     Args:
         e: Concession exponent controlling concession speed (default 0.2)
+        recent_window: Number of recent opponent bids used for concession detection (default 5)
+        older_window: Number of older opponent bids used for concession detection (default 10)
+        firm_multiplier: Multiplier applied to e when opponent is conceding (default 0.8)
+        flexible_multiplier: Multiplier applied to e when opponent is tough (default 1.2)
+        concession_factor: Fraction of utility range conceded over time (default 0.4)
+        min_utility_margin: Margin above min utility used as acceptance floor (default 0.1)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.9)
+        hybrid_search_count: Number of top candidates searched for hybrid bid (default 30)
+        own_utility_weight: Weight of own utility in hybrid scoring (default 0.7)
+        opponent_utility_weight: Weight of opponent utility in hybrid scoring (default 0.3)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -68,6 +78,16 @@ class AgentH(SAONegotiator):
     def __init__(
         self,
         e: float = 0.2,
+        recent_window: int = 5,
+        older_window: int = 10,
+        firm_multiplier: float = 0.8,
+        flexible_multiplier: float = 1.2,
+        concession_factor: float = 0.4,
+        min_utility_margin: float = 0.1,
+        fallback_threshold_ratio: float = 0.9,
+        hybrid_search_count: int = 30,
+        own_utility_weight: float = 0.7,
+        opponent_utility_weight: float = 0.3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -86,6 +106,16 @@ class AgentH(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._recent_window = recent_window
+        self._older_window = older_window
+        self._firm_multiplier = firm_multiplier
+        self._flexible_multiplier = flexible_multiplier
+        self._concession_factor = concession_factor
+        self._min_utility_margin = min_utility_margin
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._hybrid_search_count = hybrid_search_count
+        self._own_utility_weight = own_utility_weight
+        self._opponent_utility_weight = opponent_utility_weight
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -152,24 +182,31 @@ class AgentH(SAONegotiator):
     def _compute_threshold(self, time: float) -> float:
         """Compute adaptive concession threshold."""
         # Adaptive e based on opponent concession
-        if len(self._opponent_bids) > 5:
-            recent = [u for _, u in self._opponent_bids[-5:]]
+        if len(self._opponent_bids) > self._recent_window:
+            recent = [u for _, u in self._opponent_bids[-self._recent_window :]]
             older = (
-                [u for _, u in self._opponent_bids[-10:-5]]
-                if len(self._opponent_bids) > 10
+                [
+                    u
+                    for _, u in self._opponent_bids[
+                        -self._older_window : -self._recent_window
+                    ]
+                ]
+                if len(self._opponent_bids) > self._older_window
                 else recent
             )
             if sum(recent) / len(recent) > sum(older) / len(older):
                 # Opponent conceding, be firmer
-                e = self._e * 0.8
+                e = self._e * self._firm_multiplier
             else:
-                e = self._e * 1.2
+                e = self._e * self._flexible_multiplier
         else:
             e = self._e
 
         f_t = math.pow(time, 1 / e) if e > 0 else time
-        target = self._max_utility - (self._max_utility - self._min_utility) * 0.4 * f_t
-        return max(target, self._min_utility + 0.1)
+        target = self._max_utility - (
+            self._max_utility - self._min_utility
+        ) * self._concession_factor * f_t
+        return max(target, self._min_utility + self._min_utility_margin)
 
     def _select_hybrid_bid(self, time: float) -> Outcome | None:
         """Select bid using hybrid approach."""
@@ -180,7 +217,9 @@ class AgentH(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
@@ -190,11 +229,14 @@ class AgentH(SAONegotiator):
             best_bid = None
             best_score = -1.0
 
-            for bd in candidates[:30]:
+            for bd in candidates[: self._hybrid_search_count]:
                 own_score = bd.utility
                 opp_score = self._estimate_opponent_utility(bd.bid)
                 # Hybrid score: weighted combination
-                hybrid_score = own_score * 0.7 + opp_score * 0.3
+                hybrid_score = (
+                    own_score * self._own_utility_weight
+                    + opp_score * self._opponent_utility_weight
+                )
                 if hybrid_score > best_score:
                     best_score = hybrid_score
                     best_bid = bd.bid

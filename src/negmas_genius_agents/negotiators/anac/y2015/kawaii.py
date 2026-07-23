@@ -62,6 +62,14 @@ class Kawaii(SAONegotiator):
         e: Initial concession exponent (default 0.2)
         early_time_threshold: Time before which agent stays high with no concession (default 0.3)
         deadline_time_threshold: Time after which agent becomes more accepting (default 0.95)
+        concession_rate_min_bids: Minimum opponent bids to estimate concession rate (default 3)
+        adaptation_min_observations: Minimum opponent bids before adapting exponent (default 5)
+        conceding_rate_threshold: Magnitude of concession rate considered significant (default 0.01)
+        firm_multiplier: Multiplier applied to e when opponent is conceding (default 0.7)
+        flexible_multiplier: Multiplier applied to e when opponent is tough (default 1.5)
+        concession_factor: Fraction of utility range conceded over time (default 0.4)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.9)
+        deadline_acceptance_fraction: Fraction of utility range used for near-deadline acceptance (default 0.3)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -76,6 +84,14 @@ class Kawaii(SAONegotiator):
         e: float = 0.2,
         early_time_threshold: float = 0.3,
         deadline_time_threshold: float = 0.95,
+        concession_rate_min_bids: int = 3,
+        adaptation_min_observations: int = 5,
+        conceding_rate_threshold: float = 0.01,
+        firm_multiplier: float = 0.7,
+        flexible_multiplier: float = 1.5,
+        concession_factor: float = 0.4,
+        fallback_threshold_ratio: float = 0.9,
+        deadline_acceptance_fraction: float = 0.3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -96,6 +112,14 @@ class Kawaii(SAONegotiator):
         self._e = e
         self._early_time_threshold = early_time_threshold
         self._deadline_time_threshold = deadline_time_threshold
+        self._concession_rate_min_bids = concession_rate_min_bids
+        self._adaptation_min_observations = adaptation_min_observations
+        self._conceding_rate_threshold = conceding_rate_threshold
+        self._firm_multiplier = firm_multiplier
+        self._flexible_multiplier = flexible_multiplier
+        self._concession_factor = concession_factor
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._deadline_acceptance_fraction = deadline_acceptance_fraction
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -138,7 +162,7 @@ class Kawaii(SAONegotiator):
         self._opponent_bids.append((bid, utility))
         self._opponent_utilities.append(utility)
 
-        if len(self._opponent_utilities) >= 3:
+        if len(self._opponent_utilities) >= self._concession_rate_min_bids:
             # Calculate average change in utility offered
             changes = []
             for i in range(1, len(self._opponent_utilities)):
@@ -151,16 +175,16 @@ class Kawaii(SAONegotiator):
         """Adjust concession exponent based on opponent behavior."""
         base_e = self._e
 
-        if len(self._opponent_utilities) < 5:
+        if len(self._opponent_utilities) < self._adaptation_min_observations:
             return base_e
 
         # If opponent is conceding (giving us better deals), we can be firmer
-        if self._opponent_concession_rate > 0.01:
-            return base_e * 0.7  # More boulware-like
+        if self._opponent_concession_rate > self._conceding_rate_threshold:
+            return base_e * self._firm_multiplier  # More boulware-like
 
         # If opponent is tough, we need to concede more
-        if self._opponent_concession_rate < -0.01:
-            return base_e * 1.5  # More conceder-like
+        if self._opponent_concession_rate < -self._conceding_rate_threshold:
+            return base_e * self._flexible_multiplier  # More conceder-like
 
         return base_e
 
@@ -179,7 +203,9 @@ class Kawaii(SAONegotiator):
             )
             f_t = math.pow(adjusted_time, 1 / e) if e != 0 else adjusted_time
 
-        target = self._max_utility - (self._max_utility - self._min_utility) * 0.4 * f_t
+        target = self._max_utility - (
+            self._max_utility - self._min_utility
+        ) * self._concession_factor * f_t
         return max(target, self._reservation_value)
 
     def _select_bid(self, time: float) -> Outcome | None:
@@ -191,7 +217,9 @@ class Kawaii(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
@@ -231,7 +259,7 @@ class Kawaii(SAONegotiator):
 
         # Near deadline, be more accepting
         if time > self._deadline_time_threshold:
-            if offer_utility >= self._min_utility + 0.3 * (
+            if offer_utility >= self._min_utility + self._deadline_acceptance_fraction * (
                 self._max_utility - self._min_utility
             ):
                 return ResponseType.ACCEPT_OFFER

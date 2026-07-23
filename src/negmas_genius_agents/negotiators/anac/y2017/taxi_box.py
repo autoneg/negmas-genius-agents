@@ -60,6 +60,25 @@ class TaxiBox(SAONegotiator):
         min_utility: Minimum acceptable utility (default 0.55).
         base_rate: Base concession rate per time unit (default 0.3).
         deadline_threshold: Time threshold for accelerated concession (default 0.8).
+        min_opponent_data: Minimum opponent offers required before adapting
+            the fare rate to the opponent concession rate (default 3).
+        opponent_window: Number of recent opponent offers used to compute the
+            concession rate (default 5).
+        cooperative_concession_threshold: Opponent concession rate above which
+            the opponent is considered cooperative (default 0.1).
+        cooperative_rate_multiplier: Multiplier applied to the fare rate when
+            the opponent is cooperative (default 0.7).
+        hardening_concession_threshold: Opponent concession rate below which the
+            opponent is considered to be hardening (default 0.05).
+        hardening_rate_multiplier: Multiplier applied to the fare rate when the
+            opponent is hardening (default 1.2).
+        opponent_best_offset: Tolerance below the opponent's best utility used as
+            a threshold floor (default 0.05).
+        min_window_width: Minimum width of the bid selection window (default 0.05).
+        window_width_scale: Scale applied to the threshold-minus-minimum gap when
+            computing the bid selection window width (default 0.3).
+        deadline_acceptance_threshold: Relative time after which any offer above
+            ``min_utility`` is accepted (default 0.98).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -74,6 +93,16 @@ class TaxiBox(SAONegotiator):
         min_utility: float = 0.55,
         base_rate: float = 0.3,
         deadline_threshold: float = 0.8,
+        min_opponent_data: int = 3,
+        opponent_window: int = 5,
+        cooperative_concession_threshold: float = 0.1,
+        cooperative_rate_multiplier: float = 0.7,
+        hardening_concession_threshold: float = 0.05,
+        hardening_rate_multiplier: float = 1.2,
+        opponent_best_offset: float = 0.05,
+        min_window_width: float = 0.05,
+        window_width_scale: float = 0.3,
+        deadline_acceptance_threshold: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -94,6 +123,16 @@ class TaxiBox(SAONegotiator):
         self._min_utility = min_utility
         self._base_rate = base_rate
         self._deadline_threshold = deadline_threshold
+        self._min_opponent_data = min_opponent_data
+        self._opponent_window = opponent_window
+        self._cooperative_concession_threshold = cooperative_concession_threshold
+        self._cooperative_rate_multiplier = cooperative_rate_multiplier
+        self._hardening_concession_threshold = hardening_concession_threshold
+        self._hardening_rate_multiplier = hardening_rate_multiplier
+        self._opponent_best_offset = opponent_best_offset
+        self._min_window_width = min_window_width
+        self._window_width_scale = window_width_scale
+        self._deadline_acceptance_threshold = deadline_acceptance_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -145,8 +184,8 @@ class TaxiBox(SAONegotiator):
         self._best_opponent_utility = max(self._best_opponent_utility, offer_utility)
 
         # Estimate opponent's concession rate
-        if len(self._opponent_utilities) >= 3:
-            recent = self._opponent_utilities[-5:]
+        if len(self._opponent_utilities) >= self._min_opponent_data:
+            recent = self._opponent_utilities[-self._opponent_window :]
             utility_change = recent[-1][1] - recent[0][1]
             time_change = recent[-1][0] - recent[0][0]
             if time_change > 0:
@@ -160,12 +199,12 @@ class TaxiBox(SAONegotiator):
 
         # Adjust rate based on opponent behavior
         rate = self._base_rate
-        if self._opponent_concession_rate > 0.1:
+        if self._opponent_concession_rate > self._cooperative_concession_threshold:
             # Opponent is conceding, slow down our concession
-            rate *= 0.7
-        elif self._opponent_concession_rate < -0.05:
+            rate *= self._cooperative_rate_multiplier
+        elif self._opponent_concession_rate < -self._hardening_concession_threshold:
             # Opponent is hardening, speed up slightly
-            rate *= 1.2
+            rate *= self._hardening_rate_multiplier
 
         # Accelerate near deadline
         if time > self._deadline_threshold:
@@ -187,7 +226,7 @@ class TaxiBox(SAONegotiator):
 
         # Don't go below what opponent has offered
         if self._best_opponent_utility > self._min_utility:
-            threshold = max(threshold, self._best_opponent_utility - 0.05)
+            threshold = max(threshold, self._best_opponent_utility - self._opponent_best_offset)
 
         return max(threshold, self._min_utility)
 
@@ -197,7 +236,10 @@ class TaxiBox(SAONegotiator):
             return None
 
         # Window shrinks as threshold decreases
-        window_width = max(0.05, (threshold - self._min_utility) * 0.3)
+        window_width = max(
+            self._min_window_width,
+            (threshold - self._min_utility) * self._window_width_scale,
+        )
 
         candidates = self._outcome_space.get_bids_in_range(
             threshold, threshold + window_width
@@ -251,7 +293,7 @@ class TaxiBox(SAONegotiator):
                 return ResponseType.ACCEPT_OFFER
 
         # Near deadline
-        if time > 0.98 and offer_utility >= self._min_utility:
+        if time > self._deadline_acceptance_threshold and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

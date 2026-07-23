@@ -64,6 +64,17 @@ class MeanBot(SAONegotiator):
         early_time_threshold: Time before which agent stays high at 93% (default 0.2)
         main_time_threshold: Time before which agent is in main phase (default 0.8)
         deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
+        min_acceptable: Minimum acceptable utility (default 0.5)
+        generous_threshold: Mean opponent utility above which agent stays firmer (default 0.5)
+        tough_threshold: Mean opponent utility below which agent concedes more (default 0.3)
+        firm_multiplier: Multiplier applied to e when opponent is generous (default 0.8)
+        flexible_multiplier: Multiplier applied to e when opponent is tough (default 1.3)
+        max_utility_ratio: Ratio of max utility used as firm starting threshold (default 0.93)
+        mean_target_margin: Margin added to mean opponent utility for target (default 0.1)
+        mean_target_default: Default target when no opponent utilities observed (default 0.6)
+        end_phase_concession_factor: Fraction of concession applied in end phase (default 0.5)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.9)
+        statistical_acceptance_margin: Margin above mean for statistical acceptance (default 0.2)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -79,6 +90,17 @@ class MeanBot(SAONegotiator):
         early_time_threshold: float = 0.2,
         main_time_threshold: float = 0.8,
         deadline_time_threshold: float = 0.95,
+        min_acceptable: float = 0.5,
+        generous_threshold: float = 0.5,
+        tough_threshold: float = 0.3,
+        firm_multiplier: float = 0.8,
+        flexible_multiplier: float = 1.3,
+        max_utility_ratio: float = 0.93,
+        mean_target_margin: float = 0.1,
+        mean_target_default: float = 0.6,
+        end_phase_concession_factor: float = 0.5,
+        fallback_threshold_ratio: float = 0.9,
+        statistical_acceptance_margin: float = 0.2,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -100,13 +122,23 @@ class MeanBot(SAONegotiator):
         self._early_time_threshold = early_time_threshold
         self._main_time_threshold = main_time_threshold
         self._deadline_time_threshold = deadline_time_threshold
+        self._min_acceptable = min_acceptable
+        self._generous_threshold = generous_threshold
+        self._tough_threshold = tough_threshold
+        self._firm_multiplier = firm_multiplier
+        self._flexible_multiplier = flexible_multiplier
+        self._max_utility_ratio = max_utility_ratio
+        self._mean_target_margin = mean_target_margin
+        self._mean_target_default = mean_target_default
+        self._end_phase_concession_factor = end_phase_concession_factor
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._statistical_acceptance_margin = statistical_acceptance_margin
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
         # State
         self._max_utility: float = 1.0
         self._min_utility: float = 0.0
-        self._min_acceptable: float = 0.5
 
         # Opponent statistics
         self._opponent_utilities: list[float] = []
@@ -153,14 +185,14 @@ class MeanBot(SAONegotiator):
         """Compute threshold using mean-based strategy."""
         # Adjust e based on mean opponent utility
         e = self._e
-        if self._mean_opponent_utility > 0.5:
-            e *= 0.8  # Opponent generous, stay firm
-        elif self._mean_opponent_utility < 0.3:
-            e *= 1.3  # Opponent tough, concede more
+        if self._mean_opponent_utility > self._generous_threshold:
+            e *= self._firm_multiplier  # Opponent generous, stay firm
+        elif self._mean_opponent_utility < self._tough_threshold:
+            e *= self._flexible_multiplier  # Opponent tough, concede more
 
         if time < self._early_time_threshold:
             # Early: stay high
-            return self._max_utility * 0.93
+            return self._max_utility * self._max_utility_ratio
         elif time < self._main_time_threshold:
             # Main phase: concede toward mean-based target
             progress = (time - self._early_time_threshold) / (
@@ -170,21 +202,27 @@ class MeanBot(SAONegotiator):
 
             # Target is adjusted based on mean
             target_min = max(
-                self._mean_opponent_utility + 0.1 if self._opponent_utilities else 0.6,
+                self._mean_opponent_utility + self._mean_target_margin
+                if self._opponent_utilities
+                else self._mean_target_default,
                 self._min_acceptable,
             )
 
             return (
-                self._max_utility * 0.93 - (self._max_utility * 0.93 - target_min) * f_t
+                self._max_utility * self._max_utility_ratio
+                - (self._max_utility * self._max_utility_ratio - target_min) * f_t
             )
         else:
             # End phase: more aggressive
             progress = (time - self._main_time_threshold) / (
                 1.0 - self._main_time_threshold
             )
-            base = max(self._mean_opponent_utility + 0.1, self._min_acceptable)
+            base = max(
+                self._mean_opponent_utility + self._mean_target_margin,
+                self._min_acceptable,
+            )
             target = self._min_acceptable
-            return base - (base - target) * progress * 0.5
+            return base - (base - target) * progress * self._end_phase_concession_factor
 
     def _select_bid(self, time: float) -> Outcome | None:
         """Select bid based on threshold."""
@@ -195,7 +233,9 @@ class MeanBot(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
@@ -232,7 +272,7 @@ class MeanBot(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Accept if significantly above mean
-        if offer_utility >= self._mean_opponent_utility + 0.2:
+        if offer_utility >= self._mean_opponent_utility + self._statistical_acceptance_margin:
             if offer_utility >= self._min_acceptable:
                 return ResponseType.ACCEPT_OFFER
 

@@ -76,6 +76,8 @@ class SACRA(SAONegotiator):
     Args:
         concession_scale: Multiplier applied to the opponent's own
             concession to determine our concession (default 0.7).
+        denominator_epsilon: Epsilon below which the acceptance-probability
+            denominator is treated as zero (default 1e-9).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -88,6 +90,7 @@ class SACRA(SAONegotiator):
     def __init__(
         self,
         concession_scale: float = 0.7,
+        denominator_epsilon: float = 1e-9,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -106,6 +109,7 @@ class SACRA(SAONegotiator):
             **kwargs,
         )
         self._concession_scale = concession_scale
+        self._denominator_epsilon = denominator_epsilon
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -180,7 +184,7 @@ class SACRA(SAONegotiator):
         target_utility = u_max - concession_rate
 
         denominator = u_max - target_utility
-        if denominator <= 1e-9:
+        if denominator <= self._denominator_epsilon:
             # Opponent has not conceded at all: only accept its best bid.
             accept_probability = 1.0 if u_last >= u_max else 0.0
         else:

@@ -91,6 +91,24 @@ class ValueModelAgent(SAONegotiator):
             best bid if it is decent (default 0.995).
         final_stage_min_utility: minimum utility of opponent's best bid to
             consider offering/accepting it in the final stage (default 0.55).
+        unknown_value_preference: estimated opponent preference for unseen
+            values (default 0.3).
+        min_bids_for_concession: number of opponent bids required before any
+            threshold concession is considered (default 4).
+        opponent_best_bid_margin: small margin above the opponent's best bid
+            utility used as a floor for the threshold candidate (default 0.001).
+        threshold_max_step: maximum per-round drop of the acceptance threshold
+            (rate-limiting smoothing, default 0.02).
+        best_bid_epsilon: tolerance below max utility used to fetch the
+            opening best bid (default 0.001).
+        endgame_relax_factor: fraction of the remaining concession pulled
+            toward the opponent's best bid during the end-game ladder
+            (default 0.8).
+        final_stage_accept_factor: accept in the final stage if the offer is
+            at least this fraction of the opponent's best bid utility
+            (default 0.99).
+        accept_margin: accept an offer if it is within this margin below the
+            current threshold (default 0.01).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -107,6 +125,14 @@ class ValueModelAgent(SAONegotiator):
         endgame_start_time: float = 0.9,
         final_stage_time: float = 0.995,
         final_stage_min_utility: float = 0.55,
+        unknown_value_preference: float = 0.3,
+        min_bids_for_concession: int = 4,
+        opponent_best_bid_margin: float = 0.001,
+        threshold_max_step: float = 0.02,
+        best_bid_epsilon: float = 0.001,
+        endgame_relax_factor: float = 0.8,
+        final_stage_accept_factor: float = 0.99,
+        accept_margin: float = 0.01,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -129,6 +155,14 @@ class ValueModelAgent(SAONegotiator):
         self._endgame_start_time = endgame_start_time
         self._final_stage_time = final_stage_time
         self._final_stage_min_utility = final_stage_min_utility
+        self._unknown_value_preference = unknown_value_preference
+        self._min_bids_for_concession = min_bids_for_concession
+        self._opponent_best_bid_margin = opponent_best_bid_margin
+        self._threshold_max_step = threshold_max_step
+        self._best_bid_epsilon = best_bid_epsilon
+        self._endgame_relax_factor = endgame_relax_factor
+        self._final_stage_accept_factor = final_stage_accept_factor
+        self._accept_margin = accept_margin
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._max_util: float = 1.0
@@ -208,7 +242,7 @@ class ValueModelAgent(SAONegotiator):
             if issue_total > 0:
                 total += counts.get(str(val), 0) / issue_total
             else:
-                total += 0.3
+                total += self._unknown_value_preference
             n += 1
         return total / n if n > 0 else 0.5
 
@@ -225,7 +259,7 @@ class ValueModelAgent(SAONegotiator):
             return
         # Mirror the original's "bidCount >= 4" gate before any concession
         # is considered at all.
-        if self._opponent_bid_count < 4:
+        if self._opponent_bid_count < self._min_bids_for_concession:
             return
 
         # How much our utility for the opponent's bids has improved.
@@ -246,13 +280,13 @@ class ValueModelAgent(SAONegotiator):
 
         candidate = 1 - min_concession
         candidate = max(candidate, self._lowest_acceptable)
-        candidate = max(candidate, self._opponent_max_bid_utility + 0.001)
+        candidate = max(candidate, self._opponent_max_bid_utility + self._opponent_best_bid_margin)
 
         # Rate-limit the concession: never drop the threshold by more than a
         # small step per round, so we stay tough unless the opponent keeps
         # conceding steadily over many rounds (approximating the original's
         # per-time-segment damping).
-        max_step = 0.02
+        max_step = self._threshold_max_step
         candidate = max(candidate, self._lowest_approved - max_step)
 
         # Threshold is monotonically non-increasing.
@@ -296,7 +330,7 @@ class ValueModelAgent(SAONegotiator):
         t = state.relative_time
 
         if self._opponent_bid_count == 0:
-            best_bids = self._outcome_space.get_bids_above(self._max_util - 0.001)
+            best_bids = self._outcome_space.get_bids_above(self._max_util - self._best_bid_epsilon)
             bid = best_bids[0].bid if best_bids else None
             if bid is not None:
                 self._mark_offered(bid)
@@ -319,7 +353,7 @@ class ValueModelAgent(SAONegotiator):
                 self._final_stage_time - self._endgame_start_time
             ))
             concession_left = self._lowest_approved - self._opponent_max_bid_utility
-            relaxed = self._lowest_approved - progress * max(0.0, concession_left) * 0.8
+            relaxed = self._lowest_approved - progress * max(0.0, concession_left) * self._endgame_relax_factor
             relaxed = max(relaxed, self._opponent_max_bid_utility)
             self._lowest_approved = min(self._lowest_approved, max(relaxed, self._lowest_acceptable))
         else:
@@ -345,11 +379,11 @@ class ValueModelAgent(SAONegotiator):
 
         if t > self._final_stage_time:
             if self._opponent_max_bid_utility > self._final_stage_min_utility:
-                if offer_utility >= self._opponent_max_bid_utility * 0.99:
+                if offer_utility >= self._opponent_max_bid_utility * self._final_stage_accept_factor:
                     return ResponseType.ACCEPT_OFFER
                 return ResponseType.REJECT_OFFER
 
-        if offer_utility >= self._lowest_approved - 0.01:
+        if offer_utility >= self._lowest_approved - self._accept_margin:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

@@ -74,6 +74,45 @@ class AgentGG(SAONegotiator):
     Args:
         reservation_ratio: Base reservation value ratio (default 0.0)
         deadline_threshold: Time threshold for final deadline acceptance (default 0.999)
+        nash_initial_pass_window: Time window after the first opponent bids used
+            to estimate the Nash point (default 0.003)
+        nash_fallback_ratio: Fallback opponent-concession ratio used when the
+            importance range is zero (default 0.5)
+        nash_divisor: Divisor blending the opponent ratio into the Nash estimate
+            (default 1.7)
+        initial_lower_ratio: Lower-offer ratio at the very start of negotiation
+            (default 0.9999)
+        early_lower_ratio: Lower-offer ratio at the start of the early phase
+            (default 0.99)
+        early_lower_coeff: Coefficient of the linear decay applied to the lower
+            ratio during the early phase (default 0.5)
+        mid_lower_start: Starting lower-offer ratio of the middle phase
+            (default 0.9)
+        nash_blend_high: High Nash-blend coefficient used in the early/middle
+            phases (default 0.3)
+        nash_blend_mid: Mid Nash-blend coefficient used in the middle/late
+            phases (default 0.15)
+        nash_blend_low: Low Nash-blend coefficient used in the late phases
+            (default 0.05)
+        nash_blend_negative: Negative Nash-blend coefficient used near the
+            deadline (default -0.35)
+        nash_blend_final: Final Nash-blend coefficient used at the deadline
+            (default -0.4)
+        reservation_offset_early: Offset added to the reservation ratio as a
+            floor early in the late phases (default 0.3)
+        reservation_offset_mid: Offset added to the reservation ratio as a
+            floor in the middle late phases (default 0.25)
+        reservation_offset_late: Offset added to the reservation ratio as a
+            floor at the deadline (default 0.2)
+        higher_ratio_offset: Offset added to the lower ratio to compute the
+            higher ratio (default 0.1)
+        phase_time_1: First phase time boundary (default 0.01)
+        phase_time_2: Second phase time boundary (default 0.02)
+        phase_time_3: Third phase time boundary (default 0.2)
+        phase_time_4: Fourth phase time boundary (default 0.5)
+        phase_time_5: Fifth phase time boundary (default 0.9)
+        phase_time_6: Sixth phase time boundary (default 0.98)
+        phase_time_7: Seventh phase time boundary (default 0.995)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -87,6 +126,29 @@ class AgentGG(SAONegotiator):
         self,
         reservation_ratio: float = 0.0,
         deadline_threshold: float = 0.999,
+        nash_initial_pass_window: float = 0.003,
+        nash_fallback_ratio: float = 0.5,
+        nash_divisor: float = 1.7,
+        initial_lower_ratio: float = 0.9999,
+        early_lower_ratio: float = 0.99,
+        early_lower_coeff: float = 0.5,
+        mid_lower_start: float = 0.9,
+        nash_blend_high: float = 0.3,
+        nash_blend_mid: float = 0.15,
+        nash_blend_low: float = 0.05,
+        nash_blend_negative: float = -0.35,
+        nash_blend_final: float = -0.4,
+        reservation_offset_early: float = 0.3,
+        reservation_offset_mid: float = 0.25,
+        reservation_offset_late: float = 0.2,
+        higher_ratio_offset: float = 0.1,
+        phase_time_1: float = 0.01,
+        phase_time_2: float = 0.02,
+        phase_time_3: float = 0.2,
+        phase_time_4: float = 0.5,
+        phase_time_5: float = 0.9,
+        phase_time_6: float = 0.98,
+        phase_time_7: float = 0.995,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -106,6 +168,29 @@ class AgentGG(SAONegotiator):
         )
         self._reservation_ratio = reservation_ratio
         self._deadline_threshold = deadline_threshold
+        self._nash_initial_pass_window = nash_initial_pass_window
+        self._nash_fallback_ratio = nash_fallback_ratio
+        self._nash_divisor = nash_divisor
+        self._initial_lower_ratio = initial_lower_ratio
+        self._early_lower_ratio = early_lower_ratio
+        self._early_lower_coeff = early_lower_coeff
+        self._mid_lower_start = mid_lower_start
+        self._nash_blend_high = nash_blend_high
+        self._nash_blend_mid = nash_blend_mid
+        self._nash_blend_low = nash_blend_low
+        self._nash_blend_negative = nash_blend_negative
+        self._nash_blend_final = nash_blend_final
+        self._reservation_offset_early = reservation_offset_early
+        self._reservation_offset_mid = reservation_offset_mid
+        self._reservation_offset_late = reservation_offset_late
+        self._higher_ratio_offset = higher_ratio_offset
+        self._phase_time_1 = phase_time_1
+        self._phase_time_2 = phase_time_2
+        self._phase_time_3 = phase_time_3
+        self._phase_time_4 = phase_time_4
+        self._phase_time_5 = phase_time_5
+        self._phase_time_6 = phase_time_6
+        self._phase_time_7 = phase_time_7
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -292,16 +377,18 @@ class AgentGG(SAONegotiator):
                 self._max_opponent_bid_importance = bid_importance
 
         if self._initial_time_pass:
-            if time - self._start_time > 0.003:  # 3/1000 of negotiation
+            if time - self._start_time > self._nash_initial_pass_window:
                 imp_range = self._max_importance - self._min_importance
                 if imp_range > 0:
                     max_ratio = (
                         self._max_opponent_bid_importance - self._min_importance
                     ) / imp_range
                 else:
-                    max_ratio = 0.5
+                    max_ratio = self._nash_fallback_ratio
                 # Estimate Nash between opponent's best for us and 1.0
-                self._estimated_nash_point = (1 - max_ratio) / 1.7 + max_ratio
+                self._estimated_nash_point = (
+                    1 - max_ratio
+                ) / self._nash_divisor + max_ratio
                 self._nash_estimated = True
         else:
             # Start timing after first different bid
@@ -311,46 +398,71 @@ class AgentGG(SAONegotiator):
 
     def _get_threshold(self, time: float) -> None:
         """Update thresholds based on time."""
-        if time < 0.01:
-            self._offer_lower_ratio = 0.9999
-        elif time < 0.02:
-            self._offer_lower_ratio = 0.99
-        elif time < 0.2:
-            self._offer_lower_ratio = 0.99 - 0.5 * (time - 0.02)
-        elif time < 0.5:
-            self._offer_randomly = False
-            p2 = 0.3 * (1 - self._estimated_nash_point) + self._estimated_nash_point
-            self._offer_lower_ratio = 0.9 - (0.9 - p2) / 0.3 * (time - 0.2)
-        elif time < 0.9:
-            p1 = 0.3 * (1 - self._estimated_nash_point) + self._estimated_nash_point
-            p2 = 0.15 * (1 - self._estimated_nash_point) + self._estimated_nash_point
-            self._offer_lower_ratio = p1 - (p1 - p2) / 0.4 * (time - 0.5)
-        elif time < 0.98:
-            p1 = 0.15 * (1 - self._estimated_nash_point) + self._estimated_nash_point
-            p2 = 0.05 * (1 - self._estimated_nash_point) + self._estimated_nash_point
-            possible_ratio = p1 - (p1 - p2) / 0.08 * (time - 0.9)
-            self._offer_lower_ratio = max(possible_ratio, self._reservation_ratio + 0.3)
-        elif time < 0.995:
-            p1 = 0.05 * (1 - self._estimated_nash_point) + self._estimated_nash_point
-            p2 = 0.0 * (1 - self._estimated_nash_point) + self._estimated_nash_point
-            possible_ratio = p1 - (p1 - p2) / 0.015 * (time - 0.98)
-            self._offer_lower_ratio = max(
-                possible_ratio, self._reservation_ratio + 0.25
+        if time < self._phase_time_1:
+            self._offer_lower_ratio = self._initial_lower_ratio
+        elif time < self._phase_time_2:
+            self._offer_lower_ratio = self._early_lower_ratio
+        elif time < self._phase_time_3:
+            self._offer_lower_ratio = (
+                self._early_lower_ratio
+                - self._early_lower_coeff * (time - self._phase_time_2)
             )
-        elif time < 0.999:
-            p1 = 0.0 * (1 - self._estimated_nash_point) + self._estimated_nash_point
-            p2 = -0.35 * (1 - self._estimated_nash_point) + self._estimated_nash_point
-            possible_ratio = p1 - (p1 - p2) / 0.004 * (time - 0.995)
+        elif time < self._phase_time_4:
+            self._offer_randomly = False
+            p2 = self._nash_blend_high * (
+                1 - self._estimated_nash_point
+            ) + self._estimated_nash_point
+            self._offer_lower_ratio = (
+                self._mid_lower_start
+                - (self._mid_lower_start - p2) / 0.3 * (time - self._phase_time_3)
+            )
+        elif time < self._phase_time_5:
+            p1 = self._nash_blend_high * (
+                1 - self._estimated_nash_point
+            ) + self._estimated_nash_point
+            p2 = self._nash_blend_mid * (
+                1 - self._estimated_nash_point
+            ) + self._estimated_nash_point
+            self._offer_lower_ratio = p1 - (p1 - p2) / 0.4 * (time - self._phase_time_4)
+        elif time < self._phase_time_6:
+            p1 = self._nash_blend_mid * (
+                1 - self._estimated_nash_point
+            ) + self._estimated_nash_point
+            p2 = self._nash_blend_low * (
+                1 - self._estimated_nash_point
+            ) + self._estimated_nash_point
+            possible_ratio = p1 - (p1 - p2) / 0.08 * (time - self._phase_time_5)
             self._offer_lower_ratio = max(
-                possible_ratio, self._reservation_ratio + 0.25
+                possible_ratio, self._reservation_ratio + self._reservation_offset_early
+            )
+        elif time < self._phase_time_7:
+            p1 = self._nash_blend_low * (
+                1 - self._estimated_nash_point
+            ) + self._estimated_nash_point
+            p2 = 0.0 * (1 - self._estimated_nash_point) + self._estimated_nash_point
+            possible_ratio = p1 - (p1 - p2) / 0.015 * (time - self._phase_time_6)
+            self._offer_lower_ratio = max(
+                possible_ratio, self._reservation_ratio + self._reservation_offset_mid
+            )
+        elif time < self._deadline_threshold:
+            p1 = 0.0 * (1 - self._estimated_nash_point) + self._estimated_nash_point
+            p2 = self._nash_blend_negative * (
+                1 - self._estimated_nash_point
+            ) + self._estimated_nash_point
+            possible_ratio = p1 - (p1 - p2) / 0.004 * (time - self._phase_time_7)
+            self._offer_lower_ratio = max(
+                possible_ratio, self._reservation_ratio + self._reservation_offset_mid
             )
         else:
             possible_ratio = (
-                -0.4 * (1 - self._estimated_nash_point) + self._estimated_nash_point
+                self._nash_blend_final * (1 - self._estimated_nash_point)
+                + self._estimated_nash_point
             )
-            self._offer_lower_ratio = max(possible_ratio, self._reservation_ratio + 0.2)
+            self._offer_lower_ratio = max(
+                possible_ratio, self._reservation_ratio + self._reservation_offset_late
+            )
 
-        self._offer_higher_ratio = self._offer_lower_ratio + 0.1
+        self._offer_higher_ratio = self._offer_lower_ratio + self._higher_ratio_offset
 
     def _get_importance_ratio(self, bid: Outcome) -> float:
         """Get importance ratio for a bid (0 to 1)."""

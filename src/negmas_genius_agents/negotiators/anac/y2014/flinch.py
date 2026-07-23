@@ -96,6 +96,24 @@ class Flinch(SAONegotiator):
             the deadline (default 0.4).
         backoff_factor: Multiplicative squaring factor used to relax the
             acceptance threshold when no candidates are found (default 0.98).
+        backoff_epsilon: Lower bound on the backoff factor below which the
+            candidate search stops relaxing the threshold (default 1e-6).
+        bandwidth_base: Base value of the kernel-regression bandwidth drawn
+            each bidding round (default 0.3).
+        bandwidth_range: Range added to ``bandwidth_base`` when drawing the
+            kernel-regression bandwidth (default 0.7).
+        kop_time_exponent: Exponent applied to time when growing the opponent
+            weight in bid scoring (default 0.5).
+        discount_high_threshold: Discount factor above which the t_lambda
+            interpolation uses the high-discount exponent (default 0.75).
+        discount_mid_threshold: Discount factor above which the t_lambda
+            interpolation uses the mid-discount exponent (default 0.5).
+        discount_high_beta: Exponent applied to the discount factor when
+            computing t_lambda for high-discount domains (default 2.5).
+        discount_mid_beta: Exponent applied to the discount factor when
+            computing t_lambda for mid-discount domains (default 2.0).
+        discount_low_beta: Exponent applied to the discount factor when
+            computing t_lambda for low-discount domains (default 1.5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -116,6 +134,15 @@ class Flinch(SAONegotiator):
         kop_base: float = 0.5,
         kop_range: float = 0.4,
         backoff_factor: float = 0.98,
+        backoff_epsilon: float = 1e-6,
+        bandwidth_base: float = 0.3,
+        bandwidth_range: float = 0.7,
+        kop_time_exponent: float = 0.5,
+        discount_high_threshold: float = 0.75,
+        discount_mid_threshold: float = 0.5,
+        discount_high_beta: float = 2.5,
+        discount_mid_beta: float = 2.0,
+        discount_low_beta: float = 1.5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -142,6 +169,15 @@ class Flinch(SAONegotiator):
         self._kop_base = kop_base
         self._kop_range = kop_range
         self._backoff_factor = backoff_factor
+        self._backoff_epsilon = backoff_epsilon
+        self._bandwidth_base = bandwidth_base
+        self._bandwidth_range = bandwidth_range
+        self._kop_time_exponent = kop_time_exponent
+        self._discount_high_threshold = discount_high_threshold
+        self._discount_mid_threshold = discount_mid_threshold
+        self._discount_high_beta = discount_high_beta
+        self._discount_mid_beta = discount_mid_beta
+        self._discount_low_beta = discount_low_beta
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
@@ -172,12 +208,12 @@ class Flinch(SAONegotiator):
             self._n_issues = len(outcome_space.issues)
 
         discount = float(getattr(self.ufun, "discount_factor", None) or 1.0)
-        if discount > 0.75:
-            beta = 2.5
-        elif discount > 0.5:
-            beta = 2.0
+        if discount > self._discount_high_threshold:
+            beta = self._discount_high_beta
+        elif discount > self._discount_mid_threshold:
+            beta = self._discount_mid_beta
         else:
-            beta = 1.5
+            beta = self._discount_low_beta
         self._t_lambda = self._t_lambda_min + (
             self._t_lambda_max - self._t_lambda_min
         ) * (discount**beta)
@@ -269,14 +305,16 @@ class Flinch(SAONegotiator):
         threshold = self._accept_threshold
         f = 1.0
         candidates = self._outcome_space.get_bids_above(threshold * f)
-        while not candidates and f > 1e-6:
+        while not candidates and f > self._backoff_epsilon:
             f *= self._backoff_factor
             candidates = self._outcome_space.get_bids_above(threshold * f)
         if not candidates:
             candidates = self._outcome_space.outcomes
 
-        h = 0.3 + 0.7 * random.random()
-        kop = self._kop_base + self._kop_range * (max(time, 0.0) ** 0.5)
+        h = self._bandwidth_base + self._bandwidth_range * random.random()
+        kop = self._kop_base + self._kop_range * (
+            max(time, 0.0) ** self._kop_time_exponent
+        )
 
         my_utils = [
             c.utility / self._estimated_max_utility

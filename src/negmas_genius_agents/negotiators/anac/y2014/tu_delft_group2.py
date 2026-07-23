@@ -74,6 +74,7 @@ class TUDelftGroup2(SAONegotiator):
         concession_multiplier: Multiplier for base concession (default 0.5).
         acceleration_factor: Factor for late-game acceleration (default 0.1).
         top_candidates_divisor: Divisor for selecting top candidates (default 3).
+        min_utility_floor: Floor value for minimum acceptable utility (default 0.5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -93,6 +94,7 @@ class TUDelftGroup2(SAONegotiator):
         concession_multiplier: float = 0.5,
         acceleration_factor: float = 0.1,
         top_candidates_divisor: int = 3,
+        min_utility_floor: float = 0.5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -118,6 +120,7 @@ class TUDelftGroup2(SAONegotiator):
         self._concession_multiplier = concession_multiplier
         self._acceleration_factor = acceleration_factor
         self._top_candidates_divisor = top_candidates_divisor
+        self._min_utility_floor = min_utility_floor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -129,7 +132,7 @@ class TUDelftGroup2(SAONegotiator):
         self._opponent_issue_weights: dict[int, float] = {}
 
         # State
-        self._min_utility: float = 0.5
+        self._min_utility: float = min_utility_floor
         self._max_utility: float = 1.0
         self._round_count: int = 0
 
@@ -144,7 +147,9 @@ class TUDelftGroup2(SAONegotiator):
         self._outcome_space = SortedOutcomeSpace(ufun=self.ufun)
         if self._outcome_space.outcomes:
             self._max_utility = self._outcome_space.max_utility
-            self._min_utility = max(0.5, self._outcome_space.min_utility)
+            self._min_utility = max(
+                self._min_utility_floor, self._outcome_space.min_utility
+            )
         self._initialized = True
 
     def on_negotiation_start(self, state: SAOState) -> None:

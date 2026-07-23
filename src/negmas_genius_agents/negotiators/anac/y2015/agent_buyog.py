@@ -60,6 +60,17 @@ class AgentBuyog(SAONegotiator):
         early_time_threshold: Time threshold for early phase (default 0.2)
         main_time_threshold: Time threshold for main/late phase transition (default 0.7)
         deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
+        max_utility_ratio: Ratio of max utility used as firm starting threshold (default 0.95)
+        main_target_floor: Floor utility target in main phase (default 0.6)
+        concession_factor: Fraction of full concession applied (default 0.5)
+        nash_margin: Margin subtracted from Nash estimate for late-phase/acceptance (default 0.1)
+        late_target_floor: Floor utility target in late phase (default 0.5)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.9)
+        nash_search_count: Number of top candidates searched for Nash-like bid (default 50)
+        own_utility_weight: Weight of own utility in bid scoring (default 0.6)
+        opponent_pref_weight: Weight of opponent preference in bid scoring (default 0.4)
+        opponent_model_min_bids: Minimum opponent bids before Nash estimation (default 5)
+        opponent_model_window: Window size of recent opponent bids for Nash estimate (default 10)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -75,6 +86,17 @@ class AgentBuyog(SAONegotiator):
         early_time_threshold: float = 0.2,
         main_time_threshold: float = 0.7,
         deadline_time_threshold: float = 0.95,
+        max_utility_ratio: float = 0.95,
+        main_target_floor: float = 0.6,
+        concession_factor: float = 0.5,
+        nash_margin: float = 0.1,
+        late_target_floor: float = 0.5,
+        fallback_threshold_ratio: float = 0.9,
+        nash_search_count: int = 50,
+        own_utility_weight: float = 0.6,
+        opponent_pref_weight: float = 0.4,
+        opponent_model_min_bids: int = 5,
+        opponent_model_window: int = 10,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -96,6 +118,17 @@ class AgentBuyog(SAONegotiator):
         self._early_time_threshold = early_time_threshold
         self._main_time_threshold = main_time_threshold
         self._deadline_time_threshold = deadline_time_threshold
+        self._max_utility_ratio = max_utility_ratio
+        self._main_target_floor = main_target_floor
+        self._concession_factor = concession_factor
+        self._nash_margin = nash_margin
+        self._late_target_floor = late_target_floor
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._nash_search_count = nash_search_count
+        self._own_utility_weight = own_utility_weight
+        self._opponent_pref_weight = opponent_pref_weight
+        self._opponent_model_min_bids = opponent_model_min_bids
+        self._opponent_model_window = opponent_model_window
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -149,9 +182,9 @@ class AgentBuyog(SAONegotiator):
             )
 
         # Estimate Nash point based on best mutual offer
-        if len(self._opponent_bids) > 5:
-            avg_util = sum(u for _, u in self._opponent_bids[-10:]) / min(
-                10, len(self._opponent_bids)
+        if len(self._opponent_bids) > self._opponent_model_min_bids:
+            avg_util = sum(u for _, u in self._opponent_bids[-self._opponent_model_window :]) / min(
+                self._opponent_model_window, len(self._opponent_bids)
             )
             self._estimated_nash_utility = (avg_util + self._best_opponent_utility) / 2
 
@@ -178,27 +211,38 @@ class AgentBuyog(SAONegotiator):
         # Phase-based concession
         if time < self._early_time_threshold:
             # Early: stay firm
-            return self._max_utility * 0.95
+            return self._max_utility * self._max_utility_ratio
         elif time < self._main_time_threshold:
             # Middle: gradual concession toward Nash
             progress = (time - self._early_time_threshold) / (
                 self._main_time_threshold - self._early_time_threshold
             )
             f_t = math.pow(progress, 1 / self._e)
-            target_min = max(self._estimated_nash_utility, 0.6)
+            target_min = max(self._estimated_nash_utility, self._main_target_floor)
             return (
-                self._max_utility * 0.95
-                - (self._max_utility * 0.95 - target_min) * f_t * 0.5
+                self._max_utility * self._max_utility_ratio
+                - (
+                    self._max_utility * self._max_utility_ratio
+                    - target_min
+                )
+                * f_t
+                * self._concession_factor
             )
         else:
             # Late: concede toward Nash point
             progress = (time - self._main_time_threshold) / (
                 1.0 - self._main_time_threshold
             )
-            target_min = max(self._estimated_nash_utility - 0.1, 0.5)
+            target_min = max(
+                self._estimated_nash_utility - self._nash_margin, self._late_target_floor
+            )
             base = (
-                self._max_utility * 0.95
-                - (self._max_utility * 0.95 - self._estimated_nash_utility) * 0.5
+                self._max_utility * self._max_utility_ratio
+                - (
+                    self._max_utility * self._max_utility_ratio
+                    - self._estimated_nash_utility
+                )
+                * self._concession_factor
             )
             return base - (base - target_min) * progress
 
@@ -211,7 +255,9 @@ class AgentBuyog(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
@@ -221,10 +267,13 @@ class AgentBuyog(SAONegotiator):
             best_bid = None
             best_score = -1.0
 
-            for bd in candidates[:50]:  # Limit search
+            for bd in candidates[: self._nash_search_count]:  # Limit search
                 opp_pref = self._estimate_opponent_preference(bd.bid)
                 # Combined score: our utility + opponent preference
-                score = bd.utility * 0.6 + opp_pref * 0.4
+                score = (
+                    bd.utility * self._own_utility_weight
+                    + opp_pref * self._opponent_pref_weight
+                )
                 if score > best_score:
                     best_score = score
                     best_bid = bd.bid
@@ -273,7 +322,7 @@ class AgentBuyog(SAONegotiator):
         # End-game: accept if better than Nash estimate
         if (
             time > self._deadline_time_threshold
-            and offer_utility >= self._estimated_nash_utility - 0.1
+            and offer_utility >= self._estimated_nash_utility - self._nash_margin
         ):
             return ResponseType.ACCEPT_OFFER
 

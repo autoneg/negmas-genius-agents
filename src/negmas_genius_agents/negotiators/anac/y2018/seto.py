@@ -74,6 +74,9 @@ class Seto(SAONegotiator):
         aggressive_time: Time to start aggressive concession (default 0.9).
         late_acceptance_time: Time threshold for late acceptance (default 0.95).
         deadline_threshold: Time threshold for deadline acceptance (default 0.99).
+        aggressive_concession_exponent: Exponent of the aggressive (phase 3) concession curve (default 0.5).
+        bid_margin: Half-width of the utility window from which candidate bids are drawn (default 0.03).
+        best_received_factor: Fraction of the best received utility accepted near the deadline (default 0.95).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -91,6 +94,9 @@ class Seto(SAONegotiator):
         aggressive_time: float = 0.9,
         late_acceptance_time: float = 0.95,
         deadline_threshold: float = 0.99,
+        aggressive_concession_exponent: float = 0.5,
+        bid_margin: float = 0.03,
+        best_received_factor: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -114,6 +120,9 @@ class Seto(SAONegotiator):
         self._aggressive_time = aggressive_time
         self._late_acceptance_time = late_acceptance_time
         self._deadline_threshold = deadline_threshold
+        self._aggressive_concession_exponent = aggressive_concession_exponent
+        self._bid_margin = bid_margin
+        self._best_received_factor = best_received_factor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -176,7 +185,7 @@ class Seto(SAONegotiator):
         phase_progress = (time - self._aggressive_time) / (1.0 - self._aggressive_time)
         middle_target = (self._initial_target + self._min_target) / 2
         return middle_target - (middle_target - self._min_target) * math.pow(
-            phase_progress, 0.5
+            phase_progress, self._aggressive_concession_exponent
         )
 
     def _select_bid(self, time: float) -> Outcome | None:
@@ -193,7 +202,7 @@ class Seto(SAONegotiator):
 
         # Get candidates near target
         candidates = self._outcome_space.get_bids_in_range(
-            scaled_target - 0.03, scaled_target + 0.03
+            scaled_target - self._bid_margin, scaled_target + self._bid_margin
         )
 
         if not candidates:
@@ -233,7 +242,7 @@ class Seto(SAONegotiator):
         # Very near deadline, accept anything reasonable
         if time >= self._deadline_threshold:
             # Accept if better than what we've seen
-            if offer_utility >= self._best_received_utility * 0.95:
+            if offer_utility >= self._best_received_utility * self._best_received_factor:
                 return True
             # Accept if above reservation (min utility)
             if offer_utility >= self._min_utility:

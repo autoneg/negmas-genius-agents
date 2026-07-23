@@ -60,6 +60,16 @@ class Mercury(SAONegotiator):
     Args:
         e: Base concession exponent (default 0.25)
         deadline_time_threshold: Time after which swift end-game triggers (default 0.93)
+        trend_min_bids: Minimum opponent bids to compute trend (default 3)
+        trend_window: Number of recent opponent bids used for trend (default 3)
+        trend_divisor: Divisor used when computing trend derivative (default 2)
+        trend_threshold: Magnitude of trend considered significant (default 0.02)
+        conceding_fluid_rate: Fluid rate when opponent is conceding (default 0.7)
+        hardening_fluid_rate: Fluid rate when opponent is hardening (default 1.3)
+        neutral_fluid_rate: Fluid rate when opponent trend is neutral (default 1.0)
+        min_acceptable_floor: Minimum acceptable utility floor (default 0.45)
+        min_utility_margin: Margin above min utility used in min acceptable (default 0.1)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.9)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -73,6 +83,16 @@ class Mercury(SAONegotiator):
         self,
         e: float = 0.25,
         deadline_time_threshold: float = 0.93,
+        trend_min_bids: int = 3,
+        trend_window: int = 3,
+        trend_divisor: float = 2,
+        trend_threshold: float = 0.02,
+        conceding_fluid_rate: float = 0.7,
+        hardening_fluid_rate: float = 1.3,
+        neutral_fluid_rate: float = 1.0,
+        min_acceptable_floor: float = 0.45,
+        min_utility_margin: float = 0.1,
+        fallback_threshold_ratio: float = 0.9,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -92,6 +112,16 @@ class Mercury(SAONegotiator):
         )
         self._e = e
         self._deadline_time_threshold = deadline_time_threshold
+        self._trend_min_bids = trend_min_bids
+        self._trend_window = trend_window
+        self._trend_divisor = trend_divisor
+        self._trend_threshold = trend_threshold
+        self._conceding_fluid_rate = conceding_fluid_rate
+        self._hardening_fluid_rate = hardening_fluid_rate
+        self._neutral_fluid_rate = neutral_fluid_rate
+        self._min_acceptable_floor = min_acceptable_floor
+        self._min_utility_margin = min_utility_margin
+        self._fallback_threshold_ratio = fallback_threshold_ratio
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -128,7 +158,7 @@ class Mercury(SAONegotiator):
         self._opponent_utilities = []
         self._best_opponent_utility = 0.0
         self._opponent_trend = 0.0
-        self._fluid_rate = 1.0
+        self._fluid_rate = self._neutral_fluid_rate
 
     def _update_opponent_model(self, utility: float) -> None:
         """Track opponent and calculate trend."""
@@ -138,19 +168,19 @@ class Mercury(SAONegotiator):
             self._best_opponent_utility = utility
 
         # Calculate trend (derivative of opponent utility)
-        if len(self._opponent_utilities) >= 3:
-            recent = self._opponent_utilities[-3:]
-            self._opponent_trend = (recent[-1] - recent[0]) / 2
+        if len(self._opponent_utilities) >= self._trend_min_bids:
+            recent = self._opponent_utilities[-self._trend_window :]
+            self._opponent_trend = (recent[-1] - recent[0]) / self._trend_divisor
 
             # Adapt fluid rate based on opponent
-            if self._opponent_trend > 0.02:
+            if self._opponent_trend > self._trend_threshold:
                 # Opponent conceding, slow down
-                self._fluid_rate = 0.7
-            elif self._opponent_trend < -0.02:
+                self._fluid_rate = self._conceding_fluid_rate
+            elif self._opponent_trend < -self._trend_threshold:
                 # Opponent hardening, speed up
-                self._fluid_rate = 1.3
+                self._fluid_rate = self._hardening_fluid_rate
             else:
-                self._fluid_rate = 1.0
+                self._fluid_rate = self._neutral_fluid_rate
 
     def _compute_threshold(self, time: float) -> float:
         """Compute threshold with fluid adaptation."""
@@ -158,7 +188,7 @@ class Mercury(SAONegotiator):
 
         # Mercury formula: fast and fluid
         f_t = math.pow(time, 1 / e) if e > 0 else time
-        min_acceptable = max(0.45, self._min_utility + 0.1)
+        min_acceptable = max(self._min_acceptable_floor, self._min_utility + self._min_utility_margin)
 
         target = self._max_utility - (self._max_utility - min_acceptable) * f_t
         return max(target, min_acceptable)
@@ -172,7 +202,9 @@ class Mercury(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
@@ -218,7 +250,9 @@ class Mercury(SAONegotiator):
 
         # Swift end-game
         if time > self._deadline_time_threshold:
-            min_acceptable = max(0.45, self._min_utility + 0.1)
+            min_acceptable = max(
+                self._min_acceptable_floor, self._min_utility + self._min_utility_margin
+            )
             if offer_utility >= max(self._best_opponent_utility, min_acceptable):
                 return ResponseType.ACCEPT_OFFER
 

@@ -65,6 +65,12 @@ class CUHKAgent2015(SAONegotiator):
         main_time_threshold: Time threshold for main/end phase transition (default 0.8)
         nash_accept_time_threshold: Time after which AC_Nash applies (default 0.9)
         deadline_time_threshold: Time after which end-game acceptance triggers (default 0.98)
+        nash_estimation_min_bids: Minimum opponent bids before Nash estimation (default 3)
+        max_utility_ratio: Ratio of max utility used as initial threshold (default 0.95)
+        main_phase_exponent: Exponent used for quadratic concession in main phase (default 2)
+        end_phase_concession_factor: Fraction of remaining concession in end phase (default 0.6)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.9)
+        nash_search_count: Number of top candidates searched for Nash product (default 50)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -81,6 +87,12 @@ class CUHKAgent2015(SAONegotiator):
         main_time_threshold: float = 0.8,
         nash_accept_time_threshold: float = 0.9,
         deadline_time_threshold: float = 0.98,
+        nash_estimation_min_bids: int = 3,
+        max_utility_ratio: float = 0.95,
+        main_phase_exponent: float = 2,
+        end_phase_concession_factor: float = 0.6,
+        fallback_threshold_ratio: float = 0.9,
+        nash_search_count: int = 50,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -103,6 +115,12 @@ class CUHKAgent2015(SAONegotiator):
         self._main_time_threshold = main_time_threshold
         self._nash_accept_time_threshold = nash_accept_time_threshold
         self._deadline_time_threshold = deadline_time_threshold
+        self._nash_estimation_min_bids = nash_estimation_min_bids
+        self._max_utility_ratio = max_utility_ratio
+        self._main_phase_exponent = main_phase_exponent
+        self._end_phase_concession_factor = end_phase_concession_factor
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._nash_search_count = nash_search_count
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -153,7 +171,7 @@ class CUHKAgent2015(SAONegotiator):
         self._avg_opponent_utility = total / len(self._opponent_bids)
 
         # Update Nash estimate
-        if len(self._opponent_bids) >= 3:
+        if len(self._opponent_bids) >= self._nash_estimation_min_bids:
             self._estimated_nash = (
                 self._best_opponent_utility + self._avg_opponent_utility
             ) / 2
@@ -188,16 +206,20 @@ class CUHKAgent2015(SAONegotiator):
         """Compute threshold with CUHK strategy."""
         if time < self._initial_time_threshold:
             # Initial phase: high threshold
-            return self._max_utility * 0.95
+            return self._max_utility * self._max_utility_ratio
         elif time < self._main_time_threshold:
             # Main phase: concede toward Nash
             progress = (time - self._initial_time_threshold) / (
                 self._main_time_threshold - self._initial_time_threshold
             )
-            f_t = math.pow(progress, 2)  # Quadratic concession
+            f_t = math.pow(progress, self._main_phase_exponent)  # Quadratic concession
             target = (
-                self._max_utility * 0.95
-                - (self._max_utility * 0.95 - self._estimated_nash) * f_t
+                self._max_utility * self._max_utility_ratio
+                - (
+                    self._max_utility * self._max_utility_ratio
+                    - self._estimated_nash
+                )
+                * f_t
             )
             return max(target, self._min_utility)
         else:
@@ -207,7 +229,9 @@ class CUHKAgent2015(SAONegotiator):
             )
             target = (
                 self._estimated_nash
-                - (self._estimated_nash - self._min_utility) * progress * 0.6
+                - (self._estimated_nash - self._min_utility)
+                * progress
+                * self._end_phase_concession_factor
             )
             return max(target, self._min_utility)
 
@@ -220,7 +244,9 @@ class CUHKAgent2015(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
@@ -230,7 +256,7 @@ class CUHKAgent2015(SAONegotiator):
             best_bid = None
             best_nash_score = -1.0
 
-            for bd in candidates[:50]:
+            for bd in candidates[: self._nash_search_count]:
                 opp_pref = self._estimate_opponent_preference(bd.bid)
                 # Nash product approximation
                 nash_score = bd.utility * opp_pref

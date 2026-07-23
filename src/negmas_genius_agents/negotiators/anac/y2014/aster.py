@@ -77,6 +77,7 @@ class Aster(SAONegotiator):
         top_candidates_divisor: Divisor for selecting top candidates (default 3).
         historical_acceptance_time: Time threshold for historical acceptance (default 0.9).
         emergency_acceptance_time: Time threshold for emergency acceptance (default 0.98).
+        min_utility_floor: Floor value for minimum acceptable utility (default 0.5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -100,6 +101,7 @@ class Aster(SAONegotiator):
         top_candidates_divisor: int = 3,
         historical_acceptance_time: float = 0.9,
         emergency_acceptance_time: float = 0.98,
+        min_utility_floor: float = 0.5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -129,6 +131,7 @@ class Aster(SAONegotiator):
         self._top_candidates_divisor = top_candidates_divisor
         self._historical_acceptance_time = historical_acceptance_time
         self._emergency_acceptance_time = emergency_acceptance_time
+        self._min_utility_floor = min_utility_floor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -140,7 +143,7 @@ class Aster(SAONegotiator):
         self._opponent_issue_importance: dict[int, float] = {}
 
         # State
-        self._min_utility: float = 0.5
+        self._min_utility: float = min_utility_floor
         self._max_utility: float = 1.0
 
     def _initialize(self) -> None:
@@ -154,7 +157,9 @@ class Aster(SAONegotiator):
         self._outcome_space = SortedOutcomeSpace(ufun=self.ufun)
         if self._outcome_space.outcomes:
             self._max_utility = self._outcome_space.max_utility
-            self._min_utility = max(0.5, self._outcome_space.min_utility)
+            self._min_utility = max(
+                self._min_utility_floor, self._outcome_space.min_utility
+            )
         self._initialized = True
 
     def on_negotiation_start(self, state: SAOState) -> None:

@@ -60,6 +60,33 @@ class MadAgent(SAONegotiator):
         min_utility: Minimum acceptable utility (default 0.5).
         madness: Controls unpredictability level, 0-1 (default 0.3).
         late_game_threshold: Time threshold for normalizing behavior (default 0.85).
+        oscillation_scale: Amplitude of the random threshold oscillation applied
+            each round (default 0.15).
+        mad_event_probability_scale: Multiplier on ``madness`` giving the
+            probability of a stubborn/generous or mad-acceptance event
+            (default 0.1).
+        stubborn_probability: Probability of choosing the stubborn branch over
+            the generous branch in a mad event (default 0.5).
+        stubborn_boost: Threshold increase applied in the stubborn branch
+            (default 0.1).
+        stubborn_ceiling_ratio: Upper bound on the stubborn-adjusted threshold
+            as a fraction of max utility (default 0.9).
+        generous_concession: Threshold decrease applied in the generous branch
+            (default 0.1).
+        rational_threshold_offset: Offset above ``min_utility`` used for the
+            rational threshold blended in during the late game (default 0.2).
+        late_blend_rate: Blend factor controlling how much the rational
+            threshold replaces the mad threshold in the late game (default 0.5).
+        random_bid_probability_scale: Multiplier on ``madness`` giving the
+            probability of selecting a completely random bid (default 0.15).
+        bid_range_below: Utility range below the threshold included in the bid
+            search window (default 0.05).
+        bid_range_above: Utility range above the threshold included in the bid
+            search window (default 0.1).
+        mad_acceptance_tolerance: Tolerance below the threshold still accepted
+            during a mad-acceptance event (default 0.1).
+        deadline_threshold: Relative time after which the agent becomes fully
+            rational and accepts above ``min_utility`` (default 0.95).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -74,6 +101,19 @@ class MadAgent(SAONegotiator):
         min_utility: float = 0.5,
         madness: float = 0.3,
         late_game_threshold: float = 0.85,
+        oscillation_scale: float = 0.15,
+        mad_event_probability_scale: float = 0.1,
+        stubborn_probability: float = 0.5,
+        stubborn_boost: float = 0.1,
+        stubborn_ceiling_ratio: float = 0.9,
+        generous_concession: float = 0.1,
+        rational_threshold_offset: float = 0.2,
+        late_blend_rate: float = 0.5,
+        random_bid_probability_scale: float = 0.15,
+        bid_range_below: float = 0.05,
+        bid_range_above: float = 0.1,
+        mad_acceptance_tolerance: float = 0.1,
+        deadline_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -94,6 +134,19 @@ class MadAgent(SAONegotiator):
         self._min_utility = min_utility
         self._madness = min(max(madness, 0.0), 1.0)  # Clamp to [0, 1]
         self._late_game_threshold = late_game_threshold
+        self._oscillation_scale = oscillation_scale
+        self._mad_event_probability_scale = mad_event_probability_scale
+        self._stubborn_probability = stubborn_probability
+        self._stubborn_boost = stubborn_boost
+        self._stubborn_ceiling_ratio = stubborn_ceiling_ratio
+        self._generous_concession = generous_concession
+        self._rational_threshold_offset = rational_threshold_offset
+        self._late_blend_rate = late_blend_rate
+        self._random_bid_probability_scale = random_bid_probability_scale
+        self._bid_range_below = bid_range_below
+        self._bid_range_above = bid_range_above
+        self._mad_acceptance_tolerance = mad_acceptance_tolerance
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -133,17 +186,20 @@ class MadAgent(SAONegotiator):
         base_threshold = self._max_utility - base_concession * utility_range
 
         # Add "madness" - random oscillation
-        mad_factor = random.uniform(-self._madness, self._madness) * 0.15
+        mad_factor = random.uniform(-self._madness, self._madness) * self._oscillation_scale
         threshold = base_threshold + mad_factor
 
         # Occasionally be very stubborn or very generous
-        if random.random() < self._madness * 0.1:
-            if random.random() < 0.5:
+        if random.random() < self._madness * self._mad_event_probability_scale:
+            if random.random() < self._stubborn_probability:
                 # Stubborn
-                threshold = max(threshold + 0.1, self._max_utility * 0.9)
+                threshold = max(
+                    threshold + self._stubborn_boost,
+                    self._max_utility * self._stubborn_ceiling_ratio,
+                )
             else:
                 # More generous
-                threshold = threshold - 0.1
+                threshold = threshold - self._generous_concession
 
         # Late game normalization - reduce madness
         if time > self._late_game_threshold:
@@ -151,9 +207,9 @@ class MadAgent(SAONegotiator):
                 1.0 - self._late_game_threshold
             )
             # Blend toward rational behavior
-            rational_threshold = self._min_utility + (1 - late_factor) * 0.2
-            threshold = threshold * (1 - late_factor * 0.5) + rational_threshold * (
-                late_factor * 0.5
+            rational_threshold = self._min_utility + (1 - late_factor) * self._rational_threshold_offset
+            threshold = threshold * (1 - late_factor * self._late_blend_rate) + rational_threshold * (
+                late_factor * self._late_blend_rate
             )
 
         return max(min(threshold, self._max_utility), self._min_utility)
@@ -164,7 +220,7 @@ class MadAgent(SAONegotiator):
             return None
 
         # Occasionally select a completely random bid (controlled chaos)
-        if random.random() < self._madness * 0.15:
+        if random.random() < self._madness * self._random_bid_probability_scale:
             valid_outcomes = [
                 bd
                 for bd in self._outcome_space.outcomes
@@ -175,7 +231,7 @@ class MadAgent(SAONegotiator):
 
         # Normal selection
         candidates = self._outcome_space.get_bids_in_range(
-            threshold - 0.05, threshold + 0.1
+            threshold - self._bid_range_below, threshold + self._bid_range_above
         )
 
         if not candidates:
@@ -222,12 +278,15 @@ class MadAgent(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Mad acceptance - occasionally accept lower offers
-        if random.random() < self._madness * 0.1:
-            if offer_utility >= threshold - 0.1 and offer_utility >= self._min_utility:
+        if random.random() < self._madness * self._mad_event_probability_scale:
+            if (
+                offer_utility >= threshold - self._mad_acceptance_tolerance
+                and offer_utility >= self._min_utility
+            ):
                 return ResponseType.ACCEPT_OFFER
 
         # Near deadline - be more rational
-        if time > 0.95 and offer_utility >= self._min_utility:
+        if time > self._deadline_threshold and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

@@ -93,7 +93,21 @@ class Libra(SAONegotiator):
     Args:
         change_weight: Amount weights are adjusted per event (default 2.0).
         min_weight: Minimum allowed sub-strategy weight (default 1.0).
-        default_weight: Initial weight per sub-strategy (default 10.0).
+        default_weight: Initial weight per sub-strategy weight (default 10.0).
+        frequency_target_margin: Utility subtracted from the frequency
+            sub-strategy target when gathering candidate bids (default 0.1).
+        frequency_top_k: Maximum number of candidate bids scored by the
+            frequency sub-strategy (default 50).
+        end_vote_utility_factor: Fraction of the minimum utility below which a
+            sub-strategy votes to end the negotiation (default 0.5).
+        end_vote_time_threshold: Time after which the end-vote condition is
+            considered (default 0.98).
+        neutral_avg_utility: Neutral value returned for the average received
+            utility when none has been received yet (default 0.5).
+        reward_margin_factor: Factor applied to the offered utility when
+            deciding whether to reward sub-strategies for generosity (default 1.1).
+        assembly_score_scaling: Multiplier applied to the weighted utility
+            difference when assembling a composite bid (default 100.0).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -115,6 +129,13 @@ class Libra(SAONegotiator):
         change_weight: float = 2.0,
         min_weight: float = 1.0,
         default_weight: float = 10.0,
+        frequency_target_margin: float = 0.1,
+        frequency_top_k: int = 50,
+        end_vote_utility_factor: float = 0.5,
+        end_vote_time_threshold: float = 0.98,
+        neutral_avg_utility: float = 0.5,
+        reward_margin_factor: float = 1.1,
+        assembly_score_scaling: float = 100.0,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -135,6 +156,13 @@ class Libra(SAONegotiator):
         self._change_weight = change_weight
         self._min_weight = min_weight
         self._default_weight = default_weight
+        self._frequency_target_margin = frequency_target_margin
+        self._frequency_top_k = frequency_top_k
+        self._end_vote_utility_factor = end_vote_utility_factor
+        self._end_vote_time_threshold = end_vote_time_threshold
+        self._neutral_avg_utility = neutral_avg_utility
+        self._reward_margin_factor = reward_margin_factor
+        self._assembly_score_scaling = assembly_score_scaling
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
@@ -200,12 +228,12 @@ class Libra(SAONegotiator):
         target = self._target_utility(name, time)
 
         if name == "frequency" and self._value_frequency:
-            candidates = self._outcome_space.get_bids_above(target - 0.1)
+            candidates = self._outcome_space.get_bids_above(target - self._frequency_target_margin)
             if not candidates:
                 return self._max_bid
             best_bid = candidates[0].bid
             best_score = -1.0
-            for bd in candidates[: min(len(candidates), 50)]:
+            for bd in candidates[: min(len(candidates), self._frequency_top_k)]:
                 score = self._frequency_score(bd.bid)
                 if score > best_score:
                     best_score = score
@@ -231,7 +259,7 @@ class Libra(SAONegotiator):
         target = self._target_utility(name, time)
         if last_received_util >= target:
             return "accept"
-        if last_received_util < self._min_utility * 0.5 and time > 0.98:
+        if last_received_util < self._min_utility * self._end_vote_utility_factor and time > self._end_vote_time_threshold:
             return "end"
         return "offer"
 
@@ -246,7 +274,7 @@ class Libra(SAONegotiator):
 
     def _average_received_utility(self) -> float:
         if not self._received_utilities:
-            return 0.5
+            return self._neutral_avg_utility
         return sum(self._received_utilities) / len(self._received_utilities)
 
     def _update_weights(self, last_received_util: float, offered_util: float) -> None:
@@ -255,7 +283,7 @@ class Libra(SAONegotiator):
             # Reward sub-strategies whose implied preference matches what
             # actually turned out to be a good outcome (received > offered
             # by a margin means we should have been more generous).
-            if last_received_util > offered_util * 1.1:
+            if last_received_util > offered_util * self._reward_margin_factor:
                 self._weights[name] -= self._change_weight
             else:
                 self._weights[name] += self._change_weight
@@ -298,7 +326,7 @@ class Libra(SAONegotiator):
                     continue
                 value = bid[issue_idx]
                 util = float(self.ufun(bid))
-                score = self._weights[name] * (util - received_avg) * 100
+                score = self._weights[name] * (util - received_avg) * self._assembly_score_scaling
                 value_scores[value] = value_scores.get(value, 0.0) + score
 
             if value_scores:

@@ -96,6 +96,18 @@ class SimpaticoAgent(SAONegotiator):
             "good enough and time is short" acceptance rule (default 0.99).
         emergency_accept_utility: Utility threshold paired with
             ``emergency_accept_time`` (default 0.75).
+        tolerance_increment_interval: Number of random-bid tries before
+            relaxing the utility floor by one step (default 200).
+        tolerance_increment_step: Amount added to the random-bid tolerance
+            each time the floor is relaxed (default 0.01).
+        perturb_step_fraction: Fraction of an issue's span used as the step
+            when perturbing continuous issue values (default 0.05).
+        max_issues_to_change: Cap on the number of issues perturbed per
+            neighbourhood-search step (default 5).
+        relaxation_time: Relative time after which the minimum bid utility is
+            relaxed for cooperative opponents (default 0.5).
+        relaxed_min_bid_factor: Factor applied to the discounted utility when
+            relaxing the minimum bid utility (default 0.88).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -120,6 +132,12 @@ class SimpaticoAgent(SAONegotiator):
         deadline_reciprocation_time: float = 0.95,
         emergency_accept_time: float = 0.99,
         emergency_accept_utility: float = 0.75,
+        tolerance_increment_interval: int = 200,
+        tolerance_increment_step: float = 0.01,
+        perturb_step_fraction: float = 0.05,
+        max_issues_to_change: int = 5,
+        relaxation_time: float = 0.5,
+        relaxed_min_bid_factor: float = 0.88,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -151,6 +169,12 @@ class SimpaticoAgent(SAONegotiator):
         self._deadline_reciprocation_time = deadline_reciprocation_time
         self._emergency_accept_time = emergency_accept_time
         self._emergency_accept_utility = emergency_accept_utility
+        self._tolerance_increment_interval = tolerance_increment_interval
+        self._tolerance_increment_step = tolerance_increment_step
+        self._perturb_step_fraction = perturb_step_fraction
+        self._max_issues_to_change = max_issues_to_change
+        self._relaxation_time = relaxation_time
+        self._relaxed_min_bid_factor = relaxed_min_bid_factor
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
@@ -210,8 +234,8 @@ class SimpaticoAgent(SAONegotiator):
                 continue
             if float(self.ufun(bid)) >= self._min_bid_utility - tolerance:
                 break
-            if tries > 200:
-                tolerance += 0.01
+            if tries > self._tolerance_increment_interval:
+                tolerance += self._tolerance_increment_step
                 tries = 0
 
         if bid is None and self._outcome_space and self._outcome_space.outcomes:
@@ -237,7 +261,7 @@ class SimpaticoAgent(SAONegotiator):
         if issue.is_continuous():
             lo, hi = issue.min_value, issue.max_value
             span = hi - lo
-            step = span * 0.05 * delta_steps
+            step = span * self._perturb_step_fraction * delta_steps
             new_value = new_outcome[issue_index] + step
             if new_value < lo or new_value > hi:
                 return None
@@ -264,7 +288,13 @@ class SimpaticoAgent(SAONegotiator):
             return initial
 
         best = initial
-        n_change = max(1, min(5, int(self._n_issues * self._fraction_issues_to_change)))
+        n_change = max(
+            1,
+            min(
+                self._max_issues_to_change,
+                int(self._n_issues * self._fraction_issues_to_change),
+            ),
+        )
         issue_indices = list(range(self._n_issues))
         random.shuffle(issue_indices)
         chosen = issue_indices[:n_change]
@@ -308,8 +338,8 @@ class SimpaticoAgent(SAONegotiator):
 
     def _update_min_bid_utility(self, time: float) -> None:
         discount = float(getattr(self.ufun, "discount_factor", None) or 1.0)
-        if time >= 0.5 and self._opponent_is_cooperative:
-            self._min_bid_utility = 0.88 * (discount**time)
+        if time >= self._relaxation_time and self._opponent_is_cooperative:
+            self._min_bid_utility = self._relaxed_min_bid_factor * (discount**time)
 
     def _acceptance_threshold(self, time: float) -> float:
         discount = float(getattr(self.ufun, "discount_factor", None) or 1.0)

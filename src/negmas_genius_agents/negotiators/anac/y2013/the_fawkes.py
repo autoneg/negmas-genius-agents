@@ -62,6 +62,7 @@ class TheFawkes(SAONegotiator):
         e: Concession exponent (default 0.2, Boulware-like)
         k: Initial utility threshold offset (default 0.0)
         early_game_offers: Number of opponent offers before using opponent model (default 5)
+        default_opponent_utility: Utility assumed for the opponent when no data is available (default 0.5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -76,6 +77,7 @@ class TheFawkes(SAONegotiator):
         e: float = 0.2,
         k: float = 0.0,
         early_game_offers: int = 5,
+        default_opponent_utility: float = 0.5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -96,6 +98,7 @@ class TheFawkes(SAONegotiator):
         self._e = e
         self._k = k
         self._early_game_offers = early_game_offers
+        self._default_opponent_utility = default_opponent_utility
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -155,7 +158,7 @@ class TheFawkes(SAONegotiator):
     def _estimate_opponent_utility(self, bid: Outcome) -> float:
         """Estimate opponent's utility for a bid based on frequency model."""
         if self._total_opponent_offers == 0 or bid is None:
-            return 0.5
+            return self._default_opponent_utility
 
         total_score = 0.0
         num_issues = len(bid)
@@ -171,7 +174,7 @@ class TheFawkes(SAONegotiator):
                     max_count = max(counts.values()) if counts else 1
                     total_score += counts[value_key] / max_count
 
-        return total_score / num_issues if num_issues > 0 else 0.5
+        return total_score / num_issues if num_issues > 0 else self._default_opponent_utility
 
     def _compute_threshold(self, time: float) -> float:
         """Compute utility threshold using time-dependent concession."""

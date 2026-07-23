@@ -79,6 +79,10 @@ class TMFAgent(SAONegotiator):
         good_opponent_utility_threshold: Multiplier for threshold to detect good opponent offers (default 0.95)
         good_opponent_acceptance_multiplier: Multiplier for opponent best utility in acceptance (default 0.98)
         late_game_acceptance_multiplier: Multiplier for opponent best utility in late game acceptance (default 0.98)
+        concession_window: Number of recent/early opponent offers compared when estimating concession (default 10)
+        concession_early_window: Offer count above which the early slice equals the first window (default 20)
+        default_opponent_utility: Utility assumed for the opponent when no data is available (default 0.5)
+        tough_adaptation_time: Time after which a tough opponent triggers a more conceding exponent (default 0.3)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -108,6 +112,10 @@ class TMFAgent(SAONegotiator):
         good_opponent_utility_threshold: float = 0.95,
         good_opponent_acceptance_multiplier: float = 0.98,
         late_game_acceptance_multiplier: float = 0.98,
+        concession_window: int = 10,
+        concession_early_window: int = 20,
+        default_opponent_utility: float = 0.5,
+        tough_adaptation_time: float = 0.3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -143,6 +151,10 @@ class TMFAgent(SAONegotiator):
         self._good_opponent_utility_threshold = good_opponent_utility_threshold
         self._good_opponent_acceptance_multiplier = good_opponent_acceptance_multiplier
         self._late_game_acceptance_multiplier = late_game_acceptance_multiplier
+        self._concession_window = concession_window
+        self._concession_early_window = concession_early_window
+        self._default_opponent_utility = default_opponent_utility
+        self._tough_adaptation_time = tough_adaptation_time
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -207,11 +219,11 @@ class TMFAgent(SAONegotiator):
                 self._best_opponent_bid = bid
 
             # Estimate opponent concession rate (how fast they're improving our utility)
-            if len(self._opponent_utilities) >= 10:
-                recent = self._opponent_utilities[-10:]
+            if len(self._opponent_utilities) >= self._concession_window:
+                recent = self._opponent_utilities[-self._concession_window :]
                 early = (
-                    self._opponent_utilities[:10]
-                    if len(self._opponent_utilities) >= 20
+                    self._opponent_utilities[: self._concession_window]
+                    if len(self._opponent_utilities) >= self._concession_early_window
                     else self._opponent_utilities[: len(self._opponent_utilities) // 2]
                 )
                 if early:
@@ -235,7 +247,7 @@ class TMFAgent(SAONegotiator):
     def _estimate_opponent_utility(self, bid: Outcome) -> float:
         """Estimate opponent's utility for a bid based on frequency model."""
         if self._total_opponent_offers == 0 or bid is None:
-            return 0.5
+            return self._default_opponent_utility
 
         total_score = 0.0
         num_issues = len(bid)
@@ -251,7 +263,7 @@ class TMFAgent(SAONegotiator):
                     max_count = max(counts.values()) if counts else 1
                     total_score += counts[value_key] / max_count
 
-        return total_score / num_issues if num_issues > 0 else 0.5
+        return total_score / num_issues if num_issues > 0 else self._default_opponent_utility
 
     def _update_adaptive_concession(self, time: float) -> None:
         """Adapt concession rate based on opponent behavior."""
@@ -264,7 +276,7 @@ class TMFAgent(SAONegotiator):
             )
         elif (
             self._opponent_concession_rate < self._opponent_tough_threshold
-            and time > 0.3
+            and time > self._tough_adaptation_time
         ):
             # Opponent is tough - be slightly more conceding
             self._adaptive_e = min(

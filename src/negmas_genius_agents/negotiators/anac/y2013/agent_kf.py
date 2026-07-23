@@ -79,6 +79,13 @@ class AgentKF(SAONegotiator):
         max_bid_attempts: Maximum attempts to find suitable bid (default 50)
         bid_tolerance: Tolerance for bid utility matching (default 0.95)
         target_reduction_step: Amount to reduce target per retry cycle (default 0.02)
+        concession_detection_rounds: Minimum opponent offers before detecting concession (default 5)
+        alpha_mean_multiplier: Coefficient of mean in the alpha concession-exponent formula (default 10)
+        alpha_tremor_mean_coefficient: Coefficient of tremor*mean in the alpha formula (default 2)
+        ratio_offset: Offset added to deviation when computing the target ratio (default 0.1)
+        acceptance_time_divisor: Divisor of the time-power term in acceptance probability (default 5)
+        late_target_reduction_factor: Fraction of the late-game gap closed towards min_acceptable (default 0.5)
+        target_reduction_interval: Number of bid-search attempts between target reductions (default 10)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -107,6 +114,13 @@ class AgentKF(SAONegotiator):
         max_bid_attempts: int = 50,
         bid_tolerance: float = 0.95,
         target_reduction_step: float = 0.02,
+        concession_detection_rounds: int = 5,
+        alpha_mean_multiplier: float = 10,
+        alpha_tremor_mean_coefficient: float = 2,
+        ratio_offset: float = 0.1,
+        acceptance_time_divisor: float = 5,
+        late_target_reduction_factor: float = 0.5,
+        target_reduction_interval: int = 10,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -141,6 +155,13 @@ class AgentKF(SAONegotiator):
         self._max_bid_attempts = max_bid_attempts
         self._bid_tolerance = bid_tolerance
         self._target_reduction_step = target_reduction_step
+        self._concession_detection_rounds = concession_detection_rounds
+        self._alpha_mean_multiplier = alpha_mean_multiplier
+        self._alpha_tremor_mean_coefficient = alpha_tremor_mean_coefficient
+        self._ratio_offset = ratio_offset
+        self._acceptance_time_divisor = acceptance_time_divisor
+        self._late_target_reduction_factor = late_target_reduction_factor
+        self._target_reduction_interval = target_reduction_interval
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -217,7 +238,7 @@ class AgentKF(SAONegotiator):
         if offered_utility > self._max_received_utility:
             # Detect if opponent is conceding
             if (
-                self._rounds > 5
+                self._rounds > self._concession_detection_rounds
                 and offered_utility
                 > self._max_received_utility + self._concession_detection_threshold
             ):
@@ -262,7 +283,9 @@ class AgentKF(SAONegotiator):
 
         # Calculate alpha (concession exponent) with tremor randomness
         # Higher alpha = more Boulware-like behavior
-        alpha = 1 + self._tremor + (10 * mean) - (2 * self._tremor * mean)
+        alpha = 1 + self._tremor + (self._alpha_mean_multiplier * mean) - (
+            self._alpha_tremor_mean_coefficient * self._tremor * mean
+        )
 
         # If opponent is conceding, we can be tougher
         if self._opponent_concession_detected:
@@ -276,7 +299,7 @@ class AgentKF(SAONegotiator):
 
         # Calculate ratio for target adjustment
         ratio = (
-            (deviation + 0.1) / (1 - pre_target)
+            (deviation + self._ratio_offset) / (1 - pre_target)
             if (1 - pre_target) != 0
             else self._max_ratio
         )
@@ -284,7 +307,7 @@ class AgentKF(SAONegotiator):
             ratio = self._max_ratio
 
         ratio2 = (
-            (deviation + 0.1) / (1 - pre_target2)
+            (deviation + self._ratio_offset) / (1 - pre_target2)
             if (1 - pre_target2) != 0
             else self._max_ratio
         )
@@ -322,7 +345,7 @@ class AgentKF(SAONegotiator):
         utility_evaluation = offered_utility - estimate_max
         satisfy = offered_utility - self._target
 
-        p = (math.pow(time, alpha) / 5) + utility_evaluation + satisfy
+        p = (math.pow(time, alpha) / self._acceptance_time_divisor) + utility_evaluation + satisfy
 
         # Late game boost - more likely to accept good offers
         if time > self._late_game_threshold:
@@ -376,7 +399,10 @@ class AgentKF(SAONegotiator):
                 self._late_game_min_acceptable_floor,
             )
             current_target = (
-                current_target - late_progress * (current_target - min_acceptable) * 0.5
+                current_target
+                - late_progress
+                * (current_target - min_acceptable)
+                * self._late_target_reduction_factor
             )
 
         # Search for a bid meeting bid_target
@@ -393,7 +419,7 @@ class AgentKF(SAONegotiator):
                     return bid_details.bid
 
             # Lower target slightly and retry
-            if attempt > 0 and attempt % 10 == 0:
+            if attempt > 0 and attempt % self._target_reduction_interval == 0:
                 current_target -= self._target_reduction_step
 
         # Fallback: return best available bid

@@ -82,6 +82,19 @@ class ClockworkAgent(SAONegotiator):
         min_utility: Minimum acceptable utility threshold (default 0.6)
         early_time: Time threshold for early phase best-bid offering (default 0.02)
         deadline_time: Time threshold for deadline acceptance (default 0.95)
+        phase_start_utility_factor: Fraction of max utility at the start of the
+            phase threshold curve (default 0.95)
+        phase_curve_exponent: Exponent controlling the shape of the decrease
+            between phase thresholds (default 0.5)
+        fallback_threshold_factor: Fraction of max utility used as the threshold
+            when phase thresholds are not initialized (default 0.8)
+        threshold_relax_factor: Multiplier applied to the threshold when relaxing
+            it to find candidates (default 0.9)
+        score_base: Additive base term in the Nash-like bid scoring formula
+            (default 0.5)
+        score_opp_weight: Coefficient on estimated opponent utility in the
+            Nash-like bid scoring formula (default 0.5)
+        top_n: Number of top-scored candidates to randomly choose from (default 4)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -97,6 +110,13 @@ class ClockworkAgent(SAONegotiator):
         min_utility: float = 0.6,
         early_time: float = 0.02,
         deadline_time: float = 0.95,
+        phase_start_utility_factor: float = 0.95,
+        phase_curve_exponent: float = 0.5,
+        fallback_threshold_factor: float = 0.8,
+        threshold_relax_factor: float = 0.9,
+        score_base: float = 0.5,
+        score_opp_weight: float = 0.5,
+        top_n: int = 4,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -118,6 +138,13 @@ class ClockworkAgent(SAONegotiator):
         self._min_utility = min_utility
         self._early_time = early_time
         self._deadline_time = deadline_time
+        self._phase_start_utility_factor = phase_start_utility_factor
+        self._phase_curve_exponent = phase_curve_exponent
+        self._fallback_threshold_factor = fallback_threshold_factor
+        self._threshold_relax_factor = threshold_relax_factor
+        self._score_base = score_base
+        self._score_opp_weight = score_opp_weight
+        self._top_n = top_n
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -153,12 +180,12 @@ class ClockworkAgent(SAONegotiator):
 
         # Create phase thresholds (decreasing)
         self._phase_thresholds = []
-        start = self._max_utility * 0.95
+        start = self._max_utility * self._phase_start_utility_factor
         end = self._reservation_value
         for i in range(self._phases):
             progress = i / (self._phases - 1) if self._phases > 1 else 0
             # Boulware-like decrease
-            threshold = start - (start - end) * math.pow(progress, 0.5)
+            threshold = start - (start - end) * math.pow(progress, self._phase_curve_exponent)
             self._phase_thresholds.append(threshold)
 
         self._initialized = True
@@ -186,7 +213,7 @@ class ClockworkAgent(SAONegotiator):
         self._current_phase = phase
 
         if not self._phase_thresholds:
-            return self._max_utility * 0.8
+            return self._max_utility * self._fallback_threshold_factor
 
         return self._phase_thresholds[phase]
 
@@ -239,7 +266,7 @@ class ClockworkAgent(SAONegotiator):
 
         if not candidates:
             # Relax threshold
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(threshold * self._threshold_relax_factor)
 
         if not candidates:
             return self._best_bid
@@ -248,13 +275,13 @@ class ClockworkAgent(SAONegotiator):
         scored: list[tuple[Outcome, float]] = []
         for bd in candidates:
             opp_util = self._estimate_opponent_utility(bd.bid)
-            score = bd.utility * (0.5 + 0.5 * opp_util)
+            score = bd.utility * (self._score_base + self._score_opp_weight * opp_util)
             scored.append((bd.bid, score))
 
         scored.sort(key=lambda x: x[1], reverse=True)
 
         # Select from top with regularity (clockwork-like)
-        n = min(4, len(scored))
+        n = min(self._top_n, len(scored))
         return random.choice(scored[:n])[0]
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:

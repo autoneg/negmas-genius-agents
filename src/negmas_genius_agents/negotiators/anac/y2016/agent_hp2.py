@@ -82,6 +82,25 @@ class AgentHP2(SAONegotiator):
         phase2_end: End time for phase 2 (default 0.8)
         early_time: Time threshold for early phase best-bid offering (default 0.02)
         deadline_time: Time threshold for deadline acceptance (default 0.95)
+        reservation_range_fraction: Fraction of the domain utility range added to
+            the domain minimum when computing the reservation value (default 0.5)
+        trend_min_samples: Minimum opponent utilities required before computing
+            the opponent trend (default 5)
+        phase1_utility_factor: Fraction of max utility targeted during phase 1
+            (default 0.98)
+        phase2_end_utility_factor: Fraction of max utility targeted at the end of
+            phase 2 (default 0.78)
+        trend_epsilon: Positive threshold above which the opponent trend is
+            considered a conceding trend (default 0.02)
+        endgame_concession_offset: Utility added to the reservation value as the
+            end-game concession target when the opponent is conceding (default 0.1)
+        cache_epsilon: Absolute difference in threshold below which the candidate
+            cache is reused (default 0.03)
+        threshold_relax_factor: Multiplier applied to the threshold when relaxing
+            it to find candidates (default 0.9)
+        top_n: Number of top candidates to randomly choose a bid from (default 8)
+        endgame_accept_ratio: Minimum ratio of the best opponent utility required
+            for end-game acceptance (default 0.99)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -99,6 +118,16 @@ class AgentHP2(SAONegotiator):
         phase2_end: float = 0.8,
         early_time: float = 0.02,
         deadline_time: float = 0.95,
+        reservation_range_fraction: float = 0.5,
+        trend_min_samples: int = 5,
+        phase1_utility_factor: float = 0.98,
+        phase2_end_utility_factor: float = 0.78,
+        trend_epsilon: float = 0.02,
+        endgame_concession_offset: float = 0.1,
+        cache_epsilon: float = 0.03,
+        threshold_relax_factor: float = 0.9,
+        top_n: int = 8,
+        endgame_accept_ratio: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -122,6 +151,16 @@ class AgentHP2(SAONegotiator):
         self._phase2_end = phase2_end
         self._early_time = early_time
         self._deadline_time = deadline_time
+        self._reservation_range_fraction = reservation_range_fraction
+        self._trend_min_samples = trend_min_samples
+        self._phase1_utility_factor = phase1_utility_factor
+        self._phase2_end_utility_factor = phase2_end_utility_factor
+        self._trend_epsilon = trend_epsilon
+        self._endgame_concession_offset = endgame_concession_offset
+        self._cache_epsilon = cache_epsilon
+        self._threshold_relax_factor = threshold_relax_factor
+        self._top_n = top_n
+        self._endgame_accept_ratio = endgame_accept_ratio
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -160,7 +199,8 @@ class AgentHP2(SAONegotiator):
         self._reservation_value = max(
             self._min_utility,
             self._domain_min_utility
-            + 0.5 * (self._max_utility - self._domain_min_utility),
+            + self._reservation_range_fraction
+            * (self._max_utility - self._domain_min_utility),
         )
 
         self._initialized = True
@@ -188,7 +228,7 @@ class AgentHP2(SAONegotiator):
             self._best_opponent_bid = bid
 
         # Compute trend (positive = opponent conceding)
-        if len(self._opponent_utilities) >= 5:
+        if len(self._opponent_utilities) >= self._trend_min_samples:
             recent = self._opponent_utilities[-3:]
             earlier = (
                 self._opponent_utilities[-6:-3]
@@ -203,24 +243,24 @@ class AgentHP2(SAONegotiator):
         """Multi-phase threshold computation."""
         if time < self._phase1_end:
             # Phase 1: High aspiration
-            return self._max_utility * 0.98
+            return self._max_utility * self._phase1_utility_factor
         elif time < self._phase2_end:
             # Phase 2: Boulware concession
             phase_time = (time - self._phase1_end) / (
                 self._phase2_end - self._phase1_end
             )
             f_t = math.pow(phase_time, 1 / self._e) if self._e > 0 else phase_time
-            start = self._max_utility * 0.98
-            end = self._max_utility * 0.78
+            start = self._max_utility * self._phase1_utility_factor
+            end = self._max_utility * self._phase2_end_utility_factor
             return start - (start - end) * f_t
         else:
             # Phase 3: End-game with adaptation based on opponent
             phase_time = (time - self._phase2_end) / (1.0 - self._phase2_end)
-            start = self._max_utility * 0.78
+            start = self._max_utility * self._phase2_end_utility_factor
 
             # If opponent is conceding, we can be more patient
-            if self._opponent_trend > 0.02:
-                end = self._reservation_value + 0.1
+            if self._opponent_trend > self._trend_epsilon:
+                end = self._reservation_value + self._endgame_concession_offset
             else:
                 end = self._reservation_value
 
@@ -232,7 +272,7 @@ class AgentHP2(SAONegotiator):
             return []
 
         # Use cache if threshold is close enough
-        if self._cache_valid and abs(threshold - self._last_threshold) < 0.03:
+        if self._cache_valid and abs(threshold - self._last_threshold) < self._cache_epsilon:
             return self._cached_candidates
 
         candidates = self._outcome_space.get_bids_above(threshold)
@@ -251,13 +291,13 @@ class AgentHP2(SAONegotiator):
 
         if not candidates:
             # Relax threshold
-            candidates = self._get_candidates(threshold * 0.9)
+            candidates = self._get_candidates(threshold * self._threshold_relax_factor)
 
         if not candidates:
             return self._best_bid
 
         # Select from top candidates with some randomness
-        n = min(8, len(candidates))
+        n = min(self._top_n, len(candidates))
         return random.choice(candidates[:n]).bid
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:
@@ -300,7 +340,7 @@ class AgentHP2(SAONegotiator):
         if time > self._deadline_time:
             # Accept if above reservation and at least as good as best received
             if offer_utility >= self._reservation_value:
-                if offer_utility >= self._best_opponent_utility * 0.99:
+                if offer_utility >= self._best_opponent_utility * self._endgame_accept_ratio:
                     return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

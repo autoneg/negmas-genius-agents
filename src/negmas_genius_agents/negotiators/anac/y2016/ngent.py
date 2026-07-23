@@ -82,6 +82,12 @@ class Ngent(SAONegotiator):
         early_time: Time threshold for early phase best-bid offering (default 0.02)
         deadline_time: Time threshold for deadline acceptance (default 0.95)
         critical_time: Time threshold for critical deadline acceptance (default 0.99)
+        concession_range_factor: Fraction of the concession range actually applied
+            when computing the target utility (default 0.8)
+        own_utility_weight: Weight on own utility in bid scoring (default 0.7)
+        opp_utility_weight: Weight on estimated opponent utility in bid scoring
+            (default 0.3)
+        top_n: Number of top-scored candidates to randomly choose from (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -99,6 +105,10 @@ class Ngent(SAONegotiator):
         early_time: float = 0.02,
         deadline_time: float = 0.95,
         critical_time: float = 0.99,
+        concession_range_factor: float = 0.8,
+        own_utility_weight: float = 0.7,
+        opp_utility_weight: float = 0.3,
+        top_n: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -122,6 +132,10 @@ class Ngent(SAONegotiator):
         self._early_time = early_time
         self._deadline_time = deadline_time
         self._critical_time = critical_time
+        self._concession_range_factor = concession_range_factor
+        self._own_utility_weight = own_utility_weight
+        self._opp_utility_weight = opp_utility_weight
+        self._top_n = top_n
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -227,7 +241,7 @@ class Ngent(SAONegotiator):
         # Lower gentleness = slower concession
         f_t = math.pow(time, 1 / self._gentleness) if self._gentleness > 0 else time
         concession_range = self._max_utility - self._reservation_value
-        target = self._max_utility - concession_range * f_t * 0.8
+        target = self._max_utility - concession_range * f_t * self._concession_range_factor
 
         # Don't go below reservation
         return max(target, self._reservation_value)
@@ -254,13 +268,13 @@ class Ngent(SAONegotiator):
         for bd in candidates:
             opp_util = self._estimate_opponent_utility(bd.bid)
             # Combine own utility with opponent utility estimate
-            score = 0.7 * bd.utility + 0.3 * opp_util
+            score = self._own_utility_weight * bd.utility + self._opp_utility_weight * opp_util
             scored.append((bd.bid, score))
 
         scored.sort(key=lambda x: x[1], reverse=True)
 
         # Pick from top candidates
-        top_n = min(5, len(scored))
+        top_n = min(self._top_n, len(scored))
         return random.choice(scored[:top_n])[0]
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:

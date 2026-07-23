@@ -84,6 +84,29 @@ class AgentSmith2016(SAONegotiator):
         phase2_end: End time for phase 2 (default 0.85)
         early_time: Time threshold for early phase best-bid offering (default 0.03)
         deadline_time: Time threshold for deadline acceptance (default 0.95)
+        issue_weight_increment: Increment applied to opponent issue weights on
+            value consistency between consecutive bids (default 0.1)
+        concession_min_samples: Minimum opponent utilities required before
+            estimating the concession rate (default 5)
+        concession_epsilon: Magnitude around zero used to detect opponent
+            conceding vs hardening trends (default 0.01)
+        conceding_e_cap: Upper cap on the adjusted exponent when the opponent is
+            conceding (default 0.25)
+        conceding_e_multiplier: Multiplier applied to the base exponent when the
+            opponent is conceding (default 1.3)
+        hardening_e_floor: Lower floor on the adjusted exponent when the opponent
+            is hardening (default 0.08)
+        hardening_e_multiplier: Multiplier applied to the base exponent when the
+            opponent is hardening (default 0.7)
+        phase1_utility_factor: Fraction of max utility targeted during phase 1
+            (default 0.97)
+        phase2_end_utility_factor: Fraction of max utility targeted at the end of
+            phase 2 (default 0.72)
+        own_utility_weight: Weight on own utility in the Nash-based bid score
+            (default 0.6)
+        nash_product_weight: Weight on the own-utility/opponent-utility product in
+            the bid score (default 0.4)
+        top_n: Number of top-scored candidates to randomly choose from (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -101,6 +124,18 @@ class AgentSmith2016(SAONegotiator):
         phase2_end: float = 0.85,
         early_time: float = 0.03,
         deadline_time: float = 0.95,
+        issue_weight_increment: float = 0.1,
+        concession_min_samples: int = 5,
+        concession_epsilon: float = 0.01,
+        conceding_e_cap: float = 0.25,
+        conceding_e_multiplier: float = 1.3,
+        hardening_e_floor: float = 0.08,
+        hardening_e_multiplier: float = 0.7,
+        phase1_utility_factor: float = 0.97,
+        phase2_end_utility_factor: float = 0.72,
+        own_utility_weight: float = 0.6,
+        nash_product_weight: float = 0.4,
+        top_n: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -124,6 +159,18 @@ class AgentSmith2016(SAONegotiator):
         self._phase2_end = phase2_end
         self._early_time = early_time
         self._deadline_time = deadline_time
+        self._issue_weight_increment = issue_weight_increment
+        self._concession_min_samples = concession_min_samples
+        self._concession_epsilon = concession_epsilon
+        self._conceding_e_cap = conceding_e_cap
+        self._conceding_e_multiplier = conceding_e_multiplier
+        self._hardening_e_floor = hardening_e_floor
+        self._hardening_e_multiplier = hardening_e_multiplier
+        self._phase1_utility_factor = phase1_utility_factor
+        self._phase2_end_utility_factor = phase2_end_utility_factor
+        self._own_utility_weight = own_utility_weight
+        self._nash_product_weight = nash_product_weight
+        self._top_n = top_n
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -223,7 +270,7 @@ class AgentSmith2016(SAONegotiator):
 
         for i in range(len(last_bid)):
             if last_bid[i] == prev_bid[i]:
-                self._opponent_issue_weights[i] += 0.1
+                self._opponent_issue_weights[i] += self._issue_weight_increment
 
         total = sum(self._opponent_issue_weights.values())
         if total > 0:
@@ -232,7 +279,7 @@ class AgentSmith2016(SAONegotiator):
 
     def _update_concession_estimate(self) -> None:
         """Estimate opponent's concession rate."""
-        if len(self._opponent_utilities) < 5:
+        if len(self._opponent_utilities) < self._concession_min_samples:
             return
 
         recent = self._opponent_utilities[-3:]
@@ -273,27 +320,27 @@ class AgentSmith2016(SAONegotiator):
         """Adaptive target utility with opponent awareness."""
         # Adjust exponent based on opponent behavior
         adjusted_e = self._e
-        if self._opponent_concession > 0.01:
+        if self._opponent_concession > self._concession_epsilon:
             # Opponent conceding, we can be slightly more flexible
-            adjusted_e = min(0.25, self._e * 1.3)
-        elif self._opponent_concession < -0.01:
+            adjusted_e = min(self._conceding_e_cap, self._e * self._conceding_e_multiplier)
+        elif self._opponent_concession < -self._concession_epsilon:
             # Opponent hardening, be more firm
-            adjusted_e = max(0.08, self._e * 0.7)
+            adjusted_e = max(self._hardening_e_floor, self._e * self._hardening_e_multiplier)
 
         if time < self._phase1_end:
-            return self._max_utility * 0.97
+            return self._max_utility * self._phase1_utility_factor
         elif time < self._phase2_end:
             phase_time = (time - self._phase1_end) / (
                 self._phase2_end - self._phase1_end
             )
             f_t = math.pow(phase_time, 1 / adjusted_e) if adjusted_e > 0 else phase_time
-            start = self._max_utility * 0.97
-            end = self._max_utility * 0.72
+            start = self._max_utility * self._phase1_utility_factor
+            end = self._max_utility * self._phase2_end_utility_factor
             return start - (start - end) * f_t
         else:
             # End-game
             phase_time = (time - self._phase2_end) / (1.0 - self._phase2_end)
-            start = self._max_utility * 0.72
+            start = self._max_utility * self._phase2_end_utility_factor
             end = self._reservation_value
             return max(start - (start - end) * phase_time, self._reservation_value)
 
@@ -319,12 +366,12 @@ class AgentSmith2016(SAONegotiator):
         for bd in candidates:
             opp_util = self._estimate_opponent_utility(bd.bid)
             # Weight toward own utility
-            score = 0.6 * bd.utility + 0.4 * (bd.utility * opp_util)
+            score = self._own_utility_weight * bd.utility + self._nash_product_weight * (bd.utility * opp_util)
             scored.append((bd.bid, score))
 
         scored.sort(key=lambda x: x[1], reverse=True)
 
-        top_n = min(5, len(scored))
+        top_n = min(self._top_n, len(scored))
         return random.choice(scored[:top_n])[0]
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:

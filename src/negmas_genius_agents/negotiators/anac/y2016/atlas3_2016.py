@@ -84,6 +84,23 @@ class Atlas32016(SAONegotiator):
         phase1_end: End time for phase 1 (default 0.2)
         phase2_end: End time for phase 2 (default 0.7)
         phase3_end: End time for phase 3 (default 0.9)
+        reservation_floor: Minimum floor for the computed reservation value
+            (default 0.6)
+        reservation_range_fraction: Fraction of the domain utility range added to
+            the domain minimum when computing the reservation value (default 0.4)
+        issue_weight_increment: Increment applied to opponent issue weights on
+            value consistency between consecutive bids (default 0.1)
+        phase1_utility_factor: Fraction of max utility targeted during phase 1
+            (default 0.95)
+        phase2_end_utility_factor: Fraction of max utility targeted at the end of
+            phase 2 (default 0.75)
+        phase3_concession_offset: Utility added to the reservation value as the
+            phase 3 concession target (default 0.1)
+        final_phase_remaining_turns: Estimated remaining turns below which the
+            negotiation is considered to be in its final phase (default 5)
+        threshold_relax_factor: Multiplier applied to the threshold when relaxing
+            it to find candidates (default 0.9)
+        top_n: Number of top-scored candidates to randomly choose from (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -99,6 +116,15 @@ class Atlas32016(SAONegotiator):
         phase1_end: float = 0.2,
         phase2_end: float = 0.7,
         phase3_end: float = 0.9,
+        reservation_floor: float = 0.6,
+        reservation_range_fraction: float = 0.4,
+        issue_weight_increment: float = 0.1,
+        phase1_utility_factor: float = 0.95,
+        phase2_end_utility_factor: float = 0.75,
+        phase3_concession_offset: float = 0.1,
+        final_phase_remaining_turns: int = 5,
+        threshold_relax_factor: float = 0.9,
+        top_n: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -120,6 +146,15 @@ class Atlas32016(SAONegotiator):
         self._phase1_end = phase1_end
         self._phase2_end = phase2_end
         self._phase3_end = phase3_end
+        self._reservation_floor = reservation_floor
+        self._reservation_range_fraction = reservation_range_fraction
+        self._issue_weight_increment = issue_weight_increment
+        self._phase1_utility_factor = phase1_utility_factor
+        self._phase2_end_utility_factor = phase2_end_utility_factor
+        self._phase3_concession_offset = phase3_concession_offset
+        self._final_phase_remaining_turns = final_phase_remaining_turns
+        self._threshold_relax_factor = threshold_relax_factor
+        self._top_n = top_n
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -159,7 +194,10 @@ class Atlas32016(SAONegotiator):
 
         # Set reservation based on domain
         self._reservation_value = max(
-            0.6, self._min_utility + 0.4 * (self._max_utility - self._min_utility)
+            self._reservation_floor,
+            self._min_utility
+            + self._reservation_range_fraction
+            * (self._max_utility - self._min_utility),
         )
 
         # Initialize opponent model
@@ -218,7 +256,7 @@ class Atlas32016(SAONegotiator):
 
         for i in range(len(last_bid)):
             if last_bid[i] == prev_bid[i]:
-                self._opponent_issue_weights[i] += 0.1
+                self._opponent_issue_weights[i] += self._issue_weight_increment
 
         total = sum(self._opponent_issue_weights.values())
         if total > 0:
@@ -251,28 +289,28 @@ class Atlas32016(SAONegotiator):
         """Compute utility threshold using multi-phase approach."""
         if time < self._phase1_end:
             # Phase 1: High threshold
-            return self._max_utility * 0.95
+            return self._max_utility * self._phase1_utility_factor
         elif time < self._phase2_end:
             # Phase 2: Boulware concession
             phase_time = (time - self._phase1_end) / (
                 self._phase2_end - self._phase1_end
             )
             f_t = math.pow(phase_time, 1 / self._e) if self._e > 0 else phase_time
-            start = self._max_utility * 0.95
-            end = self._max_utility * 0.75
+            start = self._max_utility * self._phase1_utility_factor
+            end = self._max_utility * self._phase2_end_utility_factor
             return start - (start - end) * f_t
         elif time < self._phase3_end:
             # Phase 3: Moderate concession
             phase_time = (time - self._phase2_end) / (
                 self._phase3_end - self._phase2_end
             )
-            start = self._max_utility * 0.75
-            end = self._reservation_value + 0.1
+            start = self._max_utility * self._phase2_end_utility_factor
+            end = self._reservation_value + self._phase3_concession_offset
             return start - (start - end) * phase_time
         else:
             # Phase 4: End-game
             phase_time = (time - self._phase3_end) / (1.0 - self._phase3_end)
-            start = self._reservation_value + 0.1
+            start = self._reservation_value + self._phase3_concession_offset
             end = self._reservation_value
             return max(start - (start - end) * phase_time, self._reservation_value)
 
@@ -281,7 +319,7 @@ class Atlas32016(SAONegotiator):
         if self._time_scale <= 0:
             return False
         remaining_turns = (1.0 - time) / self._time_scale
-        return remaining_turns < 5
+        return remaining_turns < self._final_phase_remaining_turns
 
     def _search_bid(self, threshold: float, time: float) -> Outcome | None:
         """Search for a bid meeting the threshold."""
@@ -291,7 +329,7 @@ class Atlas32016(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(threshold * self._threshold_relax_factor)
 
         if not candidates:
             return self._best_bid
@@ -305,7 +343,7 @@ class Atlas32016(SAONegotiator):
 
         scored.sort(key=lambda x: x[1], reverse=True)
 
-        top_n = min(5, len(scored))
+        top_n = min(self._top_n, len(scored))
         return random.choice(scored[:top_n])[0]
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:

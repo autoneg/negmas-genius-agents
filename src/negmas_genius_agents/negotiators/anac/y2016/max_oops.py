@@ -90,6 +90,26 @@ class MaxOops(SAONegotiator):
         recovery_phase_end: End time for recovery phase flexibility (default 0.9)
         early_time: Time threshold for early phase best-bid offering (default 0.05)
         deadline_time: Time threshold for deadline acceptance (default 0.95)
+        recovery_min_samples: Minimum opponent utilities required before checking
+            recovery conditions (default 10)
+        recovery_window_size: Number of recent/earlier opponent utilities compared
+            when checking recovery conditions (default 5)
+        recovery_utility_threshold: Best received utility below which recovery mode
+            is triggered (default 0.7)
+        recovery_best_utility_ratio: Ratio of the best received utility used as the
+            recovery threshold floor (default 0.98)
+        recovery_concession_offset: Utility added to the reservation value as the
+            recovery target during the recovery phase (default 0.1)
+        phase1_utility_factor: Fraction of max utility targeted during phase 1
+            (default 0.98)
+        phase2_end_utility_factor: Fraction of max utility targeted at the end of
+            phase 2 (default 0.75)
+        threshold_relax_factor: Multiplier applied to the target when relaxing it
+            to find candidates (default 0.9)
+        recovery_top_n: Number of closest-to-target candidates to randomly choose
+            from in recovery mode (default 3)
+        top_n: Number of top candidates to randomly choose a bid from in normal
+            mode (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -108,6 +128,16 @@ class MaxOops(SAONegotiator):
         recovery_phase_end: float = 0.9,
         early_time: float = 0.05,
         deadline_time: float = 0.95,
+        recovery_min_samples: int = 10,
+        recovery_window_size: int = 5,
+        recovery_utility_threshold: float = 0.7,
+        recovery_best_utility_ratio: float = 0.98,
+        recovery_concession_offset: float = 0.1,
+        phase1_utility_factor: float = 0.98,
+        phase2_end_utility_factor: float = 0.75,
+        threshold_relax_factor: float = 0.9,
+        recovery_top_n: int = 3,
+        top_n: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -132,6 +162,16 @@ class MaxOops(SAONegotiator):
         self._recovery_phase_end = recovery_phase_end
         self._early_time = early_time
         self._deadline_time = deadline_time
+        self._recovery_min_samples = recovery_min_samples
+        self._recovery_window_size = recovery_window_size
+        self._recovery_utility_threshold = recovery_utility_threshold
+        self._recovery_best_utility_ratio = recovery_best_utility_ratio
+        self._recovery_concession_offset = recovery_concession_offset
+        self._phase1_utility_factor = phase1_utility_factor
+        self._phase2_end_utility_factor = phase2_end_utility_factor
+        self._threshold_relax_factor = threshold_relax_factor
+        self._recovery_top_n = recovery_top_n
+        self._top_n = top_n
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -187,17 +227,23 @@ class MaxOops(SAONegotiator):
             self._best_received_bid = bid
 
         # Check if we need recovery (opponent not conceding and we're behind)
-        if len(self._opponent_utilities) >= 10:
-            recent = self._opponent_utilities[-5:]
-            earlier = self._opponent_utilities[-10:-5]
+        if len(self._opponent_utilities) >= self._recovery_min_samples:
+            recent = self._opponent_utilities[-self._recovery_window_size:]
+            earlier = self._opponent_utilities[
+                -self._recovery_min_samples:-self._recovery_window_size
+            ]
             recent_avg = sum(recent) / len(recent)
             earlier_avg = sum(earlier) / len(earlier)
 
             # If opponent is not conceding and best offers are poor
-            if recent_avg <= earlier_avg and self._best_received_utility < 0.7:
+            if (
+                recent_avg <= earlier_avg
+                and self._best_received_utility < self._recovery_utility_threshold
+            ):
                 self._in_recovery_mode = True
                 self._recovery_threshold = max(
-                    self._reservation_value, self._best_received_utility * 0.98
+                    self._reservation_value,
+                    self._best_received_utility * self._recovery_best_utility_ratio,
                 )
 
     def _get_target_utility(self, time: float) -> float:
@@ -205,13 +251,16 @@ class MaxOops(SAONegotiator):
         if self._in_recovery_mode:
             # In recovery: be more flexible
             if time < self._recovery_phase_end:
-                return max(self._recovery_threshold, self._reservation_value + 0.1)
+                return max(
+                    self._recovery_threshold,
+                    self._reservation_value + self._recovery_concession_offset,
+                )
             else:
                 return self._reservation_value
 
         # Normal aggressive mode
         if time < self._phase1_end:
-            return self._max_utility * 0.98
+            return self._max_utility * self._phase1_utility_factor
         elif time < self._phase2_end:
             phase_time = (time - self._phase1_end) / (
                 self._phase2_end - self._phase1_end
@@ -221,13 +270,13 @@ class MaxOops(SAONegotiator):
                 if self._aggression > 0
                 else phase_time
             )
-            start = self._max_utility * 0.98
-            end = self._max_utility * 0.75
+            start = self._max_utility * self._phase1_utility_factor
+            end = self._max_utility * self._phase2_end_utility_factor
             return start - (start - end) * f_t
         else:
             # End-game
             phase_time = (time - self._phase2_end) / (1.0 - self._phase2_end)
-            start = self._max_utility * 0.75
+            start = self._max_utility * self._phase2_end_utility_factor
             end = self._reservation_value
             return max(start - (start - end) * phase_time, self._reservation_value)
 
@@ -240,7 +289,7 @@ class MaxOops(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(target)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(target * 0.9)
+            candidates = self._outcome_space.get_bids_above(target * self._threshold_relax_factor)
 
         if not candidates:
             return self._best_bid
@@ -249,11 +298,11 @@ class MaxOops(SAONegotiator):
         if self._in_recovery_mode:
             # Sort by utility ascending (closer to target)
             candidates_sorted = sorted(candidates, key=lambda x: x.utility)
-            n = min(3, len(candidates_sorted))
+            n = min(self._recovery_top_n, len(candidates_sorted))
             bid = random.choice(candidates_sorted[:n]).bid
         else:
             # Normal: pick from top
-            n = min(5, len(candidates))
+            n = min(self._top_n, len(candidates))
             bid = random.choice(candidates[:n]).bid
 
         if self.ufun is not None:

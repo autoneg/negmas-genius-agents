@@ -88,6 +88,22 @@ class PodAgent(SAONegotiator):
             (default 0.05).
         extreme_panic_threshold: Fraction of remaining time to trigger
             extreme panic mode (default 0.05/3).
+        initial_step_time: Initial step duration for recomputing the candidate
+            bid set (default 0.1).
+        min_step_time: Minimum step duration below which the step time stops
+            shrinking (default 0.01).
+        step_shrink_factor: Multiplicative factor shrinking the step time each
+            step (default 0.9).
+        concession_exponent: Exponent of the ``1 - t**concession_exponent``
+            undiscounted concession curve (default 3).
+        sentiment_offset: Offset added/subtracted to the opponent sentiment to
+            bias friendliness (default 0.5).
+        sentiment_window_divisor: Divisor of the opponent history length used to
+            size the recent-offers window for sentiment (default 4).
+        hard_headed_bid_threshold: Maximum number of distinct opponent bids for
+            which the opponent is considered hard-headed (default 3).
+        hard_headed_accept_utility: Minimum offer utility to accept against a
+            hard-headed opponent in panic mode (default 0.95).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -101,6 +117,14 @@ class PodAgent(SAONegotiator):
         self,
         panic_threshold: float = 0.05,
         extreme_panic_threshold: float = 0.05 / 3,
+        initial_step_time: float = 0.1,
+        min_step_time: float = 0.01,
+        step_shrink_factor: float = 0.9,
+        concession_exponent: float = 3,
+        sentiment_offset: float = 0.5,
+        sentiment_window_divisor: int = 4,
+        hard_headed_bid_threshold: int = 3,
+        hard_headed_accept_utility: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -120,6 +144,14 @@ class PodAgent(SAONegotiator):
         )
         self._panic_threshold = panic_threshold
         self._extreme_panic_threshold = extreme_panic_threshold
+        self._initial_step_time = initial_step_time
+        self._min_step_time = min_step_time
+        self._step_shrink_factor = step_shrink_factor
+        self._concession_exponent = concession_exponent
+        self._sentiment_offset = sentiment_offset
+        self._sentiment_window_divisor = sentiment_window_divisor
+        self._hard_headed_bid_threshold = hard_headed_bid_threshold
+        self._hard_headed_accept_utility = hard_headed_accept_utility
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
@@ -127,7 +159,7 @@ class PodAgent(SAONegotiator):
         # Offering strategy state (Group1_BS)
         self._target_utility: float = 1.0
         self._undiscounted_target: float = 1.0
-        self._time_limit_for_step: float = 0.1
+        self._time_limit_for_step: float = initial_step_time
         self._last_step_time: float = 0.0
         self._panic_mode: bool = False
         self._extreme_panic_mode: bool = False
@@ -158,7 +190,7 @@ class PodAgent(SAONegotiator):
         self._initialize()
         self._target_utility = 1.0
         self._undiscounted_target = 1.0
-        self._time_limit_for_step = 0.1
+        self._time_limit_for_step = self._initial_step_time
         self._last_step_time = 0.0
         self._panic_mode = False
         self._extreme_panic_mode = False
@@ -196,11 +228,11 @@ class PodAgent(SAONegotiator):
         return total / num_issues if num_issues > 0 else 0.5
 
     def _is_hard_headed(self) -> bool:
-        """Opponent is hard-headed if it has offered <= 3 distinct bids."""
+        """Opponent is hard-headed if it has offered <= hard_headed_bid_threshold distinct bids."""
         seen: set = set()
         for bid in self._opponent_history:
             seen.add(bid)
-            if len(seen) > 3:
+            if len(seen) > self._hard_headed_bid_threshold:
                 return False
         return True
 
@@ -215,16 +247,18 @@ class PodAgent(SAONegotiator):
 
         recent = [
             float(self.ufun(b))
-            for b in self._opponent_history[-max(1, len(self._opponent_history) // 4):]
+            for b in self._opponent_history[
+                -max(1, len(self._opponent_history) // self._sentiment_window_divisor):
+            ]
         ]
         new_average = sum(recent) / len(recent) if recent else 0.0
         sentiment = new_average - self._last_step_bids_average
         self._last_step_bids_average = new_average
 
         if sentiment < 0:
-            return sentiment - 0.5
+            return sentiment - self._sentiment_offset
         elif sentiment > 0:
-            return sentiment + 0.5
+            return sentiment + self._sentiment_offset
         return 0.0
 
     # -- offering strategy (Group1_BS) -------------------------------------
@@ -238,17 +272,17 @@ class PodAgent(SAONegotiator):
 
     def _current_concession_target(self, time: float, reservation: float) -> float:
         friendliness = 1.0 if self._panic_mode else self._opponent_sentiment(time)
-        time_discount = self._undiscounted_target - (1 - time**3)
+        time_discount = self._undiscounted_target - (1 - time**self._concession_exponent)
         discount = time_discount * friendliness
-        self._undiscounted_target = 1 - time**3
+        self._undiscounted_target = 1 - time**self._concession_exponent
         new_utility = self._target_utility - discount
         if new_utility < reservation:
             return reservation
         return max(0.0, min(1.0, new_utility))
 
     def _set_new_step(self, time: float) -> None:
-        if self._time_limit_for_step > 0.01:
-            self._time_limit_for_step *= 0.9
+        if self._time_limit_for_step > self._min_step_time:
+            self._time_limit_for_step *= self._step_shrink_factor
 
         reservation = self.reserved_value if self.reserved_value is not None else 0.0
         if not self._hard_headed_locked:
@@ -334,7 +368,7 @@ class PodAgent(SAONegotiator):
         if not self._panic_mode:
             return ResponseType.REJECT_OFFER
 
-        if self._is_hard_headed() and offer_utility >= 0.95:
+        if self._is_hard_headed() and offer_utility >= self._hard_headed_accept_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

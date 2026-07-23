@@ -75,6 +75,13 @@ class GaravelAgent(SAONegotiator):
         near_deadline_time: Time threshold for near deadline (default 0.98)
         final_deadline_time: Time threshold for final deadline (default 0.99)
         final_best_ratio: Ratio of best received utility for final deadline acceptance (default 0.95)
+        concession_exponent: Exponent of the polynomial base concession curve (default 1.5)
+        min_concession_samples: Minimum number of opponent offers needed before
+            estimating opponent concession (default 2)
+        concession_detection_threshold: Magnitude of opponent concession that
+            triggers an adjustment (default 0.1)
+        concession_adjustment: Magnitude of the target adjustment when the
+            opponent concedes or hardens (default 0.05)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -91,6 +98,10 @@ class GaravelAgent(SAONegotiator):
         near_deadline_time: float = 0.98,
         final_deadline_time: float = 0.99,
         final_best_ratio: float = 0.95,
+        concession_exponent: float = 1.5,
+        min_concession_samples: int = 2,
+        concession_detection_threshold: float = 0.1,
+        concession_adjustment: float = 0.05,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -113,6 +124,10 @@ class GaravelAgent(SAONegotiator):
         self._near_deadline_time = near_deadline_time
         self._final_deadline_time = final_deadline_time
         self._final_best_ratio = final_best_ratio
+        self._concession_exponent = concession_exponent
+        self._min_concession_samples = min_concession_samples
+        self._concession_detection_threshold = concession_detection_threshold
+        self._concession_adjustment = concession_adjustment
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -148,7 +163,7 @@ class GaravelAgent(SAONegotiator):
 
     def _estimate_opponent_concession(self) -> float:
         """Estimate how much the opponent has conceded."""
-        if len(self._opponent_offers) < 2:
+        if len(self._opponent_offers) < self._min_concession_samples:
             return 0.0
 
         # Compare first and last offers (improvement for us = concession by opponent)
@@ -162,17 +177,17 @@ class GaravelAgent(SAONegotiator):
         # Base concession (polynomial)
         base_target = self._initial_target - (
             self._initial_target - self._min_target
-        ) * (time**1.5)
+        ) * (time**self._concession_exponent)
 
         # Adjust based on opponent concession
         opp_concession = self._estimate_opponent_concession()
 
-        if opp_concession > 0.1:
+        if opp_concession > self._concession_detection_threshold:
             # Opponent conceded a lot, we can stay firmer
-            adjustment = 0.05
+            adjustment = self._concession_adjustment
         elif opp_concession < 0:
             # Opponent is getting harder, we need to concede more
-            adjustment = -0.05
+            adjustment = -self._concession_adjustment
         else:
             adjustment = 0.0
 

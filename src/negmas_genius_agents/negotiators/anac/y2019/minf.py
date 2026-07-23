@@ -71,6 +71,7 @@ class MINF(SAONegotiator):
         concession_rate: Polynomial exponent for concession (default 1.0, linear)
         min_utility: Minimum acceptable utility (default 0.6)
         deadline_threshold: Time threshold for deadline acceptance (default 0.99)
+        search_range: Utility +/- range around target when searching for bids (default 0.03)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -85,6 +86,7 @@ class MINF(SAONegotiator):
         concession_rate: float = 1.0,
         min_utility: float = 0.6,
         deadline_threshold: float = 0.99,
+        search_range: float = 0.03,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -105,6 +107,7 @@ class MINF(SAONegotiator):
         self._concession_rate = concession_rate
         self._min_utility = min_utility
         self._deadline_threshold = deadline_threshold
+        self._search_range = search_range
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -150,7 +153,9 @@ class MINF(SAONegotiator):
         target = self._get_target_utility(time)
 
         # Simple random selection from near-target bids
-        candidates = self._outcome_space.get_bids_in_range(target - 0.03, target + 0.03)
+        candidates = self._outcome_space.get_bids_in_range(
+            target - self._search_range, target + self._search_range
+        )
 
         if not candidates:
             bid_detail = self._outcome_space.get_bid_near_utility(target)

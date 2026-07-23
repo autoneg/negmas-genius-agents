@@ -76,6 +76,9 @@ class Gravity(SAONegotiator):
         near_deadline_time: Time threshold for near deadline (default 0.95)
         final_deadline_time: Time threshold for final deadline (default 0.99)
         final_best_ratio: Ratio of best received utility for final deadline acceptance (default 0.95)
+        search_range: Utility +/- range around target when searching for bids (default 0.05)
+        opponent_model_threshold: Number of opponent offers before using the
+            opponent model for bid selection (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -92,6 +95,8 @@ class Gravity(SAONegotiator):
         near_deadline_time: float = 0.95,
         final_deadline_time: float = 0.99,
         final_best_ratio: float = 0.95,
+        search_range: float = 0.05,
+        opponent_model_threshold: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -114,6 +119,8 @@ class Gravity(SAONegotiator):
         self._near_deadline_time = near_deadline_time
         self._final_deadline_time = final_deadline_time
         self._final_best_ratio = final_best_ratio
+        self._search_range = search_range
+        self._opponent_model_threshold = opponent_model_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -200,7 +207,9 @@ class Gravity(SAONegotiator):
             return self._best_bid
 
         target = self._get_target_utility(time)
-        candidates = self._outcome_space.get_bids_in_range(target - 0.05, target + 0.05)
+        candidates = self._outcome_space.get_bids_in_range(
+            target - self._search_range, target + self._search_range
+        )
 
         if not candidates:
             bid_detail = self._outcome_space.get_bid_near_utility(target)
@@ -210,7 +219,7 @@ class Gravity(SAONegotiator):
             return candidates[0].bid
 
         # Select bid considering opponent utility
-        if self._opponent_offers_count >= 5:
+        if self._opponent_offers_count >= self._opponent_model_threshold:
             best_opp = -1.0
             best_bid = candidates[0].bid
             for bd in candidates:

@@ -87,6 +87,16 @@ class FSEGA2019(SAONegotiator):
         near_deadline_time: Time threshold for near deadline (default 0.98)
         final_deadline_time: Time threshold for final deadline (default 0.99)
         final_best_ratio: Ratio of best received utility for final deadline acceptance (default 0.98)
+        concession_exponent: Exponent of the polynomial base concession curve (default 2.0)
+        concession_window: Number of recent/early offers compared to estimate
+            opponent concession (default 3)
+        concession_detection_threshold: Magnitude of opponent-concession change
+            that triggers an adjustment (default 0.05)
+        concession_adjustment: Magnitude of the target adjustment when the
+            opponent concedes or hardens (default 0.05)
+        search_range: Utility +/- range around target when searching for bids (default 0.05)
+        opponent_model_threshold: Number of opponent offers before using the
+            opponent model for bid selection (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -104,6 +114,12 @@ class FSEGA2019(SAONegotiator):
         near_deadline_time: float = 0.98,
         final_deadline_time: float = 0.99,
         final_best_ratio: float = 0.98,
+        concession_exponent: float = 2.0,
+        concession_window: int = 3,
+        concession_detection_threshold: float = 0.05,
+        concession_adjustment: float = 0.05,
+        search_range: float = 0.05,
+        opponent_model_threshold: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -127,6 +143,12 @@ class FSEGA2019(SAONegotiator):
         self._near_deadline_time = near_deadline_time
         self._final_deadline_time = final_deadline_time
         self._final_best_ratio = final_best_ratio
+        self._concession_exponent = concession_exponent
+        self._concession_window = concession_window
+        self._concession_detection_threshold = concession_detection_threshold
+        self._concession_adjustment = concession_adjustment
+        self._search_range = search_range
+        self._opponent_model_threshold = opponent_model_threshold
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
@@ -206,12 +228,13 @@ class FSEGA2019(SAONegotiator):
 
     def _estimate_opponent_concession(self) -> float:
         """Estimate how much the opponent is conceding."""
-        if len(self._opponent_offers) < 3:
+        if len(self._opponent_offers) < self._concession_window:
             return 0.0
 
         # Compare recent offers to early offers
-        early_avg = sum(self._opponent_offers[:3]) / 3
-        recent_avg = sum(self._opponent_offers[-3:]) / 3
+        window = self._concession_window
+        early_avg = sum(self._opponent_offers[:window]) / window
+        recent_avg = sum(self._opponent_offers[-window:]) / window
 
         # Positive means opponent is giving us better offers
         return recent_avg - early_avg
@@ -221,17 +244,17 @@ class FSEGA2019(SAONegotiator):
         # Base concession curve
         base_target = self._initial_target - (
             self._initial_target - self._min_target
-        ) * (time**2)
+        ) * (time**self._concession_exponent)
 
         # Adjust based on opponent concession
         opp_concession = self._estimate_opponent_concession()
 
-        if opp_concession > 0.05:
+        if opp_concession > self._concession_detection_threshold:
             # Opponent is conceding, we can stay firm
-            adjustment = 0.05
-        elif opp_concession < -0.05:
+            adjustment = self._concession_adjustment
+        elif opp_concession < -self._concession_detection_threshold:
             # Opponent is hardening, we need to concede more
-            adjustment = -0.05
+            adjustment = -self._concession_adjustment
         else:
             adjustment = 0.0
 
@@ -246,7 +269,9 @@ class FSEGA2019(SAONegotiator):
         target = self._get_target_utility(time)
 
         # Get candidates near target
-        candidates = self._outcome_space.get_bids_in_range(target - 0.05, target + 0.05)
+        candidates = self._outcome_space.get_bids_in_range(
+            target - self._search_range, target + self._search_range
+        )
 
         if not candidates:
             bid_detail = self._outcome_space.get_bid_near_utility(target)
@@ -256,7 +281,7 @@ class FSEGA2019(SAONegotiator):
             return candidates[0].bid
 
         # Select bid with highest estimated opponent utility
-        if len(self._opponent_offers) >= 5:
+        if len(self._opponent_offers) >= self._opponent_model_threshold:
             best_opp_util = -1.0
             best_bid = candidates[0].bid
             for bd in candidates:

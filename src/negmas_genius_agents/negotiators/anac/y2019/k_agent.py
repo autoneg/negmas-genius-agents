@@ -86,6 +86,18 @@ class KAgent(SAONegotiator):
         near_deadline_time: Time threshold for near deadline (default 0.98)
         final_deadline_time: Time threshold for final deadline (default 0.99)
         final_best_ratio: Ratio of best received utility for final deadline acceptance (default 0.95)
+        concession_exponent: Exponent of the polynomial base concession curve (default 2.0)
+        min_expected_samples: Minimum number of opponent offers needed before
+            estimating expected utility (default 3)
+        expected_utility_window: Number of recent opponent offers averaged for
+            expected utility estimation (default 5)
+        target_adjustment: Magnitude of the target adjustment when the opponent
+            is generous or tough (default 0.05)
+        tough_threshold: How far below the base target the expected utility must
+            drop before conceding more (default 0.2)
+        search_range: Utility +/- range around target when searching for bids (default 0.05)
+        opponent_model_threshold: Number of opponent offers before using the
+            opponent model for bid selection (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -102,6 +114,13 @@ class KAgent(SAONegotiator):
         near_deadline_time: float = 0.98,
         final_deadline_time: float = 0.99,
         final_best_ratio: float = 0.95,
+        concession_exponent: float = 2.0,
+        min_expected_samples: int = 3,
+        expected_utility_window: int = 5,
+        target_adjustment: float = 0.05,
+        tough_threshold: float = 0.2,
+        search_range: float = 0.05,
+        opponent_model_threshold: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -124,6 +143,13 @@ class KAgent(SAONegotiator):
         self._near_deadline_time = near_deadline_time
         self._final_deadline_time = final_deadline_time
         self._final_best_ratio = final_best_ratio
+        self._concession_exponent = concession_exponent
+        self._min_expected_samples = min_expected_samples
+        self._expected_utility_window = expected_utility_window
+        self._target_adjustment = target_adjustment
+        self._tough_threshold = tough_threshold
+        self._search_range = search_range
+        self._opponent_model_threshold = opponent_model_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -196,28 +222,28 @@ class KAgent(SAONegotiator):
 
     def _estimate_expected_utility(self) -> float:
         """Estimate expected utility from opponent based on their pattern."""
-        if len(self._opponent_offers) < 3:
+        if len(self._opponent_offers) < self._min_expected_samples:
             return self._min_target
 
         # Use average of recent offers as expected utility
-        recent = self._opponent_offers[-5:]
+        recent = self._opponent_offers[-self._expected_utility_window :]
         return sum(recent) / len(recent)
 
     def _get_target_utility(self, time: float) -> float:
         """Get adaptive target utility."""
         # Base concession
         base = self._initial_target - (self._initial_target - self._min_target) * (
-            time**2
+            time**self._concession_exponent
         )
 
         # Adjust based on expected utility
         expected = self._estimate_expected_utility()
         if expected > base:
             # Opponent is giving good offers, stay firm
-            base = min(base + 0.05, self._initial_target)
-        elif expected < base - 0.2:
+            base = min(base + self._target_adjustment, self._initial_target)
+        elif expected < base - self._tough_threshold:
             # Opponent is tough, concede faster
-            base = max(base - 0.05, self._min_target)
+            base = max(base - self._target_adjustment, self._min_target)
 
         return max(base, self._min_target)
 
@@ -227,7 +253,9 @@ class KAgent(SAONegotiator):
             return self._best_bid
 
         target = self._get_target_utility(time)
-        candidates = self._outcome_space.get_bids_in_range(target - 0.05, target + 0.05)
+        candidates = self._outcome_space.get_bids_in_range(
+            target - self._search_range, target + self._search_range
+        )
 
         if not candidates:
             bid_detail = self._outcome_space.get_bid_near_utility(target)
@@ -237,7 +265,7 @@ class KAgent(SAONegotiator):
             return candidates[0].bid
 
         # Select bid with best opponent utility
-        if len(self._opponent_offers) >= 5:
+        if len(self._opponent_offers) >= self._opponent_model_threshold:
             best_opp = -1.0
             best_bid = candidates[0].bid
             for bd in candidates:

@@ -73,6 +73,9 @@ class WinkyAgent(SAONegotiator):
         deadline_threshold: Time threshold for deadline acceptance (default 0.99)
         deadline_min_utility: Minimum utility for deadline acceptance (default 0.5)
         deadline_best_ratio: Ratio of best received utility for deadline acceptance (default 0.95)
+        min_target_floor: Floor applied to the minimum target utility (default 0.5)
+        opponent_model_threshold: Number of opponent offers before using the
+            opponent model for Nash-based bid selection (default 3)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -88,6 +91,8 @@ class WinkyAgent(SAONegotiator):
         deadline_threshold: float = 0.99,
         deadline_min_utility: float = 0.5,
         deadline_best_ratio: float = 0.95,
+        min_target_floor: float = 0.5,
+        opponent_model_threshold: int = 3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -109,6 +114,8 @@ class WinkyAgent(SAONegotiator):
         self._deadline_threshold = deadline_threshold
         self._deadline_min_utility = deadline_min_utility
         self._deadline_best_ratio = deadline_best_ratio
+        self._min_target_floor = min_target_floor
+        self._opponent_model_threshold = opponent_model_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -199,7 +206,7 @@ class WinkyAgent(SAONegotiator):
         """Get target utility based on concession curve."""
         # Polynomial concession: starts high, decreases over time
         # u(t) = 1 - t^(1/e)
-        min_target = max(0.5, self._min_utility)
+        min_target = max(self._min_target_floor, self._min_utility)
         target = self._max_utility - (self._max_utility - min_target) * (
             time ** (1.0 / self._e)
         )
@@ -224,7 +231,7 @@ class WinkyAgent(SAONegotiator):
             return candidates[0].bid
 
         # Select bid with highest Nash product
-        if self._opponent_offers_count >= 3:
+        if self._opponent_offers_count >= self._opponent_model_threshold:
             best_nash = -1.0
             best_bid = candidates[0].bid
             for bd in candidates:

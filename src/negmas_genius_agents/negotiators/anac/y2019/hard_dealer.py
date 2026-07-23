@@ -75,6 +75,8 @@ class HardDealer(SAONegotiator):
         phase1_time: Time threshold for phase 1 (default 0.9)
         phase2_time: Time threshold for phase 2 (default 0.95)
         final_accept_time: Time threshold for deadline acceptance (default 0.99)
+        midpoint_fraction: Fraction of the high-to-deadline range dropped to by
+            the end of phase 2 (default 0.5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -91,6 +93,7 @@ class HardDealer(SAONegotiator):
         phase1_time: float = 0.9,
         phase2_time: float = 0.95,
         final_accept_time: float = 0.99,
+        midpoint_fraction: float = 0.5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -113,6 +116,7 @@ class HardDealer(SAONegotiator):
         self._phase1_time = phase1_time
         self._phase2_time = phase2_time
         self._final_accept_time = final_accept_time
+        self._midpoint_fraction = midpoint_fraction
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -155,14 +159,17 @@ class HardDealer(SAONegotiator):
             )
             return (
                 self._high_threshold
-                - (self._high_threshold - self._deadline_threshold) * progress * 0.5
+                - (self._high_threshold - self._deadline_threshold)
+                * progress
+                * self._midpoint_fraction
             )
         else:
             # Final drop
             progress = (time - self._phase2_time) / (1.0 - self._phase2_time)
             mid = (
                 self._high_threshold
-                - (self._high_threshold - self._deadline_threshold) * 0.5
+                - (self._high_threshold - self._deadline_threshold)
+                * self._midpoint_fraction
             )
             return mid - (mid - self._deadline_threshold) * progress
 

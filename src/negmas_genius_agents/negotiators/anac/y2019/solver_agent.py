@@ -82,9 +82,15 @@ class SolverAgent(SAONegotiator):
 
     Args:
         floor_utility: Minimum acceptable utility floor (default 0.80,
-            clipped to be at least 0.75 as in the original agent).
+            clipped to be at least ``min_floor_utility`` as in the original agent).
         deadline_fraction: Fraction of relative time after which the agent
             enters its final concession phase (default 0.95).
+        min_floor_utility: Hard lower bound that ``floor_utility`` is clipped to
+            (default 0.75).
+        phase1_time: Relative-time cutoff for phase 1 (random offering from
+            the high-utility candidate set) (default 0.3).
+        final_accept_utility: Utility threshold for accepting offers in the
+            final concession phase (default 0.80).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -98,6 +104,9 @@ class SolverAgent(SAONegotiator):
         self,
         floor_utility: float = 0.80,
         deadline_fraction: float = 0.95,
+        min_floor_utility: float = 0.75,
+        phase1_time: float = 0.3,
+        final_accept_utility: float = 0.80,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -115,8 +124,11 @@ class SolverAgent(SAONegotiator):
             id=id,
             **kwargs,
         )
-        self._floor_utility = max(0.75, floor_utility)
+        self._floor_utility = max(min_floor_utility, floor_utility)
         self._deadline_fraction = deadline_fraction
+        self._min_floor_utility = min_floor_utility
+        self._phase1_time = phase1_time
+        self._final_accept_utility = final_accept_utility
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
@@ -151,7 +163,7 @@ class SolverAgent(SAONegotiator):
         if not self._phase_bids:
             return self._best_bid
 
-        if time <= 0.3:
+        if time <= self._phase1_time:
             return random.choice(self._phase_bids).bid
 
         if time < self._deadline_fraction:
@@ -191,7 +203,7 @@ class SolverAgent(SAONegotiator):
         if offer_utility >= self._floor_utility:
             return ResponseType.ACCEPT_OFFER
 
-        if time >= self._deadline_fraction and offer_utility >= 0.80:
+        if time >= self._deadline_fraction and offer_utility >= self._final_accept_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

@@ -79,6 +79,20 @@ class SAGA(SAONegotiator):
         min_threshold: Minimum acceptance threshold (default 0.6)
         deadline_threshold: Time threshold for deadline acceptance (default 0.99)
         deadline_best_ratio: Ratio of best received utility for deadline acceptance (default 0.98)
+        immigration_utility: Minimum utility for immigration/population fill
+            candidates (default 0.7)
+        alpha_concession_rate: Rate at which the fitness alpha decreases over
+            time, ``alpha = 1 - alpha_concession_rate * t`` (default 0.5)
+        concession_exponent: Exponent of the polynomial acceptance-threshold
+            concession curve (default 2.0)
+        immigration_offset: How far below the current threshold the immigration
+            pool starts, ``max(immigration_utility, threshold - offset)`` (default 0.1)
+        max_iteration_multiplier: Multiplier on ``population_size`` bounding the
+            immigration/mutation loop (default 10)
+        immigration_probability: Probability of choosing immigration over
+            mutation when filling the population (default 0.5)
+        mutation_low: Utility subtracted from a parent bid during mutation (default 0.1)
+        mutation_high: Utility added to a parent bid during mutation (default 0.05)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -95,6 +109,14 @@ class SAGA(SAONegotiator):
         min_threshold: float = 0.6,
         deadline_threshold: float = 0.99,
         deadline_best_ratio: float = 0.98,
+        immigration_utility: float = 0.7,
+        alpha_concession_rate: float = 0.5,
+        concession_exponent: float = 2.0,
+        immigration_offset: float = 0.1,
+        max_iteration_multiplier: int = 10,
+        immigration_probability: float = 0.5,
+        mutation_low: float = 0.1,
+        mutation_high: float = 0.05,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -117,6 +139,14 @@ class SAGA(SAONegotiator):
         self._min_threshold = min_threshold
         self._deadline_threshold = deadline_threshold
         self._deadline_best_ratio = deadline_best_ratio
+        self._immigration_utility = immigration_utility
+        self._alpha_concession_rate = alpha_concession_rate
+        self._concession_exponent = concession_exponent
+        self._immigration_offset = immigration_offset
+        self._max_iteration_multiplier = max_iteration_multiplier
+        self._immigration_probability = immigration_probability
+        self._mutation_low = mutation_low
+        self._mutation_high = mutation_high
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
@@ -169,7 +199,7 @@ class SAGA(SAONegotiator):
             self._population.append(self._outcome_space.outcomes[i].bid)
 
         # Fill remaining slots with random high-utility bids
-        high_utility_bids = self._outcome_space.get_bids_above(0.7)
+        high_utility_bids = self._outcome_space.get_bids_above(self._immigration_utility)
         while len(self._population) < self._population_size and high_utility_bids:
             bid = random.choice(high_utility_bids).bid
             if bid not in self._population:
@@ -246,7 +276,7 @@ class SAGA(SAONegotiator):
         # Selection pressure decreases over time
         # Early: alpha close to 1 (focus on own utility)
         # Late: alpha decreases (consider opponent more)
-        alpha = 1.0 - 0.5 * time
+        alpha = 1.0 - self._alpha_concession_rate * time
 
         return alpha * own_utility + (1 - alpha) * opponent_utility
 
@@ -254,7 +284,7 @@ class SAGA(SAONegotiator):
         """Update acceptance threshold based on time."""
         # Concession curve: starts high, decreases over time
         # Use a polynomial concession for smoother decline
-        concession_rate = time**2  # Slow early, faster late
+        concession_rate = time**self._concession_exponent  # Slow early, faster late
 
         self._current_threshold = (
             self._initial_threshold
@@ -291,11 +321,13 @@ class SAGA(SAONegotiator):
         new_population = list(survivors)
 
         # Add some high-utility bids from outcome space (immigration)
-        threshold_for_new = max(0.7, self._current_threshold - 0.1)
+        threshold_for_new = max(
+            self._immigration_utility, self._current_threshold - self._immigration_offset
+        )
         candidates = self._outcome_space.get_bids_above(threshold_for_new)
 
         # Limit iterations to avoid infinite loop when all candidates are duplicates
-        max_iterations = self._population_size * 10
+        max_iterations = self._population_size * self._max_iteration_multiplier
         iterations = 0
 
         while (
@@ -303,7 +335,7 @@ class SAGA(SAONegotiator):
         ):
             iterations += 1
 
-            if candidates and random.random() < 0.5:
+            if candidates and random.random() < self._immigration_probability:
                 # Immigration: add a random good bid
                 new_bid = random.choice(candidates).bid
             elif survivors:
@@ -312,7 +344,8 @@ class SAGA(SAONegotiator):
                 parent = random.choice(survivors)
                 parent_utility = float(self.ufun(parent)) if self.ufun else 0.5
                 nearby = self._outcome_space.get_bids_in_range(
-                    parent_utility - 0.1, parent_utility + 0.05
+                    parent_utility - self._mutation_low,
+                    parent_utility + self._mutation_high,
                 )
                 new_bid = random.choice(nearby).bid if nearby else parent
             else:

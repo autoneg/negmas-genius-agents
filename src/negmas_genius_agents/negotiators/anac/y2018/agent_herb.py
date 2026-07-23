@@ -64,6 +64,12 @@ class AgentHerb(SAONegotiator):
         min_utility: Minimum utility threshold (default 0.6).
         time_pressure_threshold: Time threshold for time pressure acceptance (default 0.95).
         deadline_threshold: Time threshold for deadline acceptance (default 0.99).
+        recent_window: Number of recent opponent offers used to estimate concession rate (default 5).
+        min_offers_to_estimate: Minimum opponent offers before estimating the concession rate (default 3).
+        concession_rate_epsilon: Magnitude below which opponent concession rate is considered neutral (default 0.01).
+        target_adjustment_step: Step added to/subtracted from the target when opponent concedes/hardens (default 0.05).
+        bid_margin: Half-width of the utility window from which candidate bids are drawn (default 0.05).
+        opponent_data_threshold: Minimum opponent offers before using the opponent model for selection (default 3).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -79,6 +85,12 @@ class AgentHerb(SAONegotiator):
         min_utility: float = 0.6,
         time_pressure_threshold: float = 0.95,
         deadline_threshold: float = 0.99,
+        recent_window: int = 5,
+        min_offers_to_estimate: int = 3,
+        concession_rate_epsilon: float = 0.01,
+        target_adjustment_step: float = 0.05,
+        bid_margin: float = 0.05,
+        opponent_data_threshold: int = 3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -100,6 +112,12 @@ class AgentHerb(SAONegotiator):
         self._min_utility_param = min_utility
         self._time_pressure_threshold = time_pressure_threshold
         self._deadline_threshold = deadline_threshold
+        self._recent_window = recent_window
+        self._min_offers_to_estimate = min_offers_to_estimate
+        self._concession_rate_epsilon = concession_rate_epsilon
+        self._target_adjustment_step = target_adjustment_step
+        self._bid_margin = bid_margin
+        self._opponent_data_threshold = opponent_data_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -174,11 +192,11 @@ class AgentHerb(SAONegotiator):
 
     def _get_opponent_concession_rate(self) -> float:
         """Calculate opponent's concession rate."""
-        if len(self._opponent_utilities) < 3:
+        if len(self._opponent_utilities) < self._min_offers_to_estimate:
             return 0.0
 
         # Use last few offers to estimate concession
-        recent = self._opponent_utilities[-5:]
+        recent = self._opponent_utilities[-self._recent_window :]
         if len(recent) < 2:
             return 0.0
 
@@ -192,12 +210,12 @@ class AgentHerb(SAONegotiator):
 
         # Adjust based on opponent concession
         opp_rate = self._get_opponent_concession_rate()
-        if opp_rate > 0.01:
+        if opp_rate > self._concession_rate_epsilon:
             # Opponent is conceding, we can be more aggressive
-            adjustment = 0.05
-        elif opp_rate < -0.01:
+            adjustment = self._target_adjustment_step
+        elif opp_rate < -self._concession_rate_epsilon:
             # Opponent is hardening, concede more
-            adjustment = -0.05
+            adjustment = -self._target_adjustment_step
         else:
             adjustment = 0.0
 
@@ -216,7 +234,7 @@ class AgentHerb(SAONegotiator):
         target = self._get_target_utility(time)
 
         # Get candidates near target
-        candidates = self._outcome_space.get_bids_in_range(target - 0.05, target + 0.05)
+        candidates = self._outcome_space.get_bids_in_range(target - self._bid_margin, target + self._bid_margin)
 
         if not candidates:
             bid_details = self._outcome_space.get_bid_near_utility(target)
@@ -226,7 +244,7 @@ class AgentHerb(SAONegotiator):
             return candidates[0].bid
 
         # Select bid maximizing estimated joint utility
-        if self._total_opponent_offers > 3:
+        if self._total_opponent_offers > self._opponent_data_threshold:
             best_score = -1.0
             best_bid = candidates[0].bid
             for bd in candidates:

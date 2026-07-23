@@ -64,6 +64,13 @@ class AteamAgent(SAONegotiator):
         cooperation_adjustment_time: Time after which to adjust for cooperative opponent (default 0.3).
         time_pressure_threshold: Time threshold for time pressure acceptance (default 0.9).
         deadline_threshold: Time threshold for deadline acceptance (default 0.98).
+        sigmoid_midpoint: Time at which the sigmoid is centered (default 0.7).
+        recent_window: Number of recent opponent offers used to detect cooperation (default 5).
+        cooperation_adjustment_step: Target utility subtracted when the opponent is cooperative (default 0.05).
+        bid_margin: Half-width of the utility window from which candidate bids are drawn (default 0.05).
+        opponent_data_threshold: Minimum opponent offers before using the opponent model for selection (default 5).
+        own_utility_weight: Weight on own utility in the bid selection score (default 0.7).
+        opponent_utility_weight: Weight on estimated opponent utility in the bid selection score (default 0.3).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -80,6 +87,13 @@ class AteamAgent(SAONegotiator):
         cooperation_adjustment_time: float = 0.3,
         time_pressure_threshold: float = 0.9,
         deadline_threshold: float = 0.98,
+        sigmoid_midpoint: float = 0.7,
+        recent_window: int = 5,
+        cooperation_adjustment_step: float = 0.05,
+        bid_margin: float = 0.05,
+        opponent_data_threshold: int = 5,
+        own_utility_weight: float = 0.7,
+        opponent_utility_weight: float = 0.3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -102,6 +116,13 @@ class AteamAgent(SAONegotiator):
         self._cooperation_adjustment_time = cooperation_adjustment_time
         self._time_pressure_threshold = time_pressure_threshold
         self._deadline_threshold = deadline_threshold
+        self._sigmoid_midpoint = sigmoid_midpoint
+        self._recent_window = recent_window
+        self._cooperation_adjustment_step = cooperation_adjustment_step
+        self._bid_margin = bid_margin
+        self._opponent_data_threshold = opponent_data_threshold
+        self._own_utility_weight = own_utility_weight
+        self._opponent_utility_weight = opponent_utility_weight
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -176,18 +197,18 @@ class AteamAgent(SAONegotiator):
 
     def _is_opponent_cooperative(self) -> bool:
         """Check if opponent appears cooperative."""
-        if len(self._opponent_utilities) < 5:
+        if len(self._opponent_utilities) < self._recent_window:
             return False
 
         # Check if utility trend is positive
-        recent = self._opponent_utilities[-5:]
+        recent = self._opponent_utilities[-self._recent_window :]
         return recent[-1] > recent[0]
 
     def _get_target_utility(self, time: float) -> float:
         """Get target utility using sigmoid concession."""
         # Sigmoid function: stays high early, drops rapidly near midpoint
         # S(t) = 1 / (1 + e^(k*(t-0.7)))
-        sigmoid = 1.0 / (1.0 + math.exp(self._sigmoid_steepness * (time - 0.7)))
+        sigmoid = 1.0 / (1.0 + math.exp(self._sigmoid_steepness * (time - self._sigmoid_midpoint)))
 
         # Map to utility range
         range_span = 1.0 - self._min_utility_param
@@ -195,7 +216,7 @@ class AteamAgent(SAONegotiator):
 
         # Adjust for cooperative opponent
         if self._is_opponent_cooperative() and time > self._cooperation_adjustment_time:
-            target = max(target - 0.05, self._min_utility_param)
+            target = max(target - self._cooperation_adjustment_step, self._min_utility_param)
 
         # Scale to actual utility range
         scaled = self._min_utility + (self._max_utility - self._min_utility) * target
@@ -210,7 +231,7 @@ class AteamAgent(SAONegotiator):
         target = self._get_target_utility(time)
 
         # Get candidates
-        candidates = self._outcome_space.get_bids_in_range(target - 0.05, target + 0.05)
+        candidates = self._outcome_space.get_bids_in_range(target - self._bid_margin, target + self._bid_margin)
 
         if not candidates:
             bid_details = self._outcome_space.get_bid_near_utility(target)
@@ -220,13 +241,13 @@ class AteamAgent(SAONegotiator):
             return candidates[0].bid
 
         # Use opponent model for selection
-        if self._total_opponent_offers > 5:
+        if self._total_opponent_offers > self._opponent_data_threshold:
             best_score = -1.0
             best_bid = candidates[0].bid
             for bd in candidates:
                 opp_util = self._estimate_opponent_utility(bd.bid)
                 # Weighted combination: own utility + opponent utility
-                score = 0.7 * bd.utility + 0.3 * opp_util
+                score = self._own_utility_weight * bd.utility + self._opponent_utility_weight * opp_util
                 if score > best_score:
                     best_score = score
                     best_bid = bd.bid

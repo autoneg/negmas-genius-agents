@@ -64,6 +64,8 @@ class IQSun2018(SAONegotiator):
         reservation: Reservation utility threshold (default 0.65).
         time_pressure_threshold: Time threshold for time pressure acceptance (default 0.95).
         deadline_threshold: Time threshold for deadline acceptance (default 0.99).
+        bid_margin_base: Base half-width of the candidate-bid utility window, narrowed as time progresses (default 0.05).
+        opponent_data_threshold: Minimum opponent offers before using the opponent model for selection (default 3).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -79,6 +81,8 @@ class IQSun2018(SAONegotiator):
         reservation: float = 0.65,
         time_pressure_threshold: float = 0.95,
         deadline_threshold: float = 0.99,
+        bid_margin_base: float = 0.05,
+        opponent_data_threshold: int = 3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -100,6 +104,8 @@ class IQSun2018(SAONegotiator):
         self._reservation = reservation
         self._time_pressure_threshold = time_pressure_threshold
         self._deadline_threshold = deadline_threshold
+        self._bid_margin_base = bid_margin_base
+        self._opponent_data_threshold = opponent_data_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -193,7 +199,7 @@ class IQSun2018(SAONegotiator):
         target = self._get_target_utility(time)
 
         # Get candidates near target
-        margin = 0.05 * (1 - time)  # Narrower margin as time progresses
+        margin = self._bid_margin_base * (1 - time)  # Narrower margin as time progresses
         candidates = self._outcome_space.get_bids_in_range(
             target - margin, target + margin
         )
@@ -206,7 +212,7 @@ class IQSun2018(SAONegotiator):
             return candidates[0].bid
 
         # Use opponent model if enough data
-        if self._total_opponent_offers > 3:
+        if self._total_opponent_offers > self._opponent_data_threshold:
             best_opp_util = -1.0
             best_bid = candidates[0].bid
             for bd in candidates:

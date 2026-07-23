@@ -61,6 +61,8 @@ class Agent33(SAONegotiator):
         concession_start: Time to start conceding (default 0.1).
         time_pressure_threshold: Time threshold for time pressure acceptance (default 0.9).
         deadline_threshold: Time threshold for deadline acceptance (default 0.98).
+        bid_margin: Half-width of the utility window from which candidate bids are drawn (default 0.03).
+        best_received_factor: Fraction of the best received utility accepted near the deadline (default 0.95).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -77,6 +79,8 @@ class Agent33(SAONegotiator):
         concession_start: float = 0.1,
         time_pressure_threshold: float = 0.9,
         deadline_threshold: float = 0.98,
+        bid_margin: float = 0.03,
+        best_received_factor: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -99,6 +103,8 @@ class Agent33(SAONegotiator):
         self._concession_start = concession_start
         self._time_pressure_threshold = time_pressure_threshold
         self._deadline_threshold = deadline_threshold
+        self._bid_margin = bid_margin
+        self._best_received_factor = best_received_factor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -160,7 +166,7 @@ class Agent33(SAONegotiator):
         target = self._get_target_utility(time)
 
         # Get candidates
-        candidates = self._outcome_space.get_bids_in_range(target - 0.03, target + 0.03)
+        candidates = self._outcome_space.get_bids_in_range(target - self._bid_margin, target + self._bid_margin)
 
         if not candidates:
             bid_details = self._outcome_space.get_bid_near_utility(target)
@@ -186,7 +192,7 @@ class Agent33(SAONegotiator):
         # Near deadline
         if time >= self._deadline_threshold:
             # Accept if better than best received
-            if offer_utility >= self._best_received_utility * 0.95:
+            if offer_utility >= self._best_received_utility * self._best_received_factor:
                 return True
             # Accept anything above reservation
             if offer_utility >= self._min_utility:

@@ -63,6 +63,13 @@ class FullAgent(SAONegotiator):
         min_threshold: Minimum acceptance threshold (default 0.65).
         time_pressure_threshold: Time threshold for time pressure acceptance (default 0.9).
         deadline_threshold: Time threshold for deadline acceptance (default 0.98).
+        small_domain_threshold: Outcome count below which the domain is considered small (default 500).
+        medium_domain_threshold: Outcome count below which the domain is considered medium (default 2000).
+        small_domain_factor: Domain-size concession factor for small domains (default 1.2).
+        medium_domain_factor: Domain-size concession factor for medium domains (default 1.0).
+        large_domain_factor: Domain-size concession factor for large domains (default 0.8).
+        bid_margin: Half-width of the utility window from which candidate bids are drawn (default 0.06).
+        opponent_data_threshold: Minimum opponent offers before using the opponent model for selection (default 5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -78,6 +85,13 @@ class FullAgent(SAONegotiator):
         min_threshold: float = 0.65,
         time_pressure_threshold: float = 0.9,
         deadline_threshold: float = 0.98,
+        small_domain_threshold: int = 500,
+        medium_domain_threshold: int = 2000,
+        small_domain_factor: float = 1.2,
+        medium_domain_factor: float = 1.0,
+        large_domain_factor: float = 0.8,
+        bid_margin: float = 0.06,
+        opponent_data_threshold: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -99,6 +113,13 @@ class FullAgent(SAONegotiator):
         self._min_threshold = min_threshold
         self._time_pressure_threshold = time_pressure_threshold
         self._deadline_threshold = deadline_threshold
+        self._small_domain_threshold = small_domain_threshold
+        self._medium_domain_threshold = medium_domain_threshold
+        self._small_domain_factor = small_domain_factor
+        self._medium_domain_factor = medium_domain_factor
+        self._large_domain_factor = large_domain_factor
+        self._bid_margin = bid_margin
+        self._opponent_data_threshold = opponent_data_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -130,12 +151,12 @@ class FullAgent(SAONegotiator):
 
             # Adjust for domain size
             domain_size = len(self._outcome_space.outcomes)
-            if domain_size < 500:
-                self._domain_size_factor = 1.2
-            elif domain_size < 2000:
-                self._domain_size_factor = 1.0
+            if domain_size < self._small_domain_threshold:
+                self._domain_size_factor = self._small_domain_factor
+            elif domain_size < self._medium_domain_threshold:
+                self._domain_size_factor = self._medium_domain_factor
             else:
-                self._domain_size_factor = 0.8
+                self._domain_size_factor = self._large_domain_factor
 
         self._initialized = True
 
@@ -235,7 +256,7 @@ class FullAgent(SAONegotiator):
         target = self._get_target_utility(time)
 
         # Get candidates near target
-        margin = 0.06
+        margin = self._bid_margin
         candidates = self._outcome_space.get_bids_in_range(
             target - margin, target + margin
         )
@@ -248,7 +269,7 @@ class FullAgent(SAONegotiator):
             return candidates[0].bid
 
         # Use Nash welfare for selection if we have opponent data
-        if self._total_opponent_offers > 5:
+        if self._total_opponent_offers > self._opponent_data_threshold:
             best_welfare = -1.0
             best_bid = candidates[0].bid
             for bd in candidates:

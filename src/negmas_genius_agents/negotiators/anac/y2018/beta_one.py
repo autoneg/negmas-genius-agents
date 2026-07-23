@@ -187,6 +187,10 @@ class BetaOne(SAONegotiator):
             (default 0.15, matches Java ``MIN_SELFISH_RATIO``).
         max_selfish_ratio: Upper bound for interpolating the selfish point
             (default 0.30, matches Java ``MAX_SELFISH_RATIO``).
+        anti_kalai_fraction: Fraction of the utility range used as the
+            approximate Kalai-Smorodinsky reference utility (default 0.5).
+        discount_epsilon: Small value used to guard against zero discount
+            factors (default 1e-9).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -203,6 +207,8 @@ class BetaOne(SAONegotiator):
         slope_tolerance: float = 0.035,
         min_selfish_ratio: float = 0.15,
         max_selfish_ratio: float = 0.30,
+        anti_kalai_fraction: float = 0.5,
+        discount_epsilon: float = 1e-9,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -225,6 +231,8 @@ class BetaOne(SAONegotiator):
         self._slope_tolerance = slope_tolerance
         self._min_selfish_ratio = min_selfish_ratio
         self._max_selfish_ratio = max_selfish_ratio
+        self._anti_kalai_fraction = anti_kalai_fraction
+        self._discount_epsilon = discount_epsilon
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
@@ -259,7 +267,7 @@ class BetaOne(SAONegotiator):
         # Approximate Kalai-Smorodinsky point of the (utility, anti-utility)
         # space as the midpoint of the achievable utility range -- see the
         # "Simplifications" note in the class docstring.
-        self._anti_kalai_util = self._min_utility + 0.5 * util_range
+        self._anti_kalai_util = self._min_utility + self._anti_kalai_fraction * util_range
 
         selfish_ratio = (self._min_selfish_ratio + self._max_selfish_ratio) / 2.0
         self._selfish_point = _lerp(
@@ -286,7 +294,7 @@ class BetaOne(SAONegotiator):
 
     def _selfish_slope(self) -> float:
         """Estimate of our own concession slope (always <= 0)."""
-        discount = self._discount_factor if self._discount_factor > 1e-9 else 1e-9
+        discount = self._discount_factor if self._discount_factor > self._discount_epsilon else self._discount_epsilon
         util_range = self._max_utility - self._min_utility
         box_size = self._box_size * util_range
         d_util = (self._selfish_point + box_size / 2.0) - self._max_utility
@@ -385,7 +393,7 @@ class BetaOne(SAONegotiator):
         betrayed = self._has_betrayed(opponent_id)
         self._betrayed[opponent_id] = betrayed
 
-        discount = self._discount_factor if self._discount_factor > 1e-9 else 1e-9
+        discount = self._discount_factor if self._discount_factor > self._discount_epsilon else self._discount_epsilon
         adjusted_time = raw_time / discount
 
         acceptable_range = self._get_box(adjusted_time, betrayed)

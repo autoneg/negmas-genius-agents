@@ -63,6 +63,11 @@ class AgentNP1(SAONegotiator):
         min_utility: Minimum utility threshold (default 0.55).
         time_pressure_threshold: Time threshold for time pressure acceptance (default 0.9).
         deadline_threshold: Time threshold for deadline acceptance (default 0.98).
+        neutral_opponent_utility: Neutral opponent-utility estimate when no data is available (default 0.5).
+        nash_safety_offset: Offset added to each utility before multiplying in the Nash product (default 0.01).
+        bid_margin: Half-width of the utility window above the target for candidate bids (default 0.05).
+        opponent_data_threshold: Minimum opponent offers before using the opponent model for selection (default 3).
+        top_candidates_count: Number of top candidates randomly sampled from during the early phase (default 5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -78,6 +83,11 @@ class AgentNP1(SAONegotiator):
         min_utility: float = 0.55,
         time_pressure_threshold: float = 0.9,
         deadline_threshold: float = 0.98,
+        neutral_opponent_utility: float = 0.5,
+        nash_safety_offset: float = 0.01,
+        bid_margin: float = 0.05,
+        opponent_data_threshold: int = 3,
+        top_candidates_count: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -99,6 +109,11 @@ class AgentNP1(SAONegotiator):
         self._min_utility_param = min_utility
         self._time_pressure_threshold = time_pressure_threshold
         self._deadline_threshold = deadline_threshold
+        self._neutral_opponent_utility = neutral_opponent_utility
+        self._nash_safety_offset = nash_safety_offset
+        self._bid_margin = bid_margin
+        self._opponent_data_threshold = opponent_data_threshold
+        self._top_candidates_count = top_candidates_count
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -155,7 +170,7 @@ class AgentNP1(SAONegotiator):
     def _estimate_opponent_utility(self, bid: Outcome) -> float:
         """Estimate opponent utility based on frequency model."""
         if self._total_opponent_offers == 0 or bid is None:
-            return 0.5  # Neutral estimate
+            return self._neutral_opponent_utility  # Neutral estimate
 
         total_score = 0.0
         num_issues = len(bid)
@@ -166,7 +181,7 @@ class AgentNP1(SAONegotiator):
                 freq = self._value_frequencies[i][value_str]
                 total_score += freq / self._total_opponent_offers
 
-        return total_score / num_issues if num_issues > 0 else 0.5
+        return total_score / num_issues if num_issues > 0 else self._neutral_opponent_utility
 
     def _get_target_utility(self, time: float) -> float:
         """Get target utility based on concession curve."""
@@ -181,7 +196,7 @@ class AgentNP1(SAONegotiator):
     def _compute_nash_product(self, own_util: float, opp_util: float) -> float:
         """Compute Nash product with safety margins."""
         # Use small offset to handle zero utilities
-        return (own_util + 0.01) * (opp_util + 0.01)
+        return (own_util + self._nash_safety_offset) * (opp_util + self._nash_safety_offset)
 
     def _select_bid(self, time: float) -> Outcome | None:
         """Select bid maximizing Nash product above threshold."""
@@ -191,7 +206,7 @@ class AgentNP1(SAONegotiator):
         target = self._get_target_utility(time)
 
         # Get candidates above target
-        candidates = self._outcome_space.get_bids_in_range(target - 0.05, 1.0)
+        candidates = self._outcome_space.get_bids_in_range(target - self._bid_margin, 1.0)
 
         if not candidates:
             bid_details = self._outcome_space.get_bid_near_utility(target)
@@ -201,7 +216,7 @@ class AgentNP1(SAONegotiator):
             return candidates[0].bid
 
         # Select bid maximizing Nash product
-        if self._total_opponent_offers > 3:
+        if self._total_opponent_offers > self._opponent_data_threshold:
             best_nash = -1.0
             best_bid = candidates[0].bid
             for bd in candidates:
@@ -213,7 +228,7 @@ class AgentNP1(SAONegotiator):
             return best_bid
         else:
             # Early phase - random from top candidates
-            top = candidates[: min(5, len(candidates))]
+            top = candidates[: min(self._top_candidates_count, len(candidates))]
             return random.choice(top).bid
 
     def _is_acceptable(self, offer_utility: float, time: float) -> bool:

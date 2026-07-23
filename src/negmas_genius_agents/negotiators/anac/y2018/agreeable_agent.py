@@ -66,6 +66,13 @@ class AgreeableAgent2018(SAONegotiator):
         concession_factor: Concession curve parameter (default 0.1, Boulware-like).
         minimum_utility: Floor for target utility (default 0.8).
         deadline_threshold: Time threshold for deadline acceptance (default 0.99).
+        small_domain_threshold: Outcome count below which the domain is considered small (default 1000).
+        medium_domain_threshold: Outcome count below which the domain is considered medium (default 10000).
+        small_domain_model_time: Time after which the opponent model is used on small domains (default 0.2).
+        medium_domain_model_time: Time after which the opponent model is used on medium domains (default 0.3).
+        large_domain_model_time: Time after which the opponent model is used on large domains (default 0.4).
+        min_offers_for_model: Minimum opponent offers before the opponent model is considered usable (default 5).
+        neighborhood_factor: Fraction of the remaining utility range used as the explorable neighborhood (default 0.05).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -81,6 +88,13 @@ class AgreeableAgent2018(SAONegotiator):
         concession_factor: float = 0.1,
         minimum_utility: float = 0.8,
         deadline_threshold: float = 0.99,
+        small_domain_threshold: int = 1000,
+        medium_domain_threshold: int = 10000,
+        small_domain_model_time: float = 0.2,
+        medium_domain_model_time: float = 0.3,
+        large_domain_model_time: float = 0.4,
+        min_offers_for_model: int = 5,
+        neighborhood_factor: float = 0.05,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -102,6 +116,13 @@ class AgreeableAgent2018(SAONegotiator):
         self._concession_factor = concession_factor
         self._minimum_utility = minimum_utility
         self._deadline_threshold = deadline_threshold
+        self._small_domain_threshold = small_domain_threshold
+        self._medium_domain_threshold = medium_domain_threshold
+        self._small_domain_model_time = small_domain_model_time
+        self._medium_domain_model_time = medium_domain_model_time
+        self._large_domain_model_time = large_domain_model_time
+        self._min_offers_for_model = min_offers_for_model
+        self._neighborhood_factor = neighborhood_factor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -109,7 +130,7 @@ class AgreeableAgent2018(SAONegotiator):
         self._value_frequencies: dict[int, dict[str, int]] = {}
         self._issue_weights: dict[int, float] = {}
         self._total_opponent_offers: int = 0
-        self._time_for_using_model: float = 0.2
+        self._time_for_using_model: float = self._small_domain_model_time
 
         # State
         self._max_utility: float = 1.0
@@ -135,12 +156,12 @@ class AgreeableAgent2018(SAONegotiator):
 
         # Adjust model timing based on domain size
         domain_size = len(self._outcome_space.outcomes) if self._outcome_space else 0
-        if domain_size < 1000:
-            self._time_for_using_model = 0.2
-        elif domain_size < 10000:
-            self._time_for_using_model = 0.3
+        if domain_size < self._small_domain_threshold:
+            self._time_for_using_model = self._small_domain_model_time
+        elif domain_size < self._medium_domain_threshold:
+            self._time_for_using_model = self._medium_domain_model_time
         else:
-            self._time_for_using_model = 0.4
+            self._time_for_using_model = self._large_domain_model_time
 
         self._initialized = True
 
@@ -239,7 +260,7 @@ class AgreeableAgent2018(SAONegotiator):
 
     def _is_model_usable(self, time: float) -> bool:
         """Check if opponent model has enough data."""
-        return time >= self._time_for_using_model and self._total_opponent_offers > 5
+        return time >= self._time_for_using_model and self._total_opponent_offers > self._min_offers_for_model
 
     def _get_explorable_neighborhood(self, time: float) -> float:
         """Get the utility range for neighborhood exploration."""
@@ -247,7 +268,7 @@ class AgreeableAgent2018(SAONegotiator):
             return 0.0
 
         # Factor of 0.05 for neighborhood exploration
-        return 0.05 * (
+        return self._neighborhood_factor * (
             1
             - (
                 self._min_utility

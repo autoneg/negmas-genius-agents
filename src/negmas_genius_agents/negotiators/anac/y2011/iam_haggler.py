@@ -80,6 +80,8 @@ class IAMhaggler2011(SAONegotiator):
         best_opponent_utility_factor: Factor for best opponent utility target (default 0.95)
         bid_tolerance: Tolerance for bid selection around target (default 0.02)
         nash_tie_breaker: Tie-breaking bonus for own utility in Nash scoring (default 0.01)
+        unknown_value_preference: Estimated opponent preference for unseen values (default 0.3)
+        best_bid_epsilon: Tolerance below max utility used to fetch the opening best bid (default 0.001)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -111,6 +113,8 @@ class IAMhaggler2011(SAONegotiator):
         best_opponent_utility_factor: float = 0.95,
         bid_tolerance: float = 0.02,
         nash_tie_breaker: float = 0.01,
+        unknown_value_preference: float = 0.3,
+        best_bid_epsilon: float = 0.001,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -148,6 +152,8 @@ class IAMhaggler2011(SAONegotiator):
         self._best_opponent_utility_factor = best_opponent_utility_factor
         self._bid_tolerance = bid_tolerance
         self._nash_tie_breaker = nash_tie_breaker
+        self._unknown_value_preference = unknown_value_preference
+        self._best_bid_epsilon = best_bid_epsilon
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -349,7 +355,7 @@ class IAMhaggler2011(SAONegotiator):
                     value_preference = sums[val_key] / max_sum if max_sum > 0 else 0.5
                 else:
                     # Unknown value - assume moderate preference
-                    value_preference = 0.3
+                    value_preference = self._unknown_value_preference
 
                 total_utility += weight * value_preference
 
@@ -481,7 +487,7 @@ class IAMhaggler2011(SAONegotiator):
         if state.step == 0:
             if self._outcome_space is not None:
                 best_bids = self._outcome_space.get_bids_above(
-                    self._max_utility_target - 0.001
+                    self._max_utility_target - self._best_bid_epsilon
                 )
                 if best_bids:
                     bid = best_bids[0].bid

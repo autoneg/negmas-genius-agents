@@ -68,6 +68,14 @@ class AgentK2(SAONegotiator):
         bid_tolerance: Tolerance range for bid selection around target (default 0.02)
         own_utility_weight: Weight for own utility in bid scoring (default 0.7)
         opponent_utility_weight: Weight for opponent utility in bid scoring (default 0.3)
+        mean_multiplier: Multiplier on the running mean in the alpha formula (default 10.0)
+        tremor_mean_multiplier: Multiplier on tremor*mean in the alpha formula (default 2.0)
+        deviation_offset: Offset added to deviation when computing the target ratio (default 0.1)
+        ratio_ceiling: Ceiling clamping the target-adjustment ratio (default 2.0)
+        m_time_coeff: Coefficient of time in the m cap formula ``m = t*coeff + base`` (default -300.0)
+        m_constant: Constant term in the m cap formula (default 400.0)
+        accept_prob_divisor: Divisor of the time^alpha term in the acceptance probability (default 5.0)
+        unknown_value_preference: Estimated opponent preference for unseen values (default 0.3)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -86,6 +94,14 @@ class AgentK2(SAONegotiator):
         bid_tolerance: float = 0.02,
         own_utility_weight: float = 0.7,
         opponent_utility_weight: float = 0.3,
+        mean_multiplier: float = 10.0,
+        tremor_mean_multiplier: float = 2.0,
+        deviation_offset: float = 0.1,
+        ratio_ceiling: float = 2.0,
+        m_time_coeff: float = -300.0,
+        m_constant: float = 400.0,
+        accept_prob_divisor: float = 5.0,
+        unknown_value_preference: float = 0.3,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -116,6 +132,14 @@ class AgentK2(SAONegotiator):
         self._bid_tolerance = bid_tolerance
         self._own_utility_weight = own_utility_weight
         self._opponent_utility_weight = opponent_utility_weight
+        self._mean_multiplier = mean_multiplier
+        self._tremor_mean_multiplier = tremor_mean_multiplier
+        self._deviation_offset = deviation_offset
+        self._ratio_ceiling = ratio_ceiling
+        self._m_time_coeff = m_time_coeff
+        self._m_constant = m_constant
+        self._accept_prob_divisor = accept_prob_divisor
+        self._unknown_value_preference = unknown_value_preference
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -263,7 +287,7 @@ class AgentK2(SAONegotiator):
                         counts[val_key] / max_count if max_count > 0 else 0.5
                     )
                 else:
-                    value_preference = 0.3
+                    value_preference = self._unknown_value_preference
 
                 total_utility += weight * value_preference
 
@@ -320,7 +344,7 @@ class AgentK2(SAONegotiator):
         estimate_max = mean + ((1 - mean) * deviation)
 
         # Calculate alpha and beta (with tremor randomness)
-        alpha = 1 + self._tremor + (10 * mean) - (2 * self._tremor * mean)
+        alpha = 1 + self._tremor + (self._mean_multiplier * mean) - (self._tremor_mean_multiplier * self._tremor * mean)
         beta = alpha + (random.random() * self._tremor) - (self._tremor / 2)
 
         # Calculate pre-target values
@@ -328,22 +352,22 @@ class AgentK2(SAONegotiator):
         pre_target2 = 1 - (math.pow(time, beta) * (1 - estimate_max))
 
         # Calculate ratio for target adjustment
-        ratio = (deviation + 0.1) / (1 - pre_target) if (1 - pre_target) != 0 else 2.0
-        if math.isnan(ratio) or ratio > 2.0:
-            ratio = 2.0
+        ratio = (deviation + self._deviation_offset) / (1 - pre_target) if (1 - pre_target) != 0 else self._ratio_ceiling
+        if math.isnan(ratio) or ratio > self._ratio_ceiling:
+            ratio = self._ratio_ceiling
 
         ratio2 = (
-            (deviation + 0.1) / (1 - pre_target2) if (1 - pre_target2) != 0 else 2.0
+            (deviation + self._deviation_offset) / (1 - pre_target2) if (1 - pre_target2) != 0 else self._ratio_ceiling
         )
-        if math.isnan(ratio2) or ratio2 > 2.0:
-            ratio2 = 2.0
+        if math.isnan(ratio2) or ratio2 > self._ratio_ceiling:
+            ratio2 = self._ratio_ceiling
 
         # Update targets
         self._target = ratio * pre_target + 1 - ratio
         self._bid_target = ratio2 * pre_target2 + 1 - ratio2
 
         # Apply target adjustment based on estimate_max
-        m = t * (-300) + 400
+        m = t * self._m_time_coeff + self._m_constant
 
         if self._target > estimate_max:
             r = self._target - estimate_max
@@ -369,7 +393,7 @@ class AgentK2(SAONegotiator):
         utility_evaluation = offered_utility - estimate_max
         satisfy = offered_utility - self._target
 
-        p = (math.pow(time, alpha) / 5) + utility_evaluation + satisfy
+        p = (math.pow(time, alpha) / self._accept_prob_divisor) + utility_evaluation + satisfy
 
         # K2 enhancement: boost acceptance near deadline
         if time > self._deadline_boost_time:

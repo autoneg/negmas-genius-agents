@@ -85,6 +85,8 @@ class TheNegotiator(SAONegotiator):
         final_accept_factor: Factor for accepting best opponent bid in final phase (default 0.95)
         min_bids_for_analysis: Minimum bids for opponent behavior analysis (default 5)
         trend_window_size: Number of recent bids for trend analysis (default 10)
+        unknown_value_preference: Estimated opponent preference for unseen values (default 0.3)
+        best_bid_epsilon: Tolerance below max utility used to fetch the opening best bid (default 0.001)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -118,6 +120,8 @@ class TheNegotiator(SAONegotiator):
         final_accept_factor: float = 0.95,
         min_bids_for_analysis: int = 5,
         trend_window_size: int = 10,
+        unknown_value_preference: float = 0.3,
+        best_bid_epsilon: float = 0.001,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -157,6 +161,8 @@ class TheNegotiator(SAONegotiator):
         self._final_accept_factor = final_accept_factor
         self._min_bids_for_analysis = min_bids_for_analysis
         self._trend_window_size = trend_window_size
+        self._unknown_value_preference = unknown_value_preference
+        self._best_bid_epsilon = best_bid_epsilon
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -317,7 +323,7 @@ class TheNegotiator(SAONegotiator):
                         counts[val_key] / max_count if max_count > 0 else 0.5
                     )
                 else:
-                    value_preference = 0.3
+                    value_preference = self._unknown_value_preference
 
                 total_utility += weight * value_preference
 
@@ -440,7 +446,7 @@ class TheNegotiator(SAONegotiator):
         # First round: offer best bid
         if state.step == 0:
             if self._outcome_space is not None:
-                best_bids = self._outcome_space.get_bids_above(self._max_util - 0.001)
+                best_bids = self._outcome_space.get_bids_above(self._max_util - self._best_bid_epsilon)
                 if best_bids:
                     bid = best_bids[0].bid
                     self._my_last_bid = bid

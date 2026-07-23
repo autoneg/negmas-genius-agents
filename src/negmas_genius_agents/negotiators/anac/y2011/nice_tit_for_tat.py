@@ -88,6 +88,37 @@ class NiceTitForTat(SAONegotiator):
             target utility (default 0.03).
         late_accept_time: time after which the expected-value-of-waiting
             acceptance heuristic is used (default 0.98).
+        nash_multiplier_base: base of the Nash-utility scaling multiplier
+            ``base - gap_coeff * gap`` (default 1.4).
+        nash_multiplier_gap_coeff: coefficient of the gap in the Nash-utility
+            scaling multiplier (default 0.6).
+        nash_utility_floor: lower clamp on the estimated Nash utility
+            (default 0.5).
+        discount_bonus_base: base of the discount bonus ``base - factor * df``
+            (default 0.5).
+        discount_bonus_factor: coefficient of the discount factor in the
+            discount bonus (default 0.4).
+        big_domain_threshold: outcome count above which a domain is treated
+            as "big" (default 10000).
+        big_domain_min_time: time after which the end-game time bonus starts
+            on big domains (default 0.85).
+        small_domain_min_time: time after which the end-game time bonus starts
+            on small domains (default 0.91).
+        time_bonus_multiplier: slope of the end-game time bonus
+            ``min(1, mult * (t - min_time))`` (default 20.0).
+        nash_update_cutoff: time after which the Nash estimate stops being
+            updated (default 0.99).
+        big_domain_nash_update_time: on big domains, time after which the Nash
+            estimate stops being updated (default 0.5).
+        concession_denom_epsilon: denominator epsilon below which the
+            opponent concession factor defaults to full concession
+            (default 1e-9).
+        late_accept_window_epsilon: floor on the look-back window used by the
+            expected-value-of-waiting acceptance heuristic (default 1e-6).
+        unknown_value_preference: estimated opponent preference for unseen
+            values (default 0.3).
+        best_bid_epsilon: tolerance below max utility used to fetch the
+            opening best bid (default 0.001).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -102,6 +133,21 @@ class NiceTitForTat(SAONegotiator):
         first_bids_time_window: float = 0.01,
         bid_tolerance: float = 0.03,
         late_accept_time: float = 0.98,
+        nash_multiplier_base: float = 1.4,
+        nash_multiplier_gap_coeff: float = 0.6,
+        nash_utility_floor: float = 0.5,
+        discount_bonus_base: float = 0.5,
+        discount_bonus_factor: float = 0.4,
+        big_domain_threshold: int = 10000,
+        big_domain_min_time: float = 0.85,
+        small_domain_min_time: float = 0.91,
+        time_bonus_multiplier: float = 20.0,
+        nash_update_cutoff: float = 0.99,
+        big_domain_nash_update_time: float = 0.5,
+        concession_denom_epsilon: float = 1e-9,
+        late_accept_window_epsilon: float = 1e-6,
+        unknown_value_preference: float = 0.3,
+        best_bid_epsilon: float = 0.001,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -122,6 +168,21 @@ class NiceTitForTat(SAONegotiator):
         self._first_bids_time_window = first_bids_time_window
         self._bid_tolerance = bid_tolerance
         self._late_accept_time = late_accept_time
+        self._nash_multiplier_base = nash_multiplier_base
+        self._nash_multiplier_gap_coeff = nash_multiplier_gap_coeff
+        self._nash_utility_floor = nash_utility_floor
+        self._discount_bonus_base = discount_bonus_base
+        self._discount_bonus_factor = discount_bonus_factor
+        self._big_domain_threshold = big_domain_threshold
+        self._big_domain_min_time = big_domain_min_time
+        self._small_domain_min_time = small_domain_min_time
+        self._time_bonus_multiplier = time_bonus_multiplier
+        self._nash_update_cutoff = nash_update_cutoff
+        self._big_domain_nash_update_time = big_domain_nash_update_time
+        self._concession_denom_epsilon = concession_denom_epsilon
+        self._late_accept_window_epsilon = late_accept_window_epsilon
+        self._unknown_value_preference = unknown_value_preference
+        self._best_bid_epsilon = best_bid_epsilon
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -232,7 +293,7 @@ class NiceTitForTat(SAONegotiator):
                     max_count = max(counts.values())
                     value_preference = counts[val_key] / max_count if max_count > 0 else 0.5
                 else:
-                    value_preference = 0.3
+                    value_preference = self._unknown_value_preference
                 total_utility += weight * value_preference
 
         return min(1.0, max(0.0, total_utility))
@@ -280,11 +341,11 @@ class NiceTitForTat(SAONegotiator):
         self._initial_gap = 1 - min_first_bids
 
         nash_estimate = self._estimate_nash_utility()
-        nash_multiplier = max(0.0, 1.4 - 0.6 * self._initial_gap)
+        nash_multiplier = max(0.0, self._nash_multiplier_base - self._nash_multiplier_gap_coeff * self._initial_gap)
         nash_utility = nash_estimate * nash_multiplier
 
         nash_utility = min(1.0, nash_utility)
-        nash_utility = max(0.5, nash_utility)
+        nash_utility = max(self._nash_utility_floor, nash_utility)
 
         self._my_nash_utility = nash_utility
 
@@ -293,17 +354,17 @@ class NiceTitForTat(SAONegotiator):
         discount_factor = 1.0
         if self.ufun is not None:
             discount_factor = getattr(self.ufun, "discount_factor", None) or 1.0
-        discount_bonus = 0.5 - 0.4 * discount_factor
+        discount_bonus = self._discount_bonus_base - self._discount_bonus_factor * discount_factor
 
         domain_size = 0
         if self._outcome_space is not None:
             domain_size = len(self._outcome_space.outcomes)
-        is_big_domain = domain_size > 10000
+        is_big_domain = domain_size > self._big_domain_threshold
 
-        min_time = 0.85 if is_big_domain else 0.91
+        min_time = self._big_domain_min_time if is_big_domain else self._small_domain_min_time
         time_bonus = 0.0
         if t > min_time:
-            time_bonus = min(1.0, 20 * (t - min_time))
+            time_bonus = min(1.0, self._time_bonus_multiplier * (t - min_time))
 
         bonus = max(discount_bonus, time_bonus)
         return min(1.0, max(0.0, bonus))
@@ -355,15 +416,15 @@ class NiceTitForTat(SAONegotiator):
 
         if self._my_last_bid is None:
             if self._outcome_space is not None:
-                best_bids = self._outcome_space.get_bids_above(self._max_util - 0.001)
+                best_bids = self._outcome_space.get_bids_above(self._max_util - self._best_bid_epsilon)
                 if best_bids:
                     return best_bids[0].bid
             return None
 
         # Update opponent model / Nash estimate if we still have time to.
-        can_update = t <= 0.99
-        if self._outcome_space is not None and len(self._outcome_space.outcomes) > 10000:
-            can_update = can_update and t <= 0.5
+        can_update = t <= self._nash_update_cutoff
+        if self._outcome_space is not None and len(self._outcome_space.outcomes) > self._big_domain_threshold:
+            can_update = can_update and t <= self._big_domain_nash_update_time
         if can_update:
             self._update_my_nash_utility()
 
@@ -372,7 +433,7 @@ class NiceTitForTat(SAONegotiator):
 
         opponent_concession = self._best_opponent_utility - min_first_bids
         denom = nash - min_first_bids
-        if denom > 1e-9:
+        if denom > self._concession_denom_epsilon:
             opponent_concede_factor = min(1.0, max(0.0, opponent_concession / denom))
         else:
             opponent_concede_factor = 1.0
@@ -426,7 +487,7 @@ class NiceTitForTat(SAONegotiator):
 
         # Expected-value-of-waiting heuristic near the deadline.
         time_left = 1 - t
-        window = max(time_left, 1e-6)
+        window = max(time_left, self._late_accept_window_epsilon)
         recent_better = [
             u for (bt, _, u) in self._opponent_history if bt >= t - window and u >= offer_utility
         ]

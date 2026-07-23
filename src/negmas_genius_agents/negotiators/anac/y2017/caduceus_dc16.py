@@ -52,6 +52,13 @@ class CaduceusDC16(SAONegotiator):
     Args:
         percentage_best_bid: Fraction of time to offer best bid (default 0.83).
         reservation_value: Minimum acceptable utility (default 0.75).
+        strategy_weights: Weights for the 5 sub-strategies used in weighted
+            voting (default [500.0, 10.0, 5.0, 3.0, 1.0]).
+        concession_rates: Per-strategy concession rates controlling each
+            sub-strategy's threshold decay (default [0.1, 0.15, 0.2, 0.25, 0.3]).
+        best_offer_acceptance_ratio: During the best-offer phase, accept only
+            offers with utility at least this fraction of max utility
+            (default 0.99).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -65,6 +72,9 @@ class CaduceusDC16(SAONegotiator):
         self,
         percentage_best_bid: float = 0.83,
         reservation_value: float = 0.75,
+        strategy_weights: list[float] | None = None,
+        concession_rates: list[float] | None = None,
+        best_offer_acceptance_ratio: float = 0.99,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -89,7 +99,17 @@ class CaduceusDC16(SAONegotiator):
 
         # Sub-agent weights (5 strategies with different weights)
         # Higher weight = more conservative strategy has more influence
-        self._strategy_weights = [500.0, 10.0, 5.0, 3.0, 1.0]
+        self._strategy_weights = (
+            list(strategy_weights)
+            if strategy_weights is not None
+            else [500.0, 10.0, 5.0, 3.0, 1.0]
+        )
+        self._concession_rates = (
+            list(concession_rates)
+            if concession_rates is not None
+            else [0.1, 0.15, 0.2, 0.25, 0.3]
+        )
+        self._best_offer_acceptance_ratio = best_offer_acceptance_ratio
         self._normalize_weights()
 
         # State
@@ -133,7 +153,7 @@ class CaduceusDC16(SAONegotiator):
     def _get_strategy_threshold(self, strategy_idx: int, time: float) -> float:
         """Get threshold for a specific strategy."""
         # Each strategy has a different concession rate
-        concession_rates = [0.1, 0.15, 0.2, 0.25, 0.3]
+        concession_rates = self._concession_rates
         rate = concession_rates[min(strategy_idx, len(concession_rates) - 1)]
         threshold = self._max_utility * (1 - rate * time)
         return max(threshold, self._reservation_value)
@@ -247,7 +267,7 @@ class CaduceusDC16(SAONegotiator):
 
         # During best-offer phase, only accept if offer is very good
         if self._is_best_offer_time(time):
-            if self._last_received_utility >= self._max_utility * 0.99:
+            if self._last_received_utility >= self._max_utility * self._best_offer_acceptance_ratio:
                 return ResponseType.ACCEPT_OFFER
             return ResponseType.REJECT_OFFER
 

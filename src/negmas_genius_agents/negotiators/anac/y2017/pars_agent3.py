@@ -62,6 +62,22 @@ class ParsAgent3(SAONegotiator):
         min_utility: Minimum acceptable utility (default 0.65).
         phase1_end: End of phase 1 (high target) (default 0.3).
         phase2_end: End of phase 2 (gradual concession) (default 0.85).
+        phase1_concession_rate: Concession rate applied to the high target
+            during phase 1 (default 0.1).
+        phase2_start_ratio: Max-utility fraction used as the start of phase 2
+            concession (default 0.97).
+        phase2_end_ratio: Max-utility fraction used as the end of phase 2 and
+            the start of phase 3 concession (default 0.75).
+        target_tolerance: Tolerance below the target utility included in the
+            candidate search range (default 0.1).
+        nash_tolerance: Tolerance within which two Nash scores are considered
+            tied (default 0.01).
+        deadline_threshold: Relative time after which any offer above
+            ``min_utility`` is accepted (default 0.95).
+        late_game_threshold: Relative time after which offers close to the
+            opponent's best are accepted (default 0.9).
+        best_offer_tolerance: Tolerance below the best opponent utility still
+            accepted in the late game (default 0.01).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -76,6 +92,14 @@ class ParsAgent3(SAONegotiator):
         min_utility: float = 0.65,
         phase1_end: float = 0.3,
         phase2_end: float = 0.85,
+        phase1_concession_rate: float = 0.1,
+        phase2_start_ratio: float = 0.97,
+        phase2_end_ratio: float = 0.75,
+        target_tolerance: float = 0.1,
+        nash_tolerance: float = 0.01,
+        deadline_threshold: float = 0.95,
+        late_game_threshold: float = 0.9,
+        best_offer_tolerance: float = 0.01,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -96,6 +120,14 @@ class ParsAgent3(SAONegotiator):
         self._min_utility = min_utility
         self._phase1_end = phase1_end
         self._phase2_end = phase2_end
+        self._phase1_concession_rate = phase1_concession_rate
+        self._phase2_start_ratio = phase2_start_ratio
+        self._phase2_end_ratio = phase2_end_ratio
+        self._target_tolerance = target_tolerance
+        self._nash_tolerance = nash_tolerance
+        self._deadline_threshold = deadline_threshold
+        self._late_game_threshold = late_game_threshold
+        self._best_offer_tolerance = best_offer_tolerance
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -179,17 +211,17 @@ class ParsAgent3(SAONegotiator):
         """Calculate target utility based on negotiation phase."""
         if time < self._phase1_end:
             # Phase 1: High target
-            return self._max_utility * (1 - 0.1 * time)
+            return self._max_utility * (1 - self._phase1_concession_rate * time)
         elif time < self._phase2_end:
             # Phase 2: Gradual concession
             progress = (time - self._phase1_end) / (self._phase2_end - self._phase1_end)
-            start_util = self._max_utility * 0.97
-            end_util = self._max_utility * 0.75
+            start_util = self._max_utility * self._phase2_start_ratio
+            end_util = self._max_utility * self._phase2_end_ratio
             return start_util - progress * (start_util - end_util)
         else:
             # Phase 3: Faster concession
             progress = (time - self._phase2_end) / (1.0 - self._phase2_end)
-            start_util = self._max_utility * 0.75
+            start_util = self._max_utility * self._phase2_end_ratio
             end_util = self._min_utility
             return start_util - progress * (start_util - end_util)
 
@@ -199,7 +231,7 @@ class ParsAgent3(SAONegotiator):
             return None
 
         candidates = self._outcome_space.get_bids_above(
-            max(target_utility - 0.1, self._min_utility)
+            max(target_utility - self._target_tolerance, self._min_utility)
         )
 
         if not candidates:
@@ -222,7 +254,7 @@ class ParsAgent3(SAONegotiator):
             if nash_score > best_score:
                 best_score = nash_score
                 best_candidates = [candidate.bid]
-            elif abs(nash_score - best_score) < 0.01:
+            elif abs(nash_score - best_score) < self._nash_tolerance:
                 best_candidates.append(candidate.bid)
 
         if best_candidates:
@@ -263,11 +295,14 @@ class ParsAgent3(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Accept if above minimum and near deadline
-        if time > 0.95 and offer_utility >= self._min_utility:
+        if time > self._deadline_threshold and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         # Accept if best opponent offer and we're late
-        if time > 0.9 and offer_utility >= self._best_opponent_utility - 0.01:
+        if (
+            time > self._late_game_threshold
+            and offer_utility >= self._best_opponent_utility - self._best_offer_tolerance
+        ):
             if offer_utility >= self._min_utility:
                 return ResponseType.ACCEPT_OFFER
 

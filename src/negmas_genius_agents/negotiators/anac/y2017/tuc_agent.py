@@ -111,6 +111,22 @@ class TucAgent(SAONegotiator):
         reservation_value: Fixed internal reservation value used by the
             threshold formula (default 0.6, matching the Java agent's
             hardcoded value rather than the domain's actual reserved value).
+        eagerness: Eagerness factor feeding the concession rate formula
+            (default 0.5).
+        early_time_threshold: Relative time at or below which the concession
+            rate is zero (default 0.2).
+        concession_time_threshold: Relative time at or above which the
+            concession rate takes its late value (default 0.9).
+        late_concession_rate: Concession rate used once the concession time
+            threshold is reached (default 0.5).
+        self_factor_scale: Scale applied to the self-factor term inside the
+            concession rate formula (default 0.25).
+        concession_base: Constant base added to the weighted self-factor when
+            computing the concession rate (default 0.11).
+        late_time_threshold: Relative time at or above which the threshold
+            collapses to the best opponent utility (default 0.95).
+        high_utility_acceptance: Offer utility above which an offer is accepted
+            immediately regardless of the threshold (default 0.95).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -123,6 +139,14 @@ class TucAgent(SAONegotiator):
     def __init__(
         self,
         reservation_value: float = 0.6,
+        eagerness: float = 0.5,
+        early_time_threshold: float = 0.2,
+        concession_time_threshold: float = 0.9,
+        late_concession_rate: float = 0.5,
+        self_factor_scale: float = 0.25,
+        concession_base: float = 0.11,
+        late_time_threshold: float = 0.95,
+        high_utility_acceptance: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -141,6 +165,14 @@ class TucAgent(SAONegotiator):
             **kwargs,
         )
         self._reservation_value = reservation_value
+        self._eagerness = eagerness
+        self._early_time_threshold = early_time_threshold
+        self._concession_time_threshold = concession_time_threshold
+        self._late_concession_rate = late_concession_rate
+        self._self_factor_scale = self_factor_scale
+        self._concession_base = concession_base
+        self._late_time_threshold = late_time_threshold
+        self._high_utility_acceptance = high_utility_acceptance
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
@@ -155,7 +187,6 @@ class TucAgent(SAONegotiator):
         self._round_count: int = 0
         self._delta: int = 0
         self._num_committed_offers: int = 1
-        self._eagerness: float = 0.5
 
     def _initialize(self) -> None:
         """Initialize the outcome space and per-issue total weight estimate."""
@@ -210,20 +241,20 @@ class TucAgent(SAONegotiator):
 
     def _concession_rate(self, time: float) -> float:
         """Compute the concession rate used by ``_create_threshold``."""
-        if time <= 0.2:
+        if time <= self._early_time_threshold:
             return 0.0
-        if time >= 0.9:
-            return 0.5
+        if time >= self._concession_time_threshold:
+            return self._late_concession_rate
 
         ns = self._negotiation_status()
-        self_factor = 0.25 * (
+        self_factor = self._self_factor_scale * (
             (1.0 / self._num_committed_offers) + ns + time + self._eagerness
         )
-        return self._my_total_weight * self_factor + 0.11
+        return self._my_total_weight * self_factor + self._concession_base
 
     def _create_threshold(self, time: float) -> float:
         """Compute the current acceptance/offering threshold."""
-        if time >= 0.95:
+        if time >= self._late_time_threshold:
             return self._best_opponent_utility
 
         concession_rate = self._concession_rate(time)
@@ -268,7 +299,7 @@ class TucAgent(SAONegotiator):
         self._process_opponent_bid(offer)
 
         offer_utility = float(self.ufun(offer))
-        if offer_utility > 0.95:
+        if offer_utility > self._high_utility_acceptance:
             return ResponseType.ACCEPT_OFFER
 
         threshold = self._create_threshold(state.relative_time)

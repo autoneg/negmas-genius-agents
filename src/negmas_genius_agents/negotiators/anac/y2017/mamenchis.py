@@ -61,6 +61,22 @@ class Mamenchis(SAONegotiator):
         min_utility: Minimum acceptable utility (default 0.6).
         patience: Controls concession patience, higher = slower (default 3.0).
         late_game_threshold: Time threshold for late game adjustment (default 0.95).
+        min_opponent_data: Minimum opponent offers required before adapting
+            the threshold to the opponent concession rate (default 3).
+        opponent_window: Number of recent opponent offers used to compute the
+            concession rate (default 5).
+        good_concession_threshold: Opponent concession rate above which the
+            opponent is considered to be conceding well (default 0.2).
+        patience_boost: Threshold increase applied when the opponent is
+            conceding well (default 0.02).
+        hardening_time_threshold: Relative time after which a hardening opponent
+            triggers faster concession (default 0.5).
+        concession_boost: Threshold decrease applied when the opponent is
+            hardening (default 0.05).
+        late_opponent_offset: Offset above the opponent's best utility used as
+            a late-game threshold cap (default 0.02).
+        bid_range_width: Width of the utility range sampled around the threshold
+            when selecting a bid (default 0.1).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -75,6 +91,14 @@ class Mamenchis(SAONegotiator):
         min_utility: float = 0.6,
         patience: float = 3.0,
         late_game_threshold: float = 0.95,
+        min_opponent_data: int = 3,
+        opponent_window: int = 5,
+        good_concession_threshold: float = 0.2,
+        patience_boost: float = 0.02,
+        hardening_time_threshold: float = 0.5,
+        concession_boost: float = 0.05,
+        late_opponent_offset: float = 0.02,
+        bid_range_width: float = 0.1,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -95,6 +119,14 @@ class Mamenchis(SAONegotiator):
         self._min_utility = min_utility
         self._patience = patience
         self._late_game_threshold = late_game_threshold
+        self._min_opponent_data = min_opponent_data
+        self._opponent_window = opponent_window
+        self._good_concession_threshold = good_concession_threshold
+        self._patience_boost = patience_boost
+        self._hardening_time_threshold = hardening_time_threshold
+        self._concession_boost = concession_boost
+        self._late_opponent_offset = late_opponent_offset
+        self._bid_range_width = bid_range_width
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -140,8 +172,8 @@ class Mamenchis(SAONegotiator):
         self._opponent_utilities.append((time, offer_utility))
 
         # Calculate opponent's concession rate
-        if len(self._opponent_utilities) >= 3:
-            recent = self._opponent_utilities[-5:]
+        if len(self._opponent_utilities) >= self._min_opponent_data:
+            recent = self._opponent_utilities[-self._opponent_window :]
             utility_change = recent[-1][1] - recent[0][1]
             time_change = recent[-1][0] - recent[0][0]
             if time_change > 0:
@@ -156,16 +188,16 @@ class Mamenchis(SAONegotiator):
         threshold = self._max_utility - concession * utility_range
 
         # Adapt to opponent's concession rate
-        if self._opponent_concession_rate > 0.2:
+        if self._opponent_concession_rate > self._good_concession_threshold:
             # Opponent is conceding well, be more patient
-            threshold = min(threshold + 0.02, self._max_utility)
-        elif self._opponent_concession_rate < 0 and time > 0.5:
+            threshold = min(threshold + self._patience_boost, self._max_utility)
+        elif self._opponent_concession_rate < 0 and time > self._hardening_time_threshold:
             # Opponent is hardening, need to concede more
-            threshold = max(threshold - 0.05, self._min_utility)
+            threshold = max(threshold - self._concession_boost, self._min_utility)
 
         # Late game adjustment
         if time > self._late_game_threshold:
-            threshold = min(threshold, self._best_opponent_utility + 0.02)
+            threshold = min(threshold, self._best_opponent_utility + self._late_opponent_offset)
             threshold = max(threshold, self._min_utility)
 
         return max(threshold, self._min_utility)
@@ -175,7 +207,9 @@ class Mamenchis(SAONegotiator):
         if self._outcome_space is None or not self._outcome_space.outcomes:
             return None
 
-        candidates = self._outcome_space.get_bids_in_range(threshold, threshold + 0.1)
+        candidates = self._outcome_space.get_bids_in_range(
+            threshold, threshold + self._bid_range_width
+        )
 
         if not candidates:
             candidates = self._outcome_space.get_bids_above(threshold)

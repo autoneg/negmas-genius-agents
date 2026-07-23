@@ -60,6 +60,36 @@ class PonPokoAgent(SAONegotiator):
     Args:
         pattern: Which threshold pattern to use (0-4, or None for random).
         late_concession_threshold: Time threshold for pattern 3 late concession (default 0.99).
+        pattern0_high_decay: Base decay rate of the high threshold in pattern 0 (default 0.1).
+        pattern0_low_decay: Base decay rate of the low threshold in pattern 0 (default 0.1).
+        pattern0_oscillation_freq: Frequency of the low-threshold oscillation in
+            pattern 0 (default 40.0).
+        pattern0_oscillation_amp: Amplitude of the low-threshold oscillation in
+            pattern 0 (default 0.1).
+        pattern1_low_decay: Decay rate of the low threshold in pattern 1 (default 0.22).
+        pattern2_high_decay: Base decay rate of the high threshold in pattern 2 (default 0.1).
+        pattern2_low_decay: Base decay rate of the low threshold in pattern 2 (default 0.1).
+        pattern2_oscillation_freq: Frequency of the low-threshold oscillation in
+            pattern 2 (default 20.0).
+        pattern2_oscillation_amp: Amplitude of the low-threshold oscillation in
+            pattern 2 (default 0.15).
+        pattern3_high_decay: Decay rate of the high threshold in pattern 3 (default 0.05).
+        pattern3_low_decay: Decay rate of the low threshold in pattern 3 before the
+            late concession kicks in (default 0.1).
+        pattern3_late_decay: Decay rate of the low threshold in pattern 3 after the
+            late concession threshold (default 0.3).
+        pattern4_high_decay: Decay rate of the high threshold in pattern 4 (default 0.15).
+        pattern4_low_decay: Decay rate of the low threshold in pattern 4 (default 0.21).
+        pattern4_oscillation_freq: Frequency of the time-modulated oscillation in
+            pattern 4 (default 20.0).
+        default_high_decay: Base decay rate of the high threshold in the fallback
+            default pattern (default 0.1).
+        default_oscillation_freq: Frequency of the low-threshold oscillation in the
+            fallback default pattern (default 40.0).
+        default_oscillation_amp: Amplitude of the low-threshold oscillation in the
+            fallback default pattern (default 0.2).
+        threshold_decrement: Step size used to lower the low threshold when no
+            bids are found in the current range (default 0.01).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -73,6 +103,25 @@ class PonPokoAgent(SAONegotiator):
         self,
         pattern: int | None = None,
         late_concession_threshold: float = 0.99,
+        pattern0_high_decay: float = 0.1,
+        pattern0_low_decay: float = 0.1,
+        pattern0_oscillation_freq: float = 40.0,
+        pattern0_oscillation_amp: float = 0.1,
+        pattern1_low_decay: float = 0.22,
+        pattern2_high_decay: float = 0.1,
+        pattern2_low_decay: float = 0.1,
+        pattern2_oscillation_freq: float = 20.0,
+        pattern2_oscillation_amp: float = 0.15,
+        pattern3_high_decay: float = 0.05,
+        pattern3_low_decay: float = 0.1,
+        pattern3_late_decay: float = 0.3,
+        pattern4_high_decay: float = 0.15,
+        pattern4_low_decay: float = 0.21,
+        pattern4_oscillation_freq: float = 20.0,
+        default_high_decay: float = 0.1,
+        default_oscillation_freq: float = 40.0,
+        default_oscillation_amp: float = 0.2,
+        threshold_decrement: float = 0.01,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -92,6 +141,25 @@ class PonPokoAgent(SAONegotiator):
         )
         self._pattern = pattern if pattern is not None else random.randint(0, 4)
         self._late_concession_threshold = late_concession_threshold
+        self._pattern0_high_decay = pattern0_high_decay
+        self._pattern0_low_decay = pattern0_low_decay
+        self._pattern0_oscillation_freq = pattern0_oscillation_freq
+        self._pattern0_oscillation_amp = pattern0_oscillation_amp
+        self._pattern1_low_decay = pattern1_low_decay
+        self._pattern2_high_decay = pattern2_high_decay
+        self._pattern2_low_decay = pattern2_low_decay
+        self._pattern2_oscillation_freq = pattern2_oscillation_freq
+        self._pattern2_oscillation_amp = pattern2_oscillation_amp
+        self._pattern3_high_decay = pattern3_high_decay
+        self._pattern3_low_decay = pattern3_low_decay
+        self._pattern3_late_decay = pattern3_late_decay
+        self._pattern4_high_decay = pattern4_high_decay
+        self._pattern4_low_decay = pattern4_low_decay
+        self._pattern4_oscillation_freq = pattern4_oscillation_freq
+        self._default_high_decay = default_high_decay
+        self._default_oscillation_freq = default_oscillation_freq
+        self._default_oscillation_amp = default_oscillation_amp
+        self._threshold_decrement = threshold_decrement
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -124,26 +192,38 @@ class PonPokoAgent(SAONegotiator):
     def _update_thresholds(self, time: float) -> None:
         """Update thresholds based on the selected pattern."""
         if self._pattern == 0:
-            self._threshold_high = 1 - 0.1 * time
-            self._threshold_low = 1 - 0.1 * time - 0.1 * abs(math.sin(time * 40))
+            self._threshold_high = 1 - self._pattern0_high_decay * time
+            self._threshold_low = 1 - self._pattern0_low_decay * time - (
+                self._pattern0_oscillation_amp
+                * abs(math.sin(time * self._pattern0_oscillation_freq))
+            )
         elif self._pattern == 1:
             self._threshold_high = 1.0
-            self._threshold_low = 1 - 0.22 * time
+            self._threshold_low = 1 - self._pattern1_low_decay * time
         elif self._pattern == 2:
-            self._threshold_high = 1 - 0.1 * time
-            self._threshold_low = 1 - 0.1 * time - 0.15 * abs(math.sin(time * 20))
+            self._threshold_high = 1 - self._pattern2_high_decay * time
+            self._threshold_low = 1 - self._pattern2_low_decay * time - (
+                self._pattern2_oscillation_amp
+                * abs(math.sin(time * self._pattern2_oscillation_freq))
+            )
         elif self._pattern == 3:
-            self._threshold_high = 1 - 0.05 * time
-            self._threshold_low = 1 - 0.1 * time
+            self._threshold_high = 1 - self._pattern3_high_decay * time
+            self._threshold_low = 1 - self._pattern3_low_decay * time
             if time > self._late_concession_threshold:
-                self._threshold_low = 1 - 0.3 * time
+                self._threshold_low = 1 - self._pattern3_late_decay * time
         elif self._pattern == 4:
-            self._threshold_high = 1 - 0.15 * time * abs(math.sin(time * 20))
-            self._threshold_low = 1 - 0.21 * time * abs(math.sin(time * 20))
+            self._threshold_high = 1 - self._pattern4_high_decay * time * abs(
+                math.sin(time * self._pattern4_oscillation_freq)
+            )
+            self._threshold_low = 1 - self._pattern4_low_decay * time * abs(
+                math.sin(time * self._pattern4_oscillation_freq)
+            )
         else:
             # Default fallback
-            self._threshold_high = 1 - 0.1 * time
-            self._threshold_low = 1 - 0.2 * abs(math.sin(time * 40))
+            self._threshold_high = 1 - self._default_high_decay * time
+            self._threshold_low = 1 - self._default_oscillation_amp * abs(
+                math.sin(time * self._default_oscillation_freq)
+            )
 
         # Ensure valid range
         self._threshold_low = max(0.0, min(self._threshold_low, self._threshold_high))
@@ -162,7 +242,7 @@ class PonPokoAgent(SAONegotiator):
             # Lower threshold until we find something
             temp_low = self._threshold_low
             while not candidates and temp_low > 0:
-                temp_low -= 0.01
+                temp_low -= self._threshold_decrement
                 candidates = self._outcome_space.get_bids_in_range(
                     temp_low, self._threshold_high
                 )

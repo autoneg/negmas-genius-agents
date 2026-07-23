@@ -59,6 +59,26 @@ class GeneKing(SAONegotiator):
         min_utility: Minimum acceptable utility (default 0.6).
         population_size: Number of bids to maintain in population (default 10).
         late_game_threshold: Time threshold for late game pressure (default 0.95).
+        population_init_multiplier: Multiplier on ``population_size`` determining
+            how many top bids seed the initial population (default 2).
+        min_opponent_data: Minimum opponent offers required before adapting
+            the threshold to opponent trends (default 3).
+        opponent_window: Number of recent opponent offers used to compute the
+            concession trend (default 5).
+        decay_exponent: Exponent of the quadratic time-decay used for the base
+            threshold (default 2.0).
+        concession_trend_threshold: Opponent trend above which the opponent is
+            considered to be conceding (default 0.1).
+        patience_boost: Threshold increase applied when the opponent is
+            conceding (default 0.02).
+        hardening_trend_threshold: Opponent trend below which the opponent is
+            considered to be hardening (default 0.05).
+        concession_boost: Threshold decrease applied when the opponent is
+            hardening (default 0.03).
+        late_pressure_rate: Magnitude of the additional late-game threshold
+            reduction per unit of late-game progress (default 0.1).
+        deadline_threshold: Relative time after which any offer above
+            ``min_utility`` is accepted (default 0.98).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -73,6 +93,16 @@ class GeneKing(SAONegotiator):
         min_utility: float = 0.6,
         population_size: int = 10,
         late_game_threshold: float = 0.95,
+        population_init_multiplier: int = 2,
+        min_opponent_data: int = 3,
+        opponent_window: int = 5,
+        decay_exponent: float = 2.0,
+        concession_trend_threshold: float = 0.1,
+        patience_boost: float = 0.02,
+        hardening_trend_threshold: float = 0.05,
+        concession_boost: float = 0.03,
+        late_pressure_rate: float = 0.1,
+        deadline_threshold: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -93,6 +123,16 @@ class GeneKing(SAONegotiator):
         self._min_utility = min_utility
         self._population_size = population_size
         self._late_game_threshold = late_game_threshold
+        self._population_init_multiplier = population_init_multiplier
+        self._min_opponent_data = min_opponent_data
+        self._opponent_window = opponent_window
+        self._decay_exponent = decay_exponent
+        self._concession_trend_threshold = concession_trend_threshold
+        self._patience_boost = patience_boost
+        self._hardening_trend_threshold = hardening_trend_threshold
+        self._concession_boost = concession_boost
+        self._late_pressure_rate = late_pressure_rate
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -121,7 +161,9 @@ class GeneKing(SAONegotiator):
             self._max_utility = self._outcome_space.max_utility
 
             # Initialize population with top bids
-            top_bids = self._outcome_space.outcomes[: self._population_size * 2]
+            top_bids = self._outcome_space.outcomes[
+                : self._population_size * self._population_init_multiplier
+            ]
             self._population = [bd.bid for bd in top_bids]
 
         self._initialized = True
@@ -144,10 +186,10 @@ class GeneKing(SAONegotiator):
 
     def _get_opponent_trend(self) -> float:
         """Calculate opponent's concession trend."""
-        if len(self._opponent_utilities) < 3:
+        if len(self._opponent_utilities) < self._min_opponent_data:
             return 0.0
 
-        recent = self._opponent_utilities[-5:]
+        recent = self._opponent_utilities[-self._opponent_window :]
         if len(recent) >= 2:
             return recent[-1] - recent[0]
         return 0.0
@@ -155,26 +197,26 @@ class GeneKing(SAONegotiator):
     def _calculate_threshold(self, time: float) -> float:
         """Calculate acceptance threshold using adaptive decay."""
         # Exponential decay with opponent adaptation
-        base_decay = 1 - math.pow(time, 2)
+        base_decay = 1 - math.pow(time, self._decay_exponent)
         utility_range = self._max_utility - self._min_utility
 
         threshold = self._min_utility + base_decay * utility_range
 
         # Adapt to opponent behavior
         opponent_trend = self._get_opponent_trend()
-        if opponent_trend > 0.1:
+        if opponent_trend > self._concession_trend_threshold:
             # Opponent is conceding, be more patient
-            threshold += 0.02
-        elif opponent_trend < -0.05:
+            threshold += self._patience_boost
+        elif opponent_trend < -self._hardening_trend_threshold:
             # Opponent is hardening, concede more
-            threshold -= 0.03
+            threshold -= self._concession_boost
 
         # Late game pressure
         if time > self._late_game_threshold:
             pressure = (time - self._late_game_threshold) / (
                 1.0 - self._late_game_threshold
             )
-            threshold -= 0.1 * pressure
+            threshold -= self._late_pressure_rate * pressure
 
         return max(min(threshold, self._max_utility), self._min_utility)
 
@@ -233,7 +275,7 @@ class GeneKing(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline, accept if above minimum
-        if time > 0.98 and offer_utility >= self._min_utility:
+        if time > self._deadline_threshold and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

@@ -61,6 +61,26 @@ class Farma2017(SAONegotiator):
     Args:
         min_utility: Minimum acceptable utility (default 0.5).
         e: Concession exponent controlling curve shape (default 0.2).
+        opponent_window: Number of recent opponent offers used for the
+            windowed average (default 5).
+        cooperative_opponent_threshold: Windowed opponent average above which
+            the opponent is considered cooperative (default 0.6).
+        opponent_patience_boost: Threshold increase applied when the opponent
+            is cooperative (default 0.02).
+        patience_ceiling_ratio: Upper bound on the patience-adjusted threshold
+            as a fraction of max utility (default 0.98).
+        opponent_history_size: Number of recent opponent bids inspected for
+            frequency-based preference estimation (default 10).
+        own_utility_weight: Weight on own utility in the bid scoring formula
+            (default 0.7).
+        opponent_pref_weight: Weight on estimated opponent preference in the
+            bid scoring formula (default 0.3).
+        top_candidates_divisor: Divisor of the candidate list used to pick the
+            top-scoring bids to randomize among (default 3).
+        late_game_threshold: Relative time after which the best opponent offer
+            is considered for acceptance (default 0.95).
+        best_offer_tolerance: Tolerance below the best opponent utility still
+            accepted in the late game (default 0.01).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -74,6 +94,16 @@ class Farma2017(SAONegotiator):
         self,
         min_utility: float = 0.5,
         e: float = 0.2,
+        opponent_window: int = 5,
+        cooperative_opponent_threshold: float = 0.6,
+        opponent_patience_boost: float = 0.02,
+        patience_ceiling_ratio: float = 0.98,
+        opponent_history_size: int = 10,
+        own_utility_weight: float = 0.7,
+        opponent_pref_weight: float = 0.3,
+        top_candidates_divisor: int = 3,
+        late_game_threshold: float = 0.95,
+        best_offer_tolerance: float = 0.01,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -93,6 +123,16 @@ class Farma2017(SAONegotiator):
         )
         self._min_utility = min_utility
         self._e = e
+        self._opponent_window = opponent_window
+        self._cooperative_opponent_threshold = cooperative_opponent_threshold
+        self._opponent_patience_boost = opponent_patience_boost
+        self._patience_ceiling_ratio = patience_ceiling_ratio
+        self._opponent_history_size = opponent_history_size
+        self._own_utility_weight = own_utility_weight
+        self._opponent_pref_weight = opponent_pref_weight
+        self._top_candidates_divisor = top_candidates_divisor
+        self._late_game_threshold = late_game_threshold
+        self._best_offer_tolerance = best_offer_tolerance
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -142,10 +182,12 @@ class Farma2017(SAONegotiator):
         self._opponent_utilities.append(offer_utility)
         self._best_opponent_utility = max(self._best_opponent_utility, offer_utility)
 
-    def _get_opponent_window_avg(self, window: int = 5) -> float:
+    def _get_opponent_window_avg(self, window: int | None = None) -> float:
         """Get average utility of opponent's recent offers."""
         if not self._opponent_utilities:
             return 0.5
+        if window is None:
+            window = self._opponent_window
         recent = self._opponent_utilities[-window:]
         return sum(recent) / len(recent)
 
@@ -159,9 +201,12 @@ class Farma2017(SAONegotiator):
 
         # Adjust based on opponent's average
         opp_avg = self._get_opponent_window_avg()
-        if opp_avg > 0.6:
+        if opp_avg > self._cooperative_opponent_threshold:
             # Opponent offers are good, be slightly more patient
-            threshold = min(threshold + 0.02, self._max_utility * 0.98)
+            threshold = min(
+                threshold + self._opponent_patience_boost,
+                self._max_utility * self._patience_ceiling_ratio,
+            )
 
         return max(threshold, self._min_utility)
 
@@ -174,7 +219,7 @@ class Farma2017(SAONegotiator):
         matches = 0
         total = 0
 
-        for opp_bid in self._opponent_bids[-10:]:  # Recent bids
+        for opp_bid in self._opponent_bids[-self._opponent_history_size :]:  # Recent bids
             if not isinstance(opp_bid, tuple):
                 continue
             for i, val in enumerate(bid):
@@ -207,13 +252,16 @@ class Farma2017(SAONegotiator):
 
             opp_pref = self._estimate_opponent_preference(bid)
             # Balance our utility with opponent's estimated preference
-            score = 0.7 * candidate.utility + 0.3 * opp_pref
+            score = (
+                self._own_utility_weight * candidate.utility
+                + self._opponent_pref_weight * opp_pref
+            )
             scored.append((score, bid))
 
         if scored:
             # Sort by score and pick from top candidates
             scored.sort(reverse=True)
-            top_candidates = scored[: max(1, len(scored) // 3)]
+            top_candidates = scored[: max(1, len(scored) // self._top_candidates_divisor)]
             _, selected = random.choice(top_candidates)
 
             if isinstance(selected, tuple):
@@ -257,7 +305,10 @@ class Farma2017(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Late game: accept if it's the best opponent offer
-        if time > 0.95 and offer_utility >= self._best_opponent_utility - 0.01:
+        if (
+            time > self._late_game_threshold
+            and offer_utility >= self._best_opponent_utility - self._best_offer_tolerance
+        ):
             if offer_utility >= self._min_utility:
                 return ResponseType.ACCEPT_OFFER
 

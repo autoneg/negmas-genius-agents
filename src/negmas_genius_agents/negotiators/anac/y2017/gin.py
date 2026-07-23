@@ -58,6 +58,20 @@ class Gin(SAONegotiator):
         min_utility: Minimum acceptable utility (default 0.65).
         smoothness: Controls concession curve smoothness (default 2.0).
         late_game_threshold: Time threshold for late game acceleration (default 0.9).
+        max_history: Number of recently offered bids remembered to avoid
+            repetition (default 10).
+        min_opponent_data: Minimum opponent offers required before extrapolating
+            future opponent utility (default 2).
+        opponent_window: Number of recent opponent offers used for trend
+            extrapolation (default 5).
+        bid_range_width: Width of the utility range sampled around the threshold
+            when selecting a bid (default 0.05).
+        late_pressure_rate: Magnitude of the late-game quadratic threshold
+            reduction per unit of late-game progress (default 0.1).
+        future_estimate_tolerance: Tolerance below the estimated future opponent
+            utility still accepted in the late game (default 0.02).
+        deadline_threshold: Relative time after which any offer above
+            ``min_utility`` is accepted (default 0.98).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -72,6 +86,13 @@ class Gin(SAONegotiator):
         min_utility: float = 0.65,
         smoothness: float = 2.0,
         late_game_threshold: float = 0.9,
+        max_history: int = 10,
+        min_opponent_data: int = 2,
+        opponent_window: int = 5,
+        bid_range_width: float = 0.05,
+        late_pressure_rate: float = 0.1,
+        future_estimate_tolerance: float = 0.02,
+        deadline_threshold: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -92,6 +113,13 @@ class Gin(SAONegotiator):
         self._min_utility = min_utility
         self._smoothness = smoothness
         self._late_game_threshold = late_game_threshold
+        self._max_history = max_history
+        self._min_opponent_data = min_opponent_data
+        self._opponent_window = opponent_window
+        self._bid_range_width = bid_range_width
+        self._late_pressure_rate = late_pressure_rate
+        self._future_estimate_tolerance = future_estimate_tolerance
+        self._deadline_threshold = deadline_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -101,7 +129,6 @@ class Gin(SAONegotiator):
 
         # Bid history for diversity
         self._recent_bids: list[Outcome] = []
-        self._max_history = 10
 
         # Opponent modeling
         self._opponent_utilities: list[float] = []
@@ -141,11 +168,11 @@ class Gin(SAONegotiator):
 
     def _estimate_opponent_future_utility(self, time: float) -> float:
         """Estimate what utility opponent might offer in the future."""
-        if len(self._opponent_utilities) < 2:
+        if len(self._opponent_utilities) < self._min_opponent_data:
             return self._best_opponent_utility
 
         # Linear extrapolation based on recent trend
-        recent = self._opponent_utilities[-5:]
+        recent = self._opponent_utilities[-self._opponent_window :]
         if len(recent) >= 2:
             avg_utility = sum(recent) / len(recent)
             trend = recent[-1] - recent[0]
@@ -171,7 +198,7 @@ class Gin(SAONegotiator):
             late_pressure = (time - self._late_game_threshold) / (
                 1.0 - self._late_game_threshold
             )
-            threshold -= 0.1 * late_pressure * late_pressure
+            threshold -= self._late_pressure_rate * late_pressure * late_pressure
 
         return max(threshold, self._min_utility)
 
@@ -180,7 +207,9 @@ class Gin(SAONegotiator):
         if self._outcome_space is None or not self._outcome_space.outcomes:
             return None
 
-        candidates = self._outcome_space.get_bids_in_range(threshold, threshold + 0.05)
+        candidates = self._outcome_space.get_bids_in_range(
+            threshold, threshold + self._bid_range_width
+        )
 
         if not candidates:
             candidates = self._outcome_space.get_bids_above(threshold)
@@ -239,11 +268,11 @@ class Gin(SAONegotiator):
         # Accept if better than expected future offers (near deadline)
         if time > self._late_game_threshold:
             expected_future = self._estimate_opponent_future_utility(time)
-            if offer_utility >= expected_future - 0.02:
+            if offer_utility >= expected_future - self._future_estimate_tolerance:
                 return ResponseType.ACCEPT_OFFER
 
         # Near deadline, accept above minimum
-        if time > 0.98 and offer_utility >= self._min_utility:
+        if time > self._deadline_threshold and offer_utility >= self._min_utility:
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

@@ -100,6 +100,11 @@ class TheNegotiatorReloaded(SAONegotiator):
         top_k_candidates: Number of top candidates to select from (default 5).
         acceptance_margin: Margin below opponent best for near-deadline
             acceptance (default 0.02).
+        concession_detection_window: Number of recent opponent bids inspected
+            for monotonic improvement when detecting concession; also the
+            minimum number of bids required before detection (default 3).
+        min_bids_for_toughness: Minimum opponent bids required before
+            estimating opponent toughness from utility variance (default 5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -129,6 +134,8 @@ class TheNegotiatorReloaded(SAONegotiator):
         bid_tolerance: float = 0.03,
         top_k_candidates: int = 5,
         acceptance_margin: float = 0.02,
+        concession_detection_window: int = 3,
+        min_bids_for_toughness: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -164,6 +171,8 @@ class TheNegotiatorReloaded(SAONegotiator):
         self._bid_tolerance = bid_tolerance
         self._top_k_candidates = top_k_candidates
         self._acceptance_margin = acceptance_margin
+        self._concession_detection_window = concession_detection_window
+        self._min_bids_for_toughness = min_bids_for_toughness
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -249,8 +258,8 @@ class TheNegotiatorReloaded(SAONegotiator):
         self._opponent_avg_utility = total / len(self._opponent_bids)
 
         # Detect concession (opponent improving offers to us)
-        if len(self._opponent_bids) >= 3:
-            recent_utils = [u for _, u in self._opponent_bids[-3:]]
+        if len(self._opponent_bids) >= self._concession_detection_window:
+            recent_utils = [u for _, u in self._opponent_bids[-self._concession_detection_window:]]
             if all(
                 recent_utils[i] <= recent_utils[i + 1]
                 for i in range(len(recent_utils) - 1)
@@ -266,7 +275,7 @@ class TheNegotiatorReloaded(SAONegotiator):
 
         Toughness is measured as how little they concede over time.
         """
-        if len(self._opponent_bids) < 5:
+        if len(self._opponent_bids) < self._min_bids_for_toughness:
             return
 
         # Look at the variance in opponent utilities

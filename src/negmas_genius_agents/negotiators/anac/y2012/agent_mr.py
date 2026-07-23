@@ -94,6 +94,20 @@ class AgentMR(SAONegotiator):
         top_k_candidates: Number of top candidates to select from (default 5).
         acceptance_margin: Margin below opponent best for compromise acceptance
             (default 0.02).
+        min_bids_for_prediction: Minimum opponent bids required before linear
+            extrapolation of the next opponent bid (default 3).
+        prediction_window: Number of recent opponent bids used for next-bid
+            prediction (default 5).
+        min_bids_for_risk: Minimum opponent bids required before estimating
+            agreement probability from utility variance (default 5).
+        min_agreement_probability: Floor for the estimated agreement probability
+            (default 0.2).
+        default_agreement_probability: Agreement probability used before enough
+            opponent data is available (default 0.5).
+        time_risk_exponent: Exponent of the time-pressure curve
+            ``1 - (1 - t)^time_risk_exponent`` (default 2.0).
+        exploitation_concession_exponent: Exponent of the Boulware concession
+            curve used during the exploitation phase (default 2.0).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -117,6 +131,13 @@ class AgentMR(SAONegotiator):
         exploitation_tolerance: float = 0.02,
         top_k_candidates: int = 5,
         acceptance_margin: float = 0.02,
+        min_bids_for_prediction: int = 3,
+        prediction_window: int = 5,
+        min_bids_for_risk: int = 5,
+        min_agreement_probability: float = 0.2,
+        default_agreement_probability: float = 0.5,
+        time_risk_exponent: float = 2.0,
+        exploitation_concession_exponent: float = 2.0,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -146,6 +167,13 @@ class AgentMR(SAONegotiator):
         self._exploitation_tolerance = exploitation_tolerance
         self._top_k_candidates = top_k_candidates
         self._acceptance_margin = acceptance_margin
+        self._min_bids_for_prediction = min_bids_for_prediction
+        self._prediction_window = prediction_window
+        self._min_bids_for_risk = min_bids_for_risk
+        self._min_agreement_probability = min_agreement_probability
+        self._default_agreement_probability = default_agreement_probability
+        self._time_risk_exponent = time_risk_exponent
+        self._exploitation_concession_exponent = exploitation_concession_exponent
 
         # Will be initialized when negotiation starts
         self._outcome_space: SortedOutcomeSpace | None = None
@@ -172,7 +200,7 @@ class AgentMR(SAONegotiator):
         self._target_utility: float = 1.0
 
         # Risk assessment
-        self._estimated_agreement_probability: float = 0.5
+        self._estimated_agreement_probability: float = self._default_agreement_probability
         self._risk_adjusted_target: float = 1.0
 
     def _initialize(self) -> None:
@@ -214,7 +242,7 @@ class AgentMR(SAONegotiator):
         self._own_bids = []
         self._last_bid = None
         self._target_utility = self._max_utility
-        self._estimated_agreement_probability = 0.5
+        self._estimated_agreement_probability = self._default_agreement_probability
         self._risk_adjusted_target = self._max_utility
 
     def _update_phase(self, time: float) -> None:
@@ -261,12 +289,12 @@ class AgentMR(SAONegotiator):
 
         Uses linear extrapolation from recent trend.
         """
-        if len(self._opponent_bids) < 3:
+        if len(self._opponent_bids) < self._min_bids_for_prediction:
             self._predicted_opponent_next = self._opponent_avg_utility
             return
 
         # Use recent bids for prediction
-        recent = [u for _, u in self._opponent_bids[-5:]]
+        recent = [u for _, u in self._opponent_bids[-self._prediction_window:]]
         n = len(recent)
 
         if n < 2:
@@ -299,7 +327,7 @@ class AgentMR(SAONegotiator):
         Considers the risk of no agreement vs accepting lower utility.
         """
         # Estimate agreement probability based on opponent behavior
-        if len(self._opponent_bids) > 5:
+        if len(self._opponent_bids) > self._min_bids_for_risk:
             # Higher variance = less predictable = higher risk
             stdev = (
                 math.sqrt(self._opponent_utility_variance)
@@ -307,13 +335,13 @@ class AgentMR(SAONegotiator):
                 else 0
             )
             self._estimated_agreement_probability = max(
-                0.2, 1.0 - stdev * self._stdev_multiplier
+                self._min_agreement_probability, 1.0 - stdev * self._stdev_multiplier
             )
         else:
-            self._estimated_agreement_probability = 0.5
+            self._estimated_agreement_probability = self._default_agreement_probability
 
         # Time pressure increases risk of no agreement
-        time_risk = 1.0 - math.pow(1.0 - time, 2)
+        time_risk = 1.0 - math.pow(1.0 - time, self._time_risk_exponent)
 
         # Risk-adjusted utility considers expected value
         # With probability (1 - agreement_prob * (1 - time_risk)), we get nothing
@@ -350,7 +378,7 @@ class AgentMR(SAONegotiator):
             )
             base_target = self._max_utility - (
                 self._max_utility - self._min_utility
-            ) * math.pow(adjusted_time, 2)
+            ) * math.pow(adjusted_time, self._exploitation_concession_exponent)
         else:
             # Compromise phase - concede faster
             adjusted_time = (time - self._compromise_time) / (

@@ -63,6 +63,9 @@ class AgentM(SAONegotiator):
         base_threshold: Starting acceptance threshold (default 0.999).
         time_divisor: Divisor for time-based threshold reduction (default 10).
         min_threshold: Minimum acceptance threshold floor (default 0.5).
+        temperature_decay_exponent: Exponent for SA temperature decay over iterations (default 2.0).
+        concession_rate_exponent: Exponent applied to opponent utility spread when
+            computing the concession rate (default 2.0).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -79,6 +82,8 @@ class AgentM(SAONegotiator):
         base_threshold: float = 0.999,
         time_divisor: float = 10.0,
         min_threshold: float = 0.5,
+        temperature_decay_exponent: float = 2.0,
+        concession_rate_exponent: float = 2.0,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -101,6 +106,8 @@ class AgentM(SAONegotiator):
         self._base_threshold = base_threshold
         self._time_divisor = time_divisor
         self._min_threshold = min_threshold
+        self._temperature_decay_exponent = temperature_decay_exponent
+        self._concession_rate_exponent = concession_rate_exponent
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -148,7 +155,7 @@ class AgentM(SAONegotiator):
 
             # Temperature decreases over time
             temperature = self._temperature_base * math.pow(
-                1.0 - (i / self._num_iterations), 2
+                1.0 - (i / self._num_iterations), self._temperature_decay_exponent
             )
 
             # Acceptance probability
@@ -187,7 +194,7 @@ class AgentM(SAONegotiator):
         best_util = max(utilities)
 
         # Concession rate is squared difference
-        self._concession_rate = (worst_util - best_util) ** 2
+        self._concession_rate = (worst_util - best_util) ** self._concession_rate_exponent
 
     def _compute_threshold(self, time: float) -> float:
         """Compute acceptance threshold."""

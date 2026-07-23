@@ -79,6 +79,8 @@ class KGAgent(SAONegotiator):
         base_concession_multiplier: Multiplier for base concession (default 0.5).
         lowered_threshold_factor: Factor for lowering target when no candidates (default 0.95).
         exploration_candidates_divisor: Divisor for exploration candidates (default 2).
+        min_utility_floor: Floor value for minimum acceptable utility (default 0.5).
+        time_pressure_exponent: Exponent for time-pressure acceleration curve (default 2.0).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -100,6 +102,8 @@ class KGAgent(SAONegotiator):
         base_concession_multiplier: float = 0.5,
         lowered_threshold_factor: float = 0.95,
         exploration_candidates_divisor: int = 2,
+        min_utility_floor: float = 0.5,
+        time_pressure_exponent: float = 2.0,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -127,6 +131,8 @@ class KGAgent(SAONegotiator):
         self._base_concession_multiplier = base_concession_multiplier
         self._lowered_threshold_factor = lowered_threshold_factor
         self._exploration_candidates_divisor = exploration_candidates_divisor
+        self._min_utility_floor = min_utility_floor
+        self._time_pressure_exponent = time_pressure_exponent
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -139,7 +145,7 @@ class KGAgent(SAONegotiator):
         # State estimation
         self._estimated_opponent_target: float = 0.5
         self._current_target: float = initial_target
-        self._min_utility: float = 0.5
+        self._min_utility: float = min_utility_floor
 
     def _initialize(self) -> None:
         """Initialize the outcome space."""
@@ -151,7 +157,9 @@ class KGAgent(SAONegotiator):
 
         self._outcome_space = SortedOutcomeSpace(ufun=self.ufun)
         if self._outcome_space.outcomes:
-            self._min_utility = max(0.5, self._outcome_space.min_utility)
+            self._min_utility = max(
+                self._min_utility_floor, self._outcome_space.min_utility
+            )
         self._initialized = True
 
     def on_negotiation_start(self, state: SAOState) -> None:
@@ -188,7 +196,7 @@ class KGAgent(SAONegotiator):
     def _update_target(self, time: float) -> None:
         """Update own target based on opponent behavior and time."""
         # Base time-dependent concession
-        time_pressure = time**2  # Accelerating near deadline
+        time_pressure = time**self._time_pressure_exponent  # Accelerating near deadline
 
         # Adapt based on opponent behavior
         if self._opponent_concession_rate > self._positive_concession_threshold:

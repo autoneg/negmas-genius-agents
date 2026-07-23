@@ -72,6 +72,7 @@ class ArisawaYaki(SAONegotiator):
         own_utility_weight: Weight for own utility in bid scoring (default 0.7).
         opponent_utility_weight: Weight for opponent utility in bid scoring (default 0.3).
         top_candidates_divisor: Divisor for selecting top candidates (default 3).
+        min_utility_floor: Floor value for minimum acceptable utility (default 0.5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -92,6 +93,7 @@ class ArisawaYaki(SAONegotiator):
         own_utility_weight: float = 0.7,
         opponent_utility_weight: float = 0.3,
         top_candidates_divisor: int = 3,
+        min_utility_floor: float = 0.5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -118,6 +120,7 @@ class ArisawaYaki(SAONegotiator):
         self._own_utility_weight = own_utility_weight
         self._opponent_utility_weight = opponent_utility_weight
         self._top_candidates_divisor = top_candidates_divisor
+        self._min_utility_floor = min_utility_floor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -128,7 +131,7 @@ class ArisawaYaki(SAONegotiator):
         self._opponent_value_freq: dict[int, dict] = {}
 
         # State
-        self._min_utility: float = 0.5
+        self._min_utility: float = min_utility_floor
         self._max_utility: float = 1.0
         self._base_concession: float = 0.0
 
@@ -143,7 +146,9 @@ class ArisawaYaki(SAONegotiator):
         self._outcome_space = SortedOutcomeSpace(ufun=self.ufun)
         if self._outcome_space.outcomes:
             self._max_utility = self._outcome_space.max_utility
-            self._min_utility = max(0.5, self._outcome_space.min_utility)
+            self._min_utility = max(
+                self._min_utility_floor, self._outcome_space.min_utility
+            )
         self._initialized = True
 
     def on_negotiation_start(self, state: SAOState) -> None:

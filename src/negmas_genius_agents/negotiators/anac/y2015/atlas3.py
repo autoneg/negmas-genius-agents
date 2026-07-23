@@ -65,6 +65,13 @@ class Atlas3(SAONegotiator):
         e: Concession exponent (default 0.1, Boulware-like)
         start_phase_time_threshold: Time threshold for start phase (default 0.2)
         main_phase_time_threshold: Time threshold for main/end phase transition (default 0.8)
+        max_utility_ratio: Ratio of max utility used as start-phase threshold (default 0.95)
+        main_concession_factor: Fraction of utility range conceded in main phase (default 0.3)
+        end_phase_exponent: Exponent used for quadratic concession in end phase (default 2)
+        end_phase_base_ratio: Ratio of max utility used as end-phase base (default 0.7)
+        end_phase_concession_factor: Fraction of remaining range conceded in end phase (default 0.5)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.9)
+        final_phase_remaining_turns: Remaining turns below which final phase triggers (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -79,6 +86,13 @@ class Atlas3(SAONegotiator):
         e: float = 0.1,
         start_phase_time_threshold: float = 0.2,
         main_phase_time_threshold: float = 0.8,
+        max_utility_ratio: float = 0.95,
+        main_concession_factor: float = 0.3,
+        end_phase_exponent: float = 2,
+        end_phase_base_ratio: float = 0.7,
+        end_phase_concession_factor: float = 0.5,
+        fallback_threshold_ratio: float = 0.9,
+        final_phase_remaining_turns: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -99,6 +113,13 @@ class Atlas3(SAONegotiator):
         self._e = e
         self._start_phase_time_threshold = start_phase_time_threshold
         self._main_phase_time_threshold = main_phase_time_threshold
+        self._max_utility_ratio = max_utility_ratio
+        self._main_concession_factor = main_concession_factor
+        self._end_phase_exponent = end_phase_exponent
+        self._end_phase_base_ratio = end_phase_base_ratio
+        self._end_phase_concession_factor = end_phase_concession_factor
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._final_phase_remaining_turns = final_phase_remaining_turns
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -152,7 +173,7 @@ class Atlas3(SAONegotiator):
         # Atlas3 uses a Boulware-like formula with reservation value consideration
         if time < self._start_phase_time_threshold:
             # Start phase: very high threshold
-            return self._max_utility * 0.95
+            return self._max_utility * self._max_utility_ratio
         elif time < self._main_phase_time_threshold:
             # Main negotiation phase
             f_t = (
@@ -168,7 +189,10 @@ class Atlas3(SAONegotiator):
                 else 0
             )
             target = (
-                self._max_utility - (self._max_utility - self._min_utility) * 0.3 * f_t
+                self._max_utility
+                - (self._max_utility - self._min_utility)
+                * self._main_concession_factor
+                * f_t
             )
             return max(target, self._reservation_value)
         else:
@@ -176,11 +200,16 @@ class Atlas3(SAONegotiator):
             f_t = math.pow(
                 (time - self._main_phase_time_threshold)
                 / (1.0 - self._main_phase_time_threshold),
-                2,
+                self._end_phase_exponent,
             )  # Quadratic concession
             target = (
-                self._max_utility * 0.7
-                - (self._max_utility * 0.7 - self._min_utility) * 0.5 * f_t
+                self._max_utility * self._end_phase_base_ratio
+                - (
+                    self._max_utility * self._end_phase_base_ratio
+                    - self._min_utility
+                )
+                * self._end_phase_concession_factor
+                * f_t
             )
             return max(target, self._reservation_value)
 
@@ -194,7 +223,9 @@ class Atlas3(SAONegotiator):
 
         if not candidates:
             # Try lower threshold
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             # Return best bid
@@ -210,7 +241,7 @@ class Atlas3(SAONegotiator):
 
         # Final phase if remaining time is less than a few turns
         remaining_turns = (1.0 - time) / self._time_scale
-        return remaining_turns < 5
+        return remaining_turns < self._final_phase_remaining_turns
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:
         """Generate a proposal."""

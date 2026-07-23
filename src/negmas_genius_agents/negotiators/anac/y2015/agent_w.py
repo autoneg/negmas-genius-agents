@@ -61,6 +61,18 @@ class AgentW(SAONegotiator):
         e: Base concession exponent (default 0.15)
         main_phase_time_threshold: Time threshold for main phase (default 0.85)
         deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
+        classification_min_observations: Minimum opponent bids before classification (default 5)
+        conceder_threshold: Utility improvement needed to classify opponent as conceder (default 0.05)
+        hardhead_threshold: Utility decrease needed to classify opponent as hardhead (default 0.02)
+        conceder_multiplier: Multiplier applied to e against a conceder (default 0.7)
+        hardhead_multiplier: Multiplier applied to e against a hardhead (default 1.5)
+        waiting_phase_time_threshold: Time before which agent stays in waiting phase (default 0.15)
+        max_utility_ratio: Ratio of max utility used as firm starting threshold (default 0.95)
+        main_phase_target: Utility target at end of main phase / base of end phase (default 0.55)
+        min_utility_margin: Margin above min utility used as end-game floor (default 0.1)
+        end_phase_concession_factor: Fraction of concession applied in end phase (default 0.7)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.9)
+        waiting_top_fraction: Divisor for selecting top candidates in waiting phase (default 10)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -75,6 +87,18 @@ class AgentW(SAONegotiator):
         e: float = 0.15,
         main_phase_time_threshold: float = 0.85,
         deadline_time_threshold: float = 0.95,
+        classification_min_observations: int = 5,
+        conceder_threshold: float = 0.05,
+        hardhead_threshold: float = 0.02,
+        conceder_multiplier: float = 0.7,
+        hardhead_multiplier: float = 1.5,
+        waiting_phase_time_threshold: float = 0.15,
+        max_utility_ratio: float = 0.95,
+        main_phase_target: float = 0.55,
+        min_utility_margin: float = 0.1,
+        end_phase_concession_factor: float = 0.7,
+        fallback_threshold_ratio: float = 0.9,
+        waiting_top_fraction: int = 10,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -95,6 +119,18 @@ class AgentW(SAONegotiator):
         self._e = e
         self._main_phase_time_threshold = main_phase_time_threshold
         self._deadline_time_threshold = deadline_time_threshold
+        self._classification_min_observations = classification_min_observations
+        self._conceder_threshold = conceder_threshold
+        self._hardhead_threshold = hardhead_threshold
+        self._conceder_multiplier = conceder_multiplier
+        self._hardhead_multiplier = hardhead_multiplier
+        self._waiting_phase_time_threshold = waiting_phase_time_threshold
+        self._max_utility_ratio = max_utility_ratio
+        self._main_phase_target = main_phase_target
+        self._min_utility_margin = min_utility_margin
+        self._end_phase_concession_factor = end_phase_concession_factor
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._waiting_top_fraction = waiting_top_fraction
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -145,7 +181,7 @@ class AgentW(SAONegotiator):
             self._best_opponent_utility = utility
 
         # Classify opponent after enough observations
-        if len(self._opponent_utilities) >= 5:
+        if len(self._opponent_utilities) >= self._classification_min_observations:
             self._waiting_phase = False
 
             # Analyze utility trend
@@ -155,9 +191,9 @@ class AgentW(SAONegotiator):
             avg_first = sum(first_half) / len(first_half)
             avg_second = sum(second_half) / len(second_half)
 
-            if avg_second > avg_first + 0.05:
+            if avg_second > avg_first + self._conceder_threshold:
                 self._opponent_type = "conceder"
-            elif avg_second < avg_first - 0.02:
+            elif avg_second < avg_first - self._hardhead_threshold:
                 self._opponent_type = "hardhead"
             else:
                 self._opponent_type = "unknown"
@@ -165,9 +201,9 @@ class AgentW(SAONegotiator):
     def _get_adaptive_e(self) -> float:
         """Get concession exponent based on opponent type."""
         if self._opponent_type == "conceder":
-            return self._e * 0.7  # Be firmer against conceder
+            return self._e * self._conceder_multiplier  # Be firmer against conceder
         elif self._opponent_type == "hardhead":
-            return self._e * 1.5  # Concede more against hardhead
+            return self._e * self._hardhead_multiplier  # Concede more against hardhead
         return self._e
 
     def _compute_threshold(self, time: float) -> float:
@@ -175,22 +211,33 @@ class AgentW(SAONegotiator):
         e = self._get_adaptive_e()
 
         # Waiting phase: stay high
-        if self._waiting_phase or time < 0.15:
-            return self._max_utility * 0.95
+        if self._waiting_phase or time < self._waiting_phase_time_threshold:
+            return self._max_utility * self._max_utility_ratio
 
         # Main negotiation phase
         if time < self._main_phase_time_threshold:
-            progress = (time - 0.15) / (self._main_phase_time_threshold - 0.15)
+            progress = (time - self._waiting_phase_time_threshold) / (
+                self._main_phase_time_threshold - self._waiting_phase_time_threshold
+            )
             f_t = math.pow(progress, 1 / e)
-            target = self._max_utility * 0.95 - (self._max_utility * 0.95 - 0.55) * f_t
+            target = (
+                self._max_utility * self._max_utility_ratio
+                - (self._max_utility * self._max_utility_ratio - self._main_phase_target)
+                * f_t
+            )
             return max(target, self._reservation_value)
 
         # End phase
         progress = (time - self._main_phase_time_threshold) / (
             1.0 - self._main_phase_time_threshold
         )
-        base = 0.55
-        target = base - (base - self._min_utility - 0.1) * progress * 0.7
+        base = self._main_phase_target
+        target = (
+            base
+            - (base - self._min_utility - self._min_utility_margin)
+            * progress
+            * self._end_phase_concession_factor
+        )
         return max(target, self._reservation_value)
 
     def _select_bid(self, time: float) -> Outcome | None:
@@ -202,14 +249,16 @@ class AgentW(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
 
         # In waiting phase, prefer top bids
         if self._waiting_phase:
-            top_n = max(1, len(candidates) // 10)
+            top_n = max(1, len(candidates) // self._waiting_top_fraction)
             return random.choice(candidates[:top_n]).bid
 
         return random.choice(candidates).bid
@@ -246,7 +295,7 @@ class AgentW(SAONegotiator):
         # End-game: accept reasonable offers
         if time > self._deadline_time_threshold:
             if offer_utility >= max(
-                self._best_opponent_utility, self._min_utility + 0.1
+                self._best_opponent_utility, self._min_utility + self._min_utility_margin
             ):
                 return ResponseType.ACCEPT_OFFER
 

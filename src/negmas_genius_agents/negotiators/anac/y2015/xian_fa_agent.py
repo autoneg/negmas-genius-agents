@@ -61,6 +61,17 @@ class XianFaAgent(SAONegotiator):
         rule1_time_threshold: Time threshold for Rule 1 - start high (default 0.2)
         rule2_time_threshold: Time threshold for Rule 2 - slow concession (default 0.5)
         rule3_time_threshold: Time threshold for Rule 3 - adapt to opponent (default 0.8)
+        constitutional_min: Constitutional minimum utility (default 0.6)
+        reserve_range: Utility range above mid used to build reserve bids (default 0.15)
+        reserve_count: Number of reserve bids stored for end game (default 10)
+        max_utility_ratio: Ratio of max utility used as starting threshold (default 0.95)
+        rule2_concession: Utility conceded during Rule 2 (default 0.15)
+        rule3_base_ratio: Ratio of max utility used as Rule 3 base (default 0.8)
+        opponent_best_bonus: Bonus above best opponent utility for Rule 3/4 target (default 0.05)
+        rule4_concession_factor: Fraction of concession applied in Rule 4 (default 0.5)
+        final_phase_time_threshold: Time after which reserve bids are used (default 0.9)
+        constitutional_min_absolute_time: Time until which constitutional min is absolute (default 0.95)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.98)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -76,6 +87,17 @@ class XianFaAgent(SAONegotiator):
         rule1_time_threshold: float = 0.2,
         rule2_time_threshold: float = 0.5,
         rule3_time_threshold: float = 0.8,
+        constitutional_min: float = 0.6,
+        reserve_range: float = 0.15,
+        reserve_count: int = 10,
+        max_utility_ratio: float = 0.95,
+        rule2_concession: float = 0.15,
+        rule3_base_ratio: float = 0.8,
+        opponent_best_bonus: float = 0.05,
+        rule4_concession_factor: float = 0.5,
+        final_phase_time_threshold: float = 0.9,
+        constitutional_min_absolute_time: float = 0.95,
+        deadline_time_threshold: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -97,13 +119,23 @@ class XianFaAgent(SAONegotiator):
         self._rule1_time_threshold = rule1_time_threshold
         self._rule2_time_threshold = rule2_time_threshold
         self._rule3_time_threshold = rule3_time_threshold
+        self._constitutional_min = constitutional_min
+        self._reserve_range = reserve_range
+        self._reserve_count = reserve_count
+        self._max_utility_ratio = max_utility_ratio
+        self._rule2_concession = rule2_concession
+        self._rule3_base_ratio = rule3_base_ratio
+        self._opponent_best_bonus = opponent_best_bonus
+        self._rule4_concession_factor = rule4_concession_factor
+        self._final_phase_time_threshold = final_phase_time_threshold
+        self._constitutional_min_absolute_time = constitutional_min_absolute_time
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
         # State
         self._max_utility: float = 1.0
         self._min_utility: float = 0.0
-        self._constitutional_min: float = 0.6  # Constitutional minimum
 
         # Tracking
         self._opponent_bids: list[tuple[Outcome, float]] = []
@@ -125,8 +157,8 @@ class XianFaAgent(SAONegotiator):
 
             # Build reserve bids - good bids saved for end game
             mid_util = (self._max_utility + self._min_utility) / 2
-            reserves = self._outcome_space.get_bids_in_range(mid_util, mid_util + 0.15)
-            self._reserve_bids = [bd.bid for bd in reserves[:10]]
+            reserves = self._outcome_space.get_bids_in_range(mid_util, mid_util + self._reserve_range)
+            self._reserve_bids = [bd.bid for bd in reserves[: self._reserve_count]]
 
         self._initialized = True
 
@@ -149,18 +181,21 @@ class XianFaAgent(SAONegotiator):
         # Constitutional rules by phase
         if time < self._rule1_time_threshold:
             # Rule 1: Start high
-            return self._max_utility * 0.95
+            return self._max_utility * self._max_utility_ratio
         elif time < self._rule2_time_threshold:
             # Rule 2: Slow concession
             progress = (time - self._rule1_time_threshold) / (
                 self._rule2_time_threshold - self._rule1_time_threshold
             )
             f_t = math.pow(progress, 1 / self._e)
-            return self._max_utility * 0.95 - 0.15 * f_t
+            return self._max_utility * self._max_utility_ratio - self._rule2_concession * f_t
         elif time < self._rule3_time_threshold:
             # Rule 3: Adapt to opponent
-            base = self._max_utility * 0.8
-            target = max(self._best_opponent_utility + 0.05, self._constitutional_min)
+            base = self._max_utility * self._rule3_base_ratio
+            target = max(
+                self._best_opponent_utility + self._opponent_best_bonus,
+                self._constitutional_min,
+            )
             progress = (time - self._rule2_time_threshold) / (
                 self._rule3_time_threshold - self._rule2_time_threshold
             )
@@ -170,9 +205,12 @@ class XianFaAgent(SAONegotiator):
             progress = (time - self._rule3_time_threshold) / (
                 1.0 - self._rule3_time_threshold
             )
-            current = max(self._best_opponent_utility + 0.05, self._constitutional_min)
+            current = max(
+                self._best_opponent_utility + self._opponent_best_bonus,
+                self._constitutional_min,
+            )
             target = self._constitutional_min
-            return current - (current - target) * progress * 0.5
+            return current - (current - target) * progress * self._rule4_concession_factor
 
     def _select_bid(self, time: float) -> Outcome | None:
         """Select bid following constitutional approach."""
@@ -182,7 +220,7 @@ class XianFaAgent(SAONegotiator):
         threshold = self._compute_threshold(time)
 
         # In final phase, use reserves if available
-        if time > 0.9 and self._reserve_bids:
+        if time > self._final_phase_time_threshold and self._reserve_bids:
             for bid in self._reserve_bids:
                 if self.ufun is not None:
                     util = float(self.ufun(bid))
@@ -230,11 +268,17 @@ class XianFaAgent(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Constitutional minimum is absolute
-        if offer_utility < self._constitutional_min and time < 0.95:
+        if (
+            offer_utility < self._constitutional_min
+            and time < self._constitutional_min_absolute_time
+        ):
             return ResponseType.REJECT_OFFER
 
         # Near deadline exceptions
-        if time > 0.98 and offer_utility >= self._constitutional_min:
+        if (
+            time > self._deadline_time_threshold
+            and offer_utility >= self._constitutional_min
+        ):
             return ResponseType.ACCEPT_OFFER
 
         return ResponseType.REJECT_OFFER

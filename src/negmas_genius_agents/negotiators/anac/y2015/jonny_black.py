@@ -63,6 +63,19 @@ class JonnyBlack(SAONegotiator):
         early_time_threshold: Time threshold for early phase (default 0.3)
         main_time_threshold: Time threshold for main/end phase transition (default 0.8)
         deadline_time_threshold: Time after which end-game acceptance triggers (default 0.98)
+        mystery_range: Magnitude of random mystery factor applied to threshold (default 0.08)
+        desperation_min_bids: Minimum opponent bids to detect desperation (default 4)
+        desperation_window: Number of recent opponent bids checked for desperation (default 4)
+        desperation_threshold: Utility improvement over window classifying opponent as desperate (default 0.15)
+        desperate_multiplier: Multiplier applied to e when opponent is desperate (default 0.5)
+        max_utility_ratio: Ratio of max utility used as firm starting threshold (default 0.92)
+        main_phase_target: Utility target at end of main phase / base of end phase (default 0.55)
+        middle_phase_floor: Floor utility in middle phase (default 0.5)
+        end_phase_target: Utility target at end of end phase (default 0.45)
+        end_phase_concession_factor: Fraction of concession applied in end phase (default 0.5)
+        min_utility_margin: Margin above min utility used as end-game floor (default 0.1)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.85)
+        endgame_opponent_ratio: Ratio of best opponent utility used in end-game acceptance (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -78,6 +91,19 @@ class JonnyBlack(SAONegotiator):
         early_time_threshold: float = 0.3,
         main_time_threshold: float = 0.8,
         deadline_time_threshold: float = 0.98,
+        mystery_range: float = 0.08,
+        desperation_min_bids: int = 4,
+        desperation_window: int = 4,
+        desperation_threshold: float = 0.15,
+        desperate_multiplier: float = 0.5,
+        max_utility_ratio: float = 0.92,
+        main_phase_target: float = 0.55,
+        middle_phase_floor: float = 0.5,
+        end_phase_target: float = 0.45,
+        end_phase_concession_factor: float = 0.5,
+        min_utility_margin: float = 0.1,
+        fallback_threshold_ratio: float = 0.85,
+        endgame_opponent_ratio: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -99,6 +125,19 @@ class JonnyBlack(SAONegotiator):
         self._early_time_threshold = early_time_threshold
         self._main_time_threshold = main_time_threshold
         self._deadline_time_threshold = deadline_time_threshold
+        self._mystery_range = mystery_range
+        self._desperation_min_bids = desperation_min_bids
+        self._desperation_window = desperation_window
+        self._desperation_threshold = desperation_threshold
+        self._desperate_multiplier = desperate_multiplier
+        self._max_utility_ratio = max_utility_ratio
+        self._main_phase_target = main_phase_target
+        self._middle_phase_floor = middle_phase_floor
+        self._end_phase_target = end_phase_target
+        self._end_phase_concession_factor = end_phase_concession_factor
+        self._min_utility_margin = min_utility_margin
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._endgame_opponent_ratio = endgame_opponent_ratio
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -139,7 +178,7 @@ class JonnyBlack(SAONegotiator):
 
     def _update_mystery(self) -> None:
         """Add unpredictability to behavior."""
-        self._mystery_factor = random.uniform(-0.08, 0.08)
+        self._mystery_factor = random.uniform(-self._mystery_range, self._mystery_range)
 
     def _update_opponent_model(self, bid: Outcome, utility: float) -> None:
         """Track opponent and detect desperation."""
@@ -149,9 +188,9 @@ class JonnyBlack(SAONegotiator):
             self._best_opponent_utility = utility
 
         # Detect desperation: opponent rapidly conceding
-        if len(self._opponent_bids) >= 4:
-            recent = [u for _, u in self._opponent_bids[-4:]]
-            if recent[-1] - recent[0] > 0.15:
+        if len(self._opponent_bids) >= self._desperation_min_bids:
+            recent = [u for _, u in self._opponent_bids[-self._desperation_window :]]
+            if recent[-1] - recent[0] > self._desperation_threshold:
                 self._opponent_desperate = True
 
     def _compute_threshold(self, time: float) -> float:
@@ -160,11 +199,11 @@ class JonnyBlack(SAONegotiator):
 
         # Exploit desperate opponent
         if self._opponent_desperate:
-            e *= 0.5
+            e *= self._desperate_multiplier
 
         if time < self._early_time_threshold:
             # Early: firm but mysterious
-            base = self._max_utility * 0.92
+            base = self._max_utility * self._max_utility_ratio
             return base + self._mystery_factor
         elif time < self._main_time_threshold:
             # Middle: unpredictable concession
@@ -172,15 +211,24 @@ class JonnyBlack(SAONegotiator):
                 self._main_time_threshold - self._early_time_threshold
             )
             f_t = math.pow(progress, 1 / e)
-            base = self._max_utility * 0.92 - (self._max_utility * 0.92 - 0.55) * f_t
-            return max(base + self._mystery_factor, 0.5)
+            base = (
+                self._max_utility * self._max_utility_ratio
+                - (self._max_utility * self._max_utility_ratio - self._main_phase_target)
+                * f_t
+            )
+            return max(base + self._mystery_factor, self._middle_phase_floor)
         else:
             # End: deal-making mode
             progress = (time - self._main_time_threshold) / (
                 1.0 - self._main_time_threshold
             )
-            base = 0.55 - (0.55 - 0.45) * progress * 0.5
-            return max(base + self._mystery_factor, self._min_utility + 0.1)
+            base = (
+                self._main_phase_target
+                - (self._main_phase_target - self._end_phase_target)
+                * progress
+                * self._end_phase_concession_factor
+            )
+            return max(base + self._mystery_factor, self._min_utility + self._min_utility_margin)
 
     def _select_bid(self, time: float) -> Outcome | None:
         """Select bid with strategic variance."""
@@ -193,7 +241,9 @@ class JonnyBlack(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.85)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
@@ -233,7 +283,8 @@ class JonnyBlack(SAONegotiator):
         # Last-minute deal
         if time > self._deadline_time_threshold:
             if offer_utility >= max(
-                self._best_opponent_utility * 0.95, self._min_utility + 0.1
+                self._best_opponent_utility * self._endgame_opponent_ratio,
+                self._min_utility + self._min_utility_margin,
             ):
                 return ResponseType.ACCEPT_OFFER
 

@@ -64,6 +64,16 @@ class PhoenixParty(SAONegotiator):
         phase1_time_threshold: Time threshold for phase 1 (aggressive) (default 0.3)
         phase2_time_threshold: Time threshold for phase 2 (adaptive) (default 0.6)
         phase3_time_threshold: Time threshold for phase 3 (final) (default 0.8)
+        stuck_window: Number of recent opponent offers checked for stuck detection (default 5)
+        stuck_variance_threshold: Variance below which a round counts as stuck (default 0.05)
+        rebirth_stuck_count: Stuck rounds needed to trigger rebirth (default 3)
+        phase1_concession: Utility conceded during phase 1 (default 0.15)
+        opponent_best_bonus: Bonus above best opponent utility for adaptive target (default 0.1)
+        adaptive_target_margin: Margin above min threshold for adaptive/final current target (default 0.2)
+        final_phase_target_margin: Margin above min threshold for final phase target (default 0.1)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.9)
+        phase1_top_fraction: Divisor for selecting top candidates in phase 1 (default 5)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.98)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -80,6 +90,16 @@ class PhoenixParty(SAONegotiator):
         phase1_time_threshold: float = 0.3,
         phase2_time_threshold: float = 0.6,
         phase3_time_threshold: float = 0.8,
+        stuck_window: int = 5,
+        stuck_variance_threshold: float = 0.05,
+        rebirth_stuck_count: int = 3,
+        phase1_concession: float = 0.15,
+        opponent_best_bonus: float = 0.1,
+        adaptive_target_margin: float = 0.2,
+        final_phase_target_margin: float = 0.1,
+        fallback_threshold_ratio: float = 0.9,
+        phase1_top_fraction: int = 5,
+        deadline_time_threshold: float = 0.98,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -102,6 +122,16 @@ class PhoenixParty(SAONegotiator):
         self._phase1_time_threshold = phase1_time_threshold
         self._phase2_time_threshold = phase2_time_threshold
         self._phase3_time_threshold = phase3_time_threshold
+        self._stuck_window = stuck_window
+        self._stuck_variance_threshold = stuck_variance_threshold
+        self._rebirth_stuck_count = rebirth_stuck_count
+        self._phase1_concession = phase1_concession
+        self._opponent_best_bonus = opponent_best_bonus
+        self._adaptive_target_margin = adaptive_target_margin
+        self._final_phase_target_margin = final_phase_target_margin
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._phase1_top_fraction = phase1_top_fraction
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -149,16 +179,16 @@ class PhoenixParty(SAONegotiator):
             self._opponent_best_for_us = utility
 
         # Check if stuck (no improvement in recent offers)
-        if len(self._opponent_pattern) >= 5:
-            recent = self._opponent_pattern[-5:]
-            if max(recent) - min(recent) < 0.05:
+        if len(self._opponent_pattern) >= self._stuck_window:
+            recent = self._opponent_pattern[-self._stuck_window :]
+            if max(recent) - min(recent) < self._stuck_variance_threshold:
                 self._stuck_counter += 1
             else:
                 self._stuck_counter = 0
 
     def _should_rebirth(self) -> bool:
         """Check if we should rebirth (change strategy phase)."""
-        return self._stuck_counter >= 3
+        return self._stuck_counter >= self._rebirth_stuck_count
 
     def _compute_threshold(self, time: float) -> float:
         """Compute threshold with phoenix rebirth mechanics."""
@@ -171,21 +201,24 @@ class PhoenixParty(SAONegotiator):
                 progress = (time - self._phase1_time_threshold) / (
                     self._phase2_time_threshold - self._phase1_time_threshold
                 )
-                return self._initial_threshold - 0.15 * progress
+                return self._initial_threshold - self._phase1_concession * progress
             else:
                 # Time to consider rebirth
                 if self._should_rebirth():
                     self._phase = 2
-                return self._initial_threshold - 0.15
+                return self._initial_threshold - self._phase1_concession
 
         elif self._phase == 2:
             # Adaptive phase - concede based on opponent best
-            target = max(self._opponent_best_for_us + 0.1, self._min_threshold + 0.2)
+            target = max(
+                self._opponent_best_for_us + self._opponent_best_bonus,
+                self._min_threshold + self._adaptive_target_margin,
+            )
             if time < self._phase3_time_threshold:
                 progress = (time - self._phase2_time_threshold) / (
                     self._phase3_time_threshold - self._phase2_time_threshold
                 )
-                base = self._initial_threshold - 0.15
+                base = self._initial_threshold - self._phase1_concession
                 return base - (base - target) * progress
             else:
                 if self._should_rebirth():
@@ -199,8 +232,10 @@ class PhoenixParty(SAONegotiator):
                 (time - self._phase3_time_threshold)
                 / (1.0 - self._phase3_time_threshold),
             )
-            target = self._min_threshold + 0.1
-            current = max(self._opponent_best_for_us, self._min_threshold + 0.2)
+            target = self._min_threshold + self._final_phase_target_margin
+            current = max(
+                self._opponent_best_for_us, self._min_threshold + self._adaptive_target_margin
+            )
             return current - (current - target) * progress
 
     def _select_bid(self, time: float) -> Outcome | None:
@@ -212,7 +247,9 @@ class PhoenixParty(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
@@ -222,7 +259,7 @@ class PhoenixParty(SAONegotiator):
             return random.choice(candidates).bid
 
         # Phase 1: prefer top bids
-        top_n = max(1, len(candidates) // 5)
+        top_n = max(1, len(candidates) // self._phase1_top_fraction)
         return random.choice(candidates[:top_n]).bid
 
     def propose(self, state: SAOState, dest: str | None = None) -> Outcome | None:
@@ -255,7 +292,10 @@ class PhoenixParty(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # Near deadline, accept best we've seen
-        if time > 0.98 and offer_utility >= self._opponent_best_for_us:
+        if (
+            time > self._deadline_time_threshold
+            and offer_utility >= self._opponent_best_for_us
+        ):
             if offer_utility >= self._min_threshold:
                 return ResponseType.ACCEPT_OFFER
 

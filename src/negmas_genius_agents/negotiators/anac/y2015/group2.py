@@ -54,6 +54,9 @@ class Y2015Group2(SAONegotiator):
 
     Args:
         e: Concession exponent controlling concession speed (default 0.2)
+        min_acceptable: Minimum acceptable utility (default 0.5)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.9)
+        deadline_time_threshold: Time after which end-game acceptance triggers (default 0.95)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -66,6 +69,9 @@ class Y2015Group2(SAONegotiator):
     def __init__(
         self,
         e: float = 0.2,
+        min_acceptable: float = 0.5,
+        fallback_threshold_ratio: float = 0.9,
+        deadline_time_threshold: float = 0.95,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -84,13 +90,15 @@ class Y2015Group2(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._min_acceptable = min_acceptable
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._deadline_time_threshold = deadline_time_threshold
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
         # State
         self._max_utility: float = 1.0
         self._min_utility: float = 0.0
-        self._min_acceptable: float = 0.5
 
         # Opponent tracking
         self._opponent_bids: list[tuple[Outcome, float]] = []
@@ -141,7 +149,9 @@ class Y2015Group2(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
@@ -178,7 +188,10 @@ class Y2015Group2(SAONegotiator):
             return ResponseType.ACCEPT_OFFER
 
         # End-game: accept best opponent offer
-        if time > 0.95 and offer_utility >= self._best_opponent_utility:
+        if (
+            time > self._deadline_time_threshold
+            and offer_utility >= self._best_opponent_utility
+        ):
             if offer_utility >= self._min_acceptable:
                 return ResponseType.ACCEPT_OFFER
 

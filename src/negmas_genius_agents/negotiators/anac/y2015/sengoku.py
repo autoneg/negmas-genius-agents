@@ -63,6 +63,21 @@ class SENGOKU(SAONegotiator):
         defense_time_threshold: Time threshold for defense phase (default 0.4)
         tactical_time_threshold: Time threshold for tactical phase (default 0.7)
         alliance_time_threshold: Time threshold for alliance phase (default 0.9)
+        territory: Defended utility territory in defense phase (default 0.85)
+        alliance_min_bids: Minimum opponent bids to assess alliance (default 3)
+        alliance_recent_window: Number of recent opponent bids for alliance assessment (default 5)
+        alliance_threshold: Alliance score/quality threshold for alliance behavior (default 0.5)
+        alliance_increment: Increment to alliance score for cooperative offers (default 0.1)
+        alliance_decrement: Decrement to alliance score for uncooperative offers (default 0.05)
+        alliance_bonus_multiplier: Multiplier applied to e for cooperative opponents (default 1.2)
+        tactical_target: Utility target in tactical/alliance phases (default 0.65)
+        alliance_target_floor: Floor utility target in alliance/victory phases (default 0.55)
+        opponent_best_bonus: Bonus above best opponent utility for alliance/victory target (default 0.1)
+        victory_target_floor: Floor utility target in victory phase (default 0.45)
+        victory_min_utility_margin: Margin above min utility for victory target (default 0.1)
+        victory_concession_factor: Fraction of concession applied in victory phase (default 0.7)
+        fallback_threshold_ratio: Ratio used when lowering threshold if no candidates (default 0.9)
+        defense_top_fraction: Divisor for selecting top candidates in defense phase (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -78,6 +93,21 @@ class SENGOKU(SAONegotiator):
         defense_time_threshold: float = 0.4,
         tactical_time_threshold: float = 0.7,
         alliance_time_threshold: float = 0.9,
+        territory: float = 0.85,
+        alliance_min_bids: int = 3,
+        alliance_recent_window: int = 5,
+        alliance_threshold: float = 0.5,
+        alliance_increment: float = 0.1,
+        alliance_decrement: float = 0.05,
+        alliance_bonus_multiplier: float = 1.2,
+        tactical_target: float = 0.65,
+        alliance_target_floor: float = 0.55,
+        opponent_best_bonus: float = 0.1,
+        victory_target_floor: float = 0.45,
+        victory_min_utility_margin: float = 0.1,
+        victory_concession_factor: float = 0.7,
+        fallback_threshold_ratio: float = 0.9,
+        defense_top_fraction: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -99,13 +129,27 @@ class SENGOKU(SAONegotiator):
         self._defense_time_threshold = defense_time_threshold
         self._tactical_time_threshold = tactical_time_threshold
         self._alliance_time_threshold = alliance_time_threshold
+        self._territory = territory
+        self._alliance_min_bids = alliance_min_bids
+        self._alliance_recent_window = alliance_recent_window
+        self._alliance_threshold = alliance_threshold
+        self._alliance_increment = alliance_increment
+        self._alliance_decrement = alliance_decrement
+        self._alliance_bonus_multiplier = alliance_bonus_multiplier
+        self._tactical_target = tactical_target
+        self._alliance_target_floor = alliance_target_floor
+        self._opponent_best_bonus = opponent_best_bonus
+        self._victory_target_floor = victory_target_floor
+        self._victory_min_utility_margin = victory_min_utility_margin
+        self._victory_concession_factor = victory_concession_factor
+        self._fallback_threshold_ratio = fallback_threshold_ratio
+        self._defense_top_fraction = defense_top_fraction
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
         # State
         self._max_utility: float = 1.0
         self._min_utility: float = 0.0
-        self._territory: float = 0.85  # Defended utility territory
         self._battle_phase: int = 1
 
         # Opponent tracking
@@ -137,7 +181,6 @@ class SENGOKU(SAONegotiator):
         self._best_opponent_utility = 0.0
         self._opponent_alliance_score = 0.0
         self._battle_phase = 1
-        self._territory = 0.85
 
     def _update_opponent_model(self, bid: Outcome, utility: float) -> None:
         """Track opponent and assess alliance potential."""
@@ -147,17 +190,17 @@ class SENGOKU(SAONegotiator):
             self._best_opponent_utility = utility
 
         # Assess alliance: is opponent offering good deals?
-        if len(self._opponent_bids) >= 3:
-            recent_utils = [u for _, u in self._opponent_bids[-5:]]
+        if len(self._opponent_bids) >= self._alliance_min_bids:
+            recent_utils = [u for _, u in self._opponent_bids[-self._alliance_recent_window :]]
             avg_recent = sum(recent_utils) / len(recent_utils)
 
-            if avg_recent > 0.5:
+            if avg_recent > self._alliance_threshold:
                 self._opponent_alliance_score = min(
-                    1.0, self._opponent_alliance_score + 0.1
+                    1.0, self._opponent_alliance_score + self._alliance_increment
                 )
             else:
                 self._opponent_alliance_score = max(
-                    0.0, self._opponent_alliance_score - 0.05
+                    0.0, self._opponent_alliance_score - self._alliance_decrement
                 )
 
     def _update_battle_phase(self, time: float) -> None:
@@ -176,8 +219,8 @@ class SENGOKU(SAONegotiator):
         e = self._e
 
         # Alliance bonus: concede more for cooperative opponent
-        if self._opponent_alliance_score > 0.5:
-            e *= 1.2
+        if self._opponent_alliance_score > self._alliance_threshold:
+            e *= self._alliance_bonus_multiplier
 
         self._update_battle_phase(time)
 
@@ -190,22 +233,30 @@ class SENGOKU(SAONegotiator):
                 self._tactical_time_threshold - self._defense_time_threshold
             )
             f_t = math.pow(progress, 1 / e)
-            return self._territory - (self._territory - 0.65) * f_t
+            return self._territory - (self._territory - self._tactical_target) * f_t
         elif self._battle_phase == 3:
             # Alliance phase: seek mutual benefit
             progress = (time - self._tactical_time_threshold) / (
                 self._alliance_time_threshold - self._tactical_time_threshold
             )
-            target = max(0.55, self._best_opponent_utility + 0.1)
-            return 0.65 - (0.65 - target) * progress
+            target = max(
+                self._alliance_target_floor,
+                self._best_opponent_utility + self._opponent_best_bonus,
+            )
+            return self._tactical_target - (self._tactical_target - target) * progress
         else:
             # Victory phase: seal the deal
             progress = (time - self._alliance_time_threshold) / (
                 1.0 - self._alliance_time_threshold
             )
-            current = max(0.55, self._best_opponent_utility + 0.1)
-            target = max(0.45, self._min_utility + 0.1)
-            return current - (current - target) * progress * 0.7
+            current = max(
+                self._alliance_target_floor,
+                self._best_opponent_utility + self._opponent_best_bonus,
+            )
+            target = max(
+                self._victory_target_floor, self._min_utility + self._victory_min_utility_margin
+            )
+            return current - (current - target) * progress * self._victory_concession_factor
 
     def _select_bid(self, time: float) -> Outcome | None:
         """Select bid based on battle strategy."""
@@ -216,14 +267,16 @@ class SENGOKU(SAONegotiator):
         candidates = self._outcome_space.get_bids_above(threshold)
 
         if not candidates:
-            candidates = self._outcome_space.get_bids_above(threshold * 0.9)
+            candidates = self._outcome_space.get_bids_above(
+                threshold * self._fallback_threshold_ratio
+            )
 
         if not candidates:
             return self._outcome_space.outcomes[0].bid
 
         # Defense phase: top bids only
         if self._battle_phase == 1:
-            top_n = max(1, len(candidates) // 5)
+            top_n = max(1, len(candidates) // self._defense_top_fraction)
             return random.choice(candidates[:top_n]).bid
 
         return random.choice(candidates).bid
@@ -260,7 +313,7 @@ class SENGOKU(SAONegotiator):
         # Victory phase: accept if better than expected
         if self._battle_phase == 4:
             if offer_utility >= max(
-                self._best_opponent_utility, self._min_utility + 0.1
+                self._best_opponent_utility, self._min_utility + self._victory_min_utility_margin
             ):
                 return ResponseType.ACCEPT_OFFER
 

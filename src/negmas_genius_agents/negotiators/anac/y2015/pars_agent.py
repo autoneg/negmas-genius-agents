@@ -57,6 +57,9 @@ class ParsAgent(SAONegotiator):
 
     Args:
         e: Concession exponent (default 0.15 without discount, 0.20 with)
+        min_threshold: Minimum utility threshold (default 0.7)
+        mutual_bid_target_time: Relative time used to compute mutual bid target (default 0.5)
+        mutual_bid_min_opponent_bids: Minimum opponent bids before mutual bid selection (default 5)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -69,6 +72,9 @@ class ParsAgent(SAONegotiator):
     def __init__(
         self,
         e: float = 0.15,
+        min_threshold: float = 0.7,
+        mutual_bid_target_time: float = 0.5,
+        mutual_bid_min_opponent_bids: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -87,12 +93,14 @@ class ParsAgent(SAONegotiator):
             **kwargs,
         )
         self._e = e
+        self._min_threshold = min_threshold
+        self._mutual_bid_target_time = mutual_bid_target_time
+        self._mutual_bid_min_opponent_bids = mutual_bid_min_opponent_bids
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
         # State
         self._max_utility: float = 1.0
-        self._min_threshold: float = 0.7
 
         # Opponent modeling
         self._opponent_value_freq: dict[int, dict] = {}  # issue -> {value: count}
@@ -147,7 +155,7 @@ class ParsAgent(SAONegotiator):
         if not self._opponent_value_freq or self._outcome_space is None:
             return None
 
-        target = self._get_target_utility(0.5)  # Use mid-point target
+        target = self._get_target_utility(self._mutual_bid_target_time)  # Use mid-point target
 
         # For each candidate bid, score by opponent preference
         best_bid = None
@@ -188,7 +196,7 @@ class ParsAgent(SAONegotiator):
                 return bid
 
         # Second try: mutual preference bid
-        if len(self._opponent_bids) > 5:
+        if len(self._opponent_bids) > self._mutual_bid_min_opponent_bids:
             mutual_bid = self._get_mutual_bid()
             if mutual_bid is not None and self.ufun is not None:
                 if float(self.ufun(mutual_bid)) >= target:

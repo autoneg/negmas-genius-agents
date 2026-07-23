@@ -217,6 +217,8 @@ class IAMhaggler(SAONegotiator):
         late_phase_time: Time for late acceptance phase (default 0.95)
         late_acceptance_factor: Factor for late acceptance (default 0.95)
         deadline_time: Time threshold for deadline acceptance (default 0.99)
+        opponent_model_min_samples: Minimum opponent offers before adapting concession (default 3).
+        opponent_trend_window: Number of recent offers used to estimate opponent trend (default 5).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -241,6 +243,8 @@ class IAMhaggler(SAONegotiator):
         late_phase_time: float = 0.95,
         late_acceptance_factor: float = 0.95,
         deadline_time: float = 0.99,
+        opponent_model_min_samples: int = 3,
+        opponent_trend_window: int = 5,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -271,6 +275,8 @@ class IAMhaggler(SAONegotiator):
         self._late_phase_time = late_phase_time
         self._late_acceptance_factor = late_acceptance_factor
         self._deadline_time = deadline_time
+        self._opponent_model_min_samples = opponent_model_min_samples
+        self._opponent_trend_window = opponent_trend_window
 
         self._outcome_space: SortedOutcomeSpace | None = None
         self._opponent_model: BayesianOpponentModel | None = None
@@ -346,8 +352,8 @@ class IAMhaggler(SAONegotiator):
             self._opponent_model.update(offer)
 
         # Adapt concession rate based on opponent behavior
-        if len(self._opponent_offers) >= 3:
-            recent = [u for _, u in self._opponent_offers[-5:]]
+        if len(self._opponent_offers) >= self._opponent_model_min_samples:
+            recent = [u for _, u in self._opponent_offers[-self._opponent_trend_window :]]
             if len(recent) >= 2:
                 trend = recent[-1] - recent[0]
                 if trend > self._opponent_trend_threshold:
@@ -416,7 +422,7 @@ class IAMhaggler(SAONegotiator):
             return None
 
         # If we have opponent model, use Nash product selection
-        if self._opponent_model is not None and len(self._opponent_offers) >= 3:
+        if self._opponent_model is not None and len(self._opponent_offers) >= self._opponent_model_min_samples:
             best_bid = None
             best_score = -1.0
 

@@ -101,6 +101,9 @@ class AgentSmith(SAONegotiator):
         hardhead_acceptance_factor: Acceptance factor against hardhead (default 0.95).
         conceder_acceptance_factor: Acceptance factor against conceder (default 0.98).
         default_acceptance_factor: Default acceptance factor (default 0.97).
+        classification_window: Number of recent offers used for opponent classification and trend (default 5).
+        tft_min_samples: Minimum opponent offers before checking TFT-like behavior (default 10).
+        tft_step_tolerance: Max absolute step between consecutive offers to classify as TFT-like (default 0.1).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -133,6 +136,9 @@ class AgentSmith(SAONegotiator):
         hardhead_acceptance_factor: float = 0.95,
         conceder_acceptance_factor: float = 0.98,
         default_acceptance_factor: float = 0.97,
+        classification_window: int = 5,
+        tft_min_samples: int = 10,
+        tft_step_tolerance: float = 0.1,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -171,6 +177,9 @@ class AgentSmith(SAONegotiator):
         self._hardhead_acceptance_factor = hardhead_acceptance_factor
         self._conceder_acceptance_factor = conceder_acceptance_factor
         self._default_acceptance_factor = default_acceptance_factor
+        self._classification_window = classification_window
+        self._tft_min_samples = tft_min_samples
+        self._tft_step_tolerance = tft_step_tolerance
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -249,7 +258,7 @@ class AgentSmith(SAONegotiator):
             self._best_opponent_offer = offer
 
         # Need enough data to classify
-        if len(self._opponent_offers) < 5:
+        if len(self._opponent_offers) < self._classification_window:
             return
 
         utilities = [u for _, u, _ in self._opponent_offers]
@@ -260,7 +269,7 @@ class AgentSmith(SAONegotiator):
         self._opponent_variance = variance
 
         # Calculate trend (are they conceding?)
-        recent = utilities[-5:]
+        recent = utilities[-self._classification_window :]
         if len(recent) >= 2:
             self._opponent_trend = (recent[-1] - recent[0]) / len(recent)
 
@@ -276,7 +285,7 @@ class AgentSmith(SAONegotiator):
 
         Uses variance and trend to determine opponent type.
         """
-        if len(self._opponent_offers) < 5:
+        if len(self._opponent_offers) < self._classification_window:
             self._opponent_type = OpponentType.UNKNOWN
             return
 
@@ -302,11 +311,12 @@ class AgentSmith(SAONegotiator):
             return
 
         # Check for TFT-like behavior (offers correlate with our concessions)
-        if len(self._opponent_offers) >= 10:
+        if len(self._opponent_offers) >= self._tft_min_samples:
             # Simple correlation check
-            recent_offers = utilities[-5:]
+            recent_offers = utilities[-self._classification_window :]
             if all(
-                abs(recent_offers[i] - recent_offers[i - 1]) < 0.1
+                abs(recent_offers[i] - recent_offers[i - 1])
+                < self._tft_step_tolerance
                 for i in range(1, len(recent_offers))
             ):
                 self._opponent_type = OpponentType.TFTLIKE

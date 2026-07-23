@@ -66,6 +66,8 @@ class IAMcrazyHaggler(SAONegotiator):
         deadline_transition_end: End of deadline transition phase (default 0.99).
         final_deadline_time: Time for final deadline check (default 0.995).
         final_acceptance_factor: Factor for final acceptance check (default 0.99).
+        effective_threshold_ratio: Ratio of max utility used as fallback bid threshold (default 0.9).
+        top_bids_divisor: Divisor determining the top fraction of bids used as fallback (default 10).
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -84,6 +86,8 @@ class IAMcrazyHaggler(SAONegotiator):
         deadline_transition_end: float = 0.99,
         final_deadline_time: float = 0.995,
         final_acceptance_factor: float = 0.99,
+        effective_threshold_ratio: float = 0.9,
+        top_bids_divisor: int = 10,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -108,6 +112,8 @@ class IAMcrazyHaggler(SAONegotiator):
         self._deadline_transition_end = deadline_transition_end
         self._final_deadline_time = final_deadline_time
         self._final_acceptance_factor = final_acceptance_factor
+        self._effective_threshold_ratio = effective_threshold_ratio
+        self._top_bids_divisor = top_bids_divisor
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -132,7 +138,7 @@ class IAMcrazyHaggler(SAONegotiator):
         if self._outcome_space.outcomes:
             max_util = self._outcome_space.max_utility
             # Use relative threshold if max utility is less than our threshold
-            effective_threshold = min(self._bid_threshold, max_util * 0.9)
+            effective_threshold = min(self._bid_threshold, max_util * self._effective_threshold_ratio)
 
             high_bids = self._outcome_space.get_bids_above(effective_threshold)
             self._high_utility_bids = [bd.bid for bd in high_bids]
@@ -140,7 +146,7 @@ class IAMcrazyHaggler(SAONegotiator):
             # Fallback: ensure we have at least some bids
             if not self._high_utility_bids:
                 # Take top 10% of bids
-                n_top = max(1, len(self._outcome_space.outcomes) // 10)
+                n_top = max(1, len(self._outcome_space.outcomes) // self._top_bids_divisor)
                 self._high_utility_bids = [
                     bd.bid for bd in self._outcome_space.outcomes[:n_top]
                 ]

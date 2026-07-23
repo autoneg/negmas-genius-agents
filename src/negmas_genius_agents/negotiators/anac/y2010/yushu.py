@@ -91,6 +91,14 @@ class Yushu(SAONegotiator):
         acceptable_utility_late: Acceptable utility factor when rounds < early threshold (default 0.92)
         deadline_rounds: Rounds threshold for using best opponent bid (default 1.6)
         many_rounds_threshold: Rounds threshold for considering opponent bids (default 30)
+        best_ten_size: Number of best opponent bids to track (default 10)
+        default_response_time: Fallback average response time when not enough data (default 0.01)
+        default_rounds_left: Fallback remaining rounds when response time is non-positive (default 100.0)
+        default_avg_opponent_utility: Fallback average opponent utility when no history (default 0.5)
+        opponent_history_min_samples: Minimum opponent offers before adjusting min utility (default 3)
+        scale_factor_divisor: Divisor of opponent utility in scale factor calculation (default 3.0)
+        recent_bid_window: Number of recent own bids to avoid repeating (default 4)
+        random_selection_min_history: Own-history length above which random candidate selection is used (default 10)
         preferences: NegMAS preferences/utility function.
         ufun: Utility function (overrides preferences if given).
         name: Negotiator name.
@@ -124,6 +132,14 @@ class Yushu(SAONegotiator):
         acceptable_utility_late: float = 0.92,
         deadline_rounds: float = 1.6,
         many_rounds_threshold: int = 30,
+        best_ten_size: int = 10,
+        default_response_time: float = 0.01,
+        default_rounds_left: float = 100.0,
+        default_avg_opponent_utility: float = 0.5,
+        opponent_history_min_samples: int = 3,
+        scale_factor_divisor: float = 3.0,
+        recent_bid_window: int = 4,
+        random_selection_min_history: int = 10,
         preferences: BaseUtilityFunction | None = None,
         ufun: BaseUtilityFunction | None = None,
         name: str | None = None,
@@ -163,6 +179,14 @@ class Yushu(SAONegotiator):
         self._acceptable_utility_late = acceptable_utility_late
         self._deadline_rounds = deadline_rounds
         self._many_rounds_threshold = many_rounds_threshold
+        self._best_ten_size = best_ten_size
+        self._default_response_time = default_response_time
+        self._default_rounds_left = default_rounds_left
+        self._default_avg_opponent_utility = default_avg_opponent_utility
+        self._opponent_history_min_samples = opponent_history_min_samples
+        self._scale_factor_divisor = scale_factor_divisor
+        self._recent_bid_window = recent_bid_window
+        self._random_selection_min_history = random_selection_min_history
         self._outcome_space: SortedOutcomeSpace | None = None
         self._initialized = False
 
@@ -221,7 +245,7 @@ class Yushu(SAONegotiator):
         self._opponent_utilities.append(utility)
         self._total_opponent_utility += utility
 
-        if len(self._best_ten_indices) < 10:
+        if len(self._best_ten_indices) < self._best_ten_size:
             self._best_ten_indices.append(idx)
             self._best_ten_indices.sort(
                 key=lambda i: self._opponent_utilities[i], reverse=True
@@ -235,18 +259,18 @@ class Yushu(SAONegotiator):
     def _average_response_time(self) -> float:
         """Calculate average response time."""
         if len(self._response_times) < 2:
-            return 0.01
+            return self._default_response_time
         diffs = [
             self._response_times[i] - self._response_times[i - 1]
             for i in range(1, len(self._response_times))
         ]
-        return sum(diffs) / len(diffs) if diffs else 0.01
+        return sum(diffs) / len(diffs) if diffs else self._default_response_time
 
     def _estimate_rounds_left(self, time: float) -> float:
         """Estimate remaining rounds based on response time."""
         avg_time = self._average_response_time()
         if avg_time <= 0:
-            return 100
+            return self._default_rounds_left
         time_left = 1.0 - time
         return time_left / avg_time
 
@@ -255,7 +279,7 @@ class Yushu(SAONegotiator):
         avg_opp_util = (
             self._total_opponent_utility / len(self._opponent_history)
             if self._opponent_history
-            else 0.5
+            else self._default_avg_opponent_utility
         )
 
         if rounds_left > self._rounds_threshold_1:
@@ -271,7 +295,7 @@ class Yushu(SAONegotiator):
 
         if (
             avg_opp_util < self._opponent_utility_threshold
-            and len(self._opponent_history) > 3
+            and len(self._opponent_history) > self._opponent_history_min_samples
         ):
             self._min_utility -= (
                 self._opponent_utility_threshold - avg_opp_util
@@ -279,7 +303,8 @@ class Yushu(SAONegotiator):
 
         self._min_utility = max(self._min_utility_floor, self._min_utility)
         scale_factor = (
-            min(self._opponent_utility_threshold, avg_opp_util) / 3
+            min(self._opponent_utility_threshold, avg_opp_util)
+            / self._scale_factor_divisor
             + self._scale_factor_base
         )
         self._min_utility *= scale_factor
@@ -323,11 +348,13 @@ class Yushu(SAONegotiator):
             return None
 
         recent = set(
-            tuple(b) if b else () for b in self._my_history[-4:] if b is not None
+            tuple(b) if b else ()
+            for b in self._my_history[-self._recent_bid_window :]
+            if b is not None
         )
         filtered = [c for c in candidates if tuple(c) not in recent]
 
-        if filtered and len(self._my_history) > 10:
+        if filtered and len(self._my_history) > self._random_selection_min_history:
             return random.choice(filtered)
         elif filtered:
             return min(

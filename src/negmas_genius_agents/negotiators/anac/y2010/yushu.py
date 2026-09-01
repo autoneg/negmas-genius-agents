@@ -325,9 +325,33 @@ class Yushu(SAONegotiator):
         upper = self._bid_upper_factor * target
 
         candidates: list[Outcome] = []
+        # `candidate_set` mirrors `candidates` so that the membership test in
+        # the second loop below is O(1) instead of a linear scan of a list that
+        # can grow to the size of the outcome space. It is set to None (falling
+        # back to the original linear scan) if any bid is unhashable.
+        candidate_set: set[Outcome] | None = set()
+
+        def _add(bid: Outcome) -> None:
+            nonlocal candidate_set
+            candidates.append(bid)
+            if candidate_set is not None:
+                try:
+                    candidate_set.add(bid)
+                except TypeError:
+                    candidate_set = None
+
+        def _seen(bid: Outcome) -> bool:
+            nonlocal candidate_set
+            if candidate_set is not None:
+                try:
+                    return bid in candidate_set
+                except TypeError:
+                    candidate_set = None
+            return bid in candidates
+
         for bd in self._outcome_space.outcomes:
             if lower <= bd.utility <= upper:
-                candidates.append(bd.bid)
+                _add(bd.bid)
             elif bd.utility < lower:
                 break
 
@@ -337,8 +361,8 @@ class Yushu(SAONegotiator):
         ):
             best_opp_util = self._opponent_utilities[self._best_ten_indices[0]]
             for bd in self._outcome_space.outcomes:
-                if bd.utility >= best_opp_util and bd.bid not in candidates:
-                    candidates.append(bd.bid)
+                if bd.utility >= best_opp_util and not _seen(bd.bid):
+                    _add(bd.bid)
                 elif bd.utility < best_opp_util:
                     break
 

@@ -187,6 +187,10 @@ class MyAgent(SAONegotiator):
         self._opponent_utilities: list[float] = []  # Our utility for their bids
         self._opponent_issue_weights: dict[int, float] = {}
         self._opponent_value_frequencies: dict[int, dict[str, int]] = {}
+        # max(freq_map.values()) per issue, maintained as the frequency model
+        # is updated so that `_estimate_opponent_utility` does not recompute
+        # it for every issue of every candidate bid it scores.
+        self._opponent_value_frequency_max: dict[int, int] = {}
 
         # Nash estimation
         self._nash_point: Outcome | None = None
@@ -218,6 +222,7 @@ class MyAgent(SAONegotiator):
             for i in range(n_issues):
                 self._opponent_issue_weights[i] = 1.0 / n_issues
                 self._opponent_value_frequencies[i] = {}
+                self._opponent_value_frequency_max[i] = 0
 
         # Set initial reservation value based on domain
         self._compute_reservation_value()
@@ -271,11 +276,17 @@ class MyAgent(SAONegotiator):
         for i, value in enumerate(bid):
             if i not in self._opponent_value_frequencies:
                 self._opponent_value_frequencies[i] = {}
+                self._opponent_value_frequency_max[i] = 0
 
             value_str = str(value)
             if value_str not in self._opponent_value_frequencies[i]:
                 self._opponent_value_frequencies[i][value_str] = 0
             self._opponent_value_frequencies[i][value_str] += 1
+            # Counts only ever increase by one, so the new maximum is either
+            # the old maximum or the count just written.
+            count = self._opponent_value_frequencies[i][value_str]
+            if count > self._opponent_value_frequency_max.get(i, 0):
+                self._opponent_value_frequency_max[i] = count
 
         # Update issue weights based on consistency
         if len(self._opponent_bids) >= 2:
@@ -340,7 +351,9 @@ class MyAgent(SAONegotiator):
 
             # Value utility based on frequency
             value_count = freq_map.get(value_str, 0)
-            max_count = max(freq_map.values()) if freq_map else 1
+            max_count = self._opponent_value_frequency_max.get(i)
+            if not max_count:
+                max_count = max(freq_map.values()) if freq_map else 1
 
             value_utility = value_count / max_count if max_count > 0 else 0.5
             total_utility += weight * value_utility

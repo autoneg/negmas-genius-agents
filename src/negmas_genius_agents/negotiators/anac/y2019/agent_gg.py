@@ -196,6 +196,10 @@ class AgentGG(SAONegotiator):
 
         # Importance maps
         self._own_importance: dict[int, dict[str, float]] = {}
+        # Own importance of every outcome, in the sorted order of
+        # `self._outcome_space.outcomes`. Computed once (it only depends on
+        # `_own_importance`, which never changes after initialization).
+        self._bid_importance: list[float] | None = None
         self._opponent_importance: dict[int, dict[str, float]] = {}
 
         # Thresholds
@@ -471,6 +475,15 @@ class AgentGG(SAONegotiator):
             return 0.5
         return (self._compute_importance(bid) - self._min_importance) / imp_range
 
+    def _bid_importances(self) -> list[float]:
+        """Own importance of every outcome (cached, in sorted-outcome order)."""
+        if self._bid_importance is None:
+            assert self._outcome_space is not None
+            self._bid_importance = [
+                self._compute_importance(bd.bid) for bd in self._outcome_space.outcomes
+            ]
+        return self._bid_importance
+
     def _select_bid(self) -> Outcome | None:
         """Select a bid within the threshold range."""
         if self._outcome_space is None or not self._outcome_space.outcomes:
@@ -487,8 +500,8 @@ class AgentGG(SAONegotiator):
 
         # Search for bids in range
         candidates: list[tuple[Outcome, float]] = []
-        for bd in self._outcome_space.outcomes:
-            bid_imp = self._compute_importance(bd.bid)
+        importances = self._bid_importances()
+        for bd, bid_imp in zip(self._outcome_space.outcomes, importances):
             if lower_threshold <= bid_imp <= upper_threshold:
                 if self._offer_randomly:
                     return bd.bid
@@ -501,8 +514,8 @@ class AgentGG(SAONegotiator):
             return best_bid[0]
 
         # Fallback: find any bid above threshold
-        for bd in self._outcome_space.outcomes:
-            if self._compute_importance(bd.bid) >= lower_threshold:
+        for bd, bid_imp in zip(self._outcome_space.outcomes, importances):
+            if bid_imp >= lower_threshold:
                 return bd.bid
 
         return self._max_importance_bid

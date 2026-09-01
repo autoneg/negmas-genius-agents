@@ -115,6 +115,10 @@ class WhaleAgent(SAONegotiator):
         self._best_opponent_bid: Outcome | None = None
         self._best_opponent_utility: float = 0.0
         self._opponent_value_freq: dict[int, dict] = {}
+        # max(self._opponent_value_freq[i].values()) per issue, maintained as
+        # the frequency model is updated so that `_estimate_opponent_utility`
+        # does not recompute it for every issue of every candidate bid.
+        self._opponent_value_freq_max: dict[int, int] = {}
 
         # Bidding state
         self._reservation_value: float = 0.0
@@ -142,6 +146,7 @@ class WhaleAgent(SAONegotiator):
         self._best_opponent_bid = None
         self._best_opponent_utility = 0.0
         self._opponent_value_freq = {}
+        self._opponent_value_freq_max = {}
 
     def _update_opponent_model(self, bid: Outcome) -> None:
         """Update opponent model with frequency analysis."""
@@ -159,9 +164,12 @@ class WhaleAgent(SAONegotiator):
         for i, value in enumerate(bid):
             if i not in self._opponent_value_freq:
                 self._opponent_value_freq[i] = {}
-            self._opponent_value_freq[i][value] = (
-                self._opponent_value_freq[i].get(value, 0) + 1
-            )
+            count = self._opponent_value_freq[i].get(value, 0) + 1
+            self._opponent_value_freq[i][value] = count
+            # Counts only ever increase by one, so the new maximum is either
+            # the old maximum or the count just written.
+            if count > self._opponent_value_freq_max.get(i, 0):
+                self._opponent_value_freq_max[i] = count
 
     def _estimate_opponent_utility(self, bid: Outcome) -> float:
         """Estimate opponent utility using frequency model."""
@@ -174,7 +182,9 @@ class WhaleAgent(SAONegotiator):
         for i, value in enumerate(bid):
             if i in self._opponent_value_freq:
                 freq = self._opponent_value_freq[i].get(value, 0)
-                max_freq = max(self._opponent_value_freq[i].values())
+                max_freq = self._opponent_value_freq_max.get(i)
+                if max_freq is None:
+                    max_freq = max(self._opponent_value_freq[i].values())
                 if max_freq > 0:
                     total_score += freq / max_freq
 

@@ -195,6 +195,15 @@ class NiceTitForTat(SAONegotiator):
         # Frequency-based opponent model
         self._opponent_issue_frequencies: dict[str, dict] = {}
         self._opponent_issue_weights: dict[str, float] = {}
+        # max(counts.values()) for each issue's frequency table, maintained
+        # incrementally so that `_get_opponent_utility` need not recompute it
+        # for every issue of every bid it scores.
+        self._opponent_issue_max_count: dict[str, int] = {}
+        # Bumped whenever anything `_estimate_nash_utility` depends on (the
+        # frequency tables or the issue weights) changes, so that the Nash
+        # estimate can be reused when the opponent model has not moved.
+        self._opponent_model_version: int = 0
+        self._nash_estimate_cache: tuple[int, object, float] | None = None
 
         # Tracking
         self._best_opponent_bid: Outcome | None = None
@@ -220,6 +229,8 @@ class NiceTitForTat(SAONegotiator):
             for issue in issues:
                 self._opponent_issue_weights[issue.name] = weight
                 self._opponent_issue_frequencies[issue.name] = {}
+                self._opponent_issue_max_count[issue.name] = 0
+            self._opponent_model_version += 1
 
         self._initialized = True
 
@@ -251,7 +262,14 @@ class NiceTitForTat(SAONegotiator):
             if val is not None:
                 val_key = str(val)
                 freqs = self._opponent_issue_frequencies[issue.name]
-                freqs[val_key] = freqs.get(val_key, 0) + 1
+                count = freqs.get(val_key, 0) + 1
+                freqs[val_key] = count
+                # Counts only ever increase by one, so the new maximum is
+                # either the old one or the count just written.
+                if count > self._opponent_issue_max_count.get(issue.name, 0):
+                    self._opponent_issue_max_count[issue.name] = count
+
+        self._opponent_model_version += 1
 
         if len(self._opponent_history) >= 3:
             self._update_issue_weights()
@@ -290,7 +308,9 @@ class NiceTitForTat(SAONegotiator):
                 val_key = str(val)
                 counts = self._opponent_issue_frequencies.get(issue.name, {})
                 if val_key in counts and counts:
-                    max_count = max(counts.values())
+                    max_count = self._opponent_issue_max_count.get(issue.name)
+                    if max_count is None:
+                        max_count = max(counts.values())
                     value_preference = counts[val_key] / max_count if max_count > 0 else 0.5
                 else:
                     value_preference = self._unknown_value_preference
@@ -323,6 +343,18 @@ class NiceTitForTat(SAONegotiator):
         if self._outcome_space is None or not self._outcome_space.outcomes:
             return 0.7
 
+        # The scan below depends only on the (fixed) outcome space and on the
+        # opponent model, so its result can be reused verbatim while the model
+        # is unchanged. `_opponent_model_version` is bumped by every write to
+        # the frequency tables or the issue weights.
+        cache = self._nash_estimate_cache
+        if (
+            cache is not None
+            and cache[0] == self._opponent_model_version
+            and cache[1] is self.nmi
+        ):
+            return cache[2]
+
         best_score = -1.0
         best_util = 0.7
         # Only consider a reasonable prefix (already sorted by our utility,
@@ -334,6 +366,11 @@ class NiceTitForTat(SAONegotiator):
                 best_score = score
                 best_util = bd.utility
 
+        self._nash_estimate_cache = (
+            self._opponent_model_version,
+            self.nmi,
+            best_util,
+        )
         return best_util
 
     def _update_my_nash_utility(self) -> None:

@@ -68,3 +68,4 @@ nav:
     - Agents by Year: api/agents.md
     - Time-Dependent Agents: api/time-dependent.md
     - Utilities: api/utilities.md
+  - Changelog: changelog.md

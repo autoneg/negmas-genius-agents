@@ -1,6 +1,6 @@
 # Available Agents
 
-This page lists all 124 negotiating agents available in the library, organized by ANAC competition year. Each agent is a Python reimplementation of its original Java Genius counterpart.
+This page lists all 141 negotiating agents available in the library, organized by ANAC competition year. Each agent is a Python reimplementation of its original Java Genius counterpart.
 
 !!! warning "AI-Generated Implementations"
     All agents in this library are AI-generated reimplementations based on the original

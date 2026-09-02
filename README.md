@@ -6,7 +6,7 @@
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/negmas-genius-agents.svg)](https://pypi.python.org/pypi/negmas-genius-agents)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-Python reimplementations of **124 [Genius](http://ii.tudelft.nl/genius/) negotiating agents** from ANAC competitions 2010-2019 for use with the [NegMAS](https://github.com/yasserfarouk/negmas) framework.
+Python reimplementations of **141 [Genius](http://ii.tudelft.nl/genius/) negotiating agents** from ANAC competitions 2010-2019 for use with the [NegMAS](https://github.com/yasserfarouk/negmas) framework.
 
 ---
 
@@ -49,7 +49,7 @@ If you use this package, please cite Genius:
 
 ## Features
 
-- **124 ANAC agents** from competitions 2010-2019
+- **141 ANAC agents** from competitions 2010-2019
 - **5 basic time-dependent agents** (Boulware, Conceder, Linear, Hardliner)
 - **Pure Python** - No Java dependency required
 - **Seamless integration** with NegMAS mechanisms and tournaments

@@ -1,6 +1,6 @@
 [project]
 name = "negmas-genius-agents"
-version = "0.2.1"
+version = "0.3.0"
 description = "Python reimplementations of Genius negotiating agents for NegMAS"
 readme = "README.md"
 license = "AGPL-3.0-or-later"
@@ -9,7 +9,7 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "negmas>=0.15.2",
+    "negmas>=0.16.0",
     "numpy>=1.24.0",
 ]
 
